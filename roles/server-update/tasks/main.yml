@@ -1,0 +1,62 @@
+---
+# - name: Display all variables/facts known for a host
+#   ansible.builtin.debug:
+#     var: hostvars[inventory_hostname]
+#     verbosity: 4
+
+### APT
+- name: Add Hashi Apt signing key
+  ansible.builtin.apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: Delete old repo
+  ansible.builtin.file:
+    state: absent
+    path: /etc/apt/sources.list.d/apt_releases_hashicorp_com.list
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: Add specified repository into sources list
+  ansible.builtin.apt_repository:
+    repo: "deb https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    state: present
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: Add Tailscale Apt signing key
+  ansible.builtin.apt_key:
+    url: https://pkgs.tailscale.com/stable/debian/bullseye.noarmor.gpg
+    state: present
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: Delete old Tailscale repo
+  ansible.builtin.file:
+    state: absent
+    path: /etc/apt/sources.list.d/pkgs_tailscale_com_stable_debian.list
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: Add specified repository into sources list
+  ansible.builtin.apt_repository:
+    repo: "deb https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+    state: present
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: APT update cache as separate step
+  ansible.builtin.apt:
+    update_cache: true
+  when: ansible_facts.pkg_mgr == "apt"
+  failed_when: false
+
+- name: APT upgrade packages
+  ansible.builtin.apt:
+    upgrade: dist
+  when: ansible_facts.pkg_mgr == "apt"
+- name: APT Remove useless packages from the cache
+  ansible.builtin.apt:
+    autoclean: true
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: APT Remove dependencies that are no longer required
+  ansible.builtin.apt:
+    autoremove: true
+  when: ansible_facts.pkg_mgr == "apt"

@@ -1,0 +1,63 @@
+---
+- name: Beginning Homelab Deploy
+  hosts: servers
+  user: root
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Set a hostname
+      become: true
+      ansible.builtin.hostname:
+        name: "{{ ansible_hostname }}"
+        use: systemd
+
+    # Setup Admin account
+    - name: Create user {{ admin_user }}
+      ansible.builtin.user:
+        name: "{{ admin_user }}"
+        shell: /bin/bash
+        state: present
+        groups:
+          - sudo
+
+    - name: Allow {{ admin_user }} to have passwordless sudo
+      ansible.builtin.lineinfile:
+        dest: /etc/sudoers.d/{{ admin_user }}
+        state: present
+        create: true
+        line: "{{ admin_user }} ALL=(ALL) NOPASSWD: ALL"
+
+    - name: Set up authorized keys for {{ admin_user }}
+      ansible.posix.authorized_key:
+        user: "{{ admin_user }}"
+        key: "{{ lookup('file', user_public_key) }}"
+
+- name: Applying roles to inventory
+  hosts: servers
+  user: matt
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Ensure service are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 3
+      delay: 10
+      with_items:
+        - consul
+        - nomad
+
+  vars_files:
+    - .secrets.yml
+
+  roles:
+    - role: requirements
+      tags: requirements
+    - role: consul
+      tags: consul
+    - role: nomad
+      tags: nomad

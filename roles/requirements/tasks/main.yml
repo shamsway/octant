@@ -1,0 +1,260 @@
+---
+- name: Set a hostname
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname.split('.')[0] }}"
+    use: debian
+
+# - name: Set a hostname
+#   become: true
+#   ansible.builtin.hostname:
+#     name: "{{ inventory_hostname.split('.')[0] }}"
+#     use: systemd
+
+# Setup hashi service account
+- name: Ensure group {{ group }} exists
+  ansible.builtin.group:
+    name: "{{ group }}"
+    state: present
+    gid: "{{ gid }}"
+
+- name: Add {{ user }} user
+  ansible.builtin.user:
+    name: "{{ user }}"
+    uid: "{{ uid }}"
+    state: present
+    system: true
+    #shell: /usr/bin/false
+    shell: /bin/bash
+    home: "{{ datadir }}/home"
+    groups:
+      - sudo
+      - "{{ group }}"
+
+- name: Allow {{ user }} to have passwordless sudo
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers.d/{{ user }}
+    state: present
+    create: true
+    line: "{{ user }} ALL=(ALL) NOPASSWD: ALL"
+
+# Setup Admin account
+- name: Create user {{ admin_user }}
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    shell: /bin/bash
+    state: present
+    groups:
+      - sudo
+      - "{{ group }}"
+
+- name: Allow {{ admin_user }} to have passwordless sudo
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers.d/{{ admin_user }}
+    state: present
+    create: true
+    line: "{{ admin_user }} ALL=(ALL) NOPASSWD: ALL"
+
+- name: Set up authorized keys for {{ admin_user }}
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', user_public_key) }}"
+
+# Complete requirements
+- name: Check if {{ user }} home folder exists
+  ansible.builtin.file:
+    path: "{{ datadir }}/home"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Ensure {{ user }} is a member of systemd-journal group
+  ansible.builtin.user:
+    name: "{{ user }}"
+    groups: systemd-journal
+    append: true
+
+- name: Create user systemd configuration directory
+  ansible.builtin.file:
+    path: "{{ datadir }}/home/.config/systemd/user/"
+    state: directory
+    mode: "0700"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Verify folder presence and ownership
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0755"
+  loop: "{{ volumes }}"
+
+- name: Add polkit policy for machinectl
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/polkit-1/rules.d/60-machinectl-fast-user-auth.rules
+    content: |
+      polkit.addRule(function(action, subject) {
+          if(action.id == "org.freedesktop.machine1.host-shell" && subject.isInGroup("{{ group }}")) {
+              return polkit.Result.YES;
+          }
+      });
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Update all packages
+  ansible.builtin.include_role:
+    name: server-update
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - acl
+      - apt-transport-https
+      - build-essential
+      - automake
+      - autoconf
+      - ca-certificates
+      - dnsmasq
+      - systemd-container
+      - curl
+      - wget
+      - unzip
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - net-tools
+      - htop
+      - bind9-dnsutils
+      - man
+      - golang
+      - podman
+      - podman-compose
+      - git
+      - crun
+      - cockpit
+      - cockpit-podman
+      - cockpit-pcp
+      - cockpit-doc
+    state: present
+
+# - name: Connect Tailscale
+#   ansible.builtin.include_role:
+#     name: artis3n.tailscale
+#   vars:
+#     # Example pulling the API key from the env vars on the host running Ansible
+#     tailscale_authkey: "{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}"
+#     state: present
+
+- name: Attempt to check Tailscale IP address
+  ansible.builtin.command:
+    cmd: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+  ignore_errors: true
+
+- name: Set Tailscale status as a variable
+  ansible.builtin.set_fact:
+    tailscale_installed: "{{ tailscale_ip_output.rc == 0 and tailscale_ip_output.stdout != '' }}"
+
+# - name: Set Tailscale IP address as a variable
+#   ansible.builtin.set_fact:
+#     tailscale_ip: "{{ tailscale_ip_output.stdout }}"
+#   when: tailscale_installed and tailscale_ip_output.stdout != ''
+
+- name: Tailscale status
+  ansible.builtin.debug:
+    msg: "Tailscale instaled: {{ tailscale_installed }}"
+    #msg: "Tailscale IP: {{ tailscale_installed | ternary(tailscale_ip, 'No IP assigned') }}"
+
+# Install tailscale
+- name: Install tailscale
+  become: true
+  ansible.builtin.shell: |
+    curl -fsSL https://tailscale.com/install.sh | sh
+    tailscale up --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}"
+  when: tailscale_installed == false
+
+- name: Configure routing advertisement
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale set --advertise-routes={{ tailscale_advertisements }}
+  when: tailscale_advertisements is defined | default(false, true)
+
+- name: Configure local routing
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale set --accept-routes
+  when: tailscale_accept_routes | default(false, true)
+
+- name: Get Tailscale IP address
+  ansible.builtin.command:
+    cmd: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+
+- name: Set Tailscale IP address as a variable
+  ansible.builtin.set_fact:
+    tailscale_ip: "{{ tailscale_ip_output.stdout }}"
+
+# Use the tailscale_ip variable in other tasks
+- name: Print Tailscale IP address
+  ansible.builtin.debug:
+    msg: "Tailscale IP address: {{ tailscale_ip }}"
+
+# - name: Add IP address of all hosts to all hosts
+#   ansible.builtin.lineinfile:
+#     dest: /etc/hosts
+#     regexp: .*{{ item }}$
+#     line: "{{ hostvars[item].ansible_ssh_host }} {{ item }}"
+#     state: present
+#   when: hostvars[item].ansible_ssh_host is defined
+#   with_items: "{{ groups.all }}"
+
+- name: Add hostname to /etc/hosts
+  vars:
+    comment: "# added by ansible"
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: 127[.]0[.]0[.]1.*
+    line: 127.0.0.1 localhost.localdomain localhost {{ domain }}.{{ datacenter }}.consul {{ domain }}.{{ tld }} {{ ansible_hostname }} {{ comment }}
+    state: present
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Disable ICMP Redirect Acceptance
+  ansible.posix.sysctl:
+    name: net.ipv4.conf.all.accept_redirects
+    value: "0"
+    sysctl_set: true
+    reload: true
+
+- name: Disable ICMP Redirect Sending
+  ansible.posix.sysctl:
+    name: net.ipv4.conf.all.send_redirects
+    value: "0"
+    sysctl_set: true
+    reload: true
+
+- name: Fix number of file opened
+  ansible.builtin.copy:
+    src: nofile.conf
+    dest: /etc/security/limits.d/90-nofile.conf
+    mode: "0644"
+
+- name: Daemon Reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable cockpit service
+  ansible.builtin.systemd_service:
+    name: cockpit
+    enabled: true
+
+- name: Conditionally reboot the machine based on the 'reboot' inventory variable
+  ansible.builtin.reboot: {}
+  when: hostvars[inventory_hostname].reboot | default(false) | bool

@@ -1,0 +1,33 @@
+---
+# This should succeed regardless of seal state
+- name: "Checking if policy exists: {{ acl_name }}"
+  # Attempt to help with long lines > 160 issues
+  ansible.builtin.shell:
+    cmd: consul acl policy list -token={{ consul_bootstrap_token }} -format=json | jq -r '.[] | select(.Name == "{{ acl_name }}") | .ID'
+  # retries: 3
+  # delay: 2
+  # until: check_result is not failed
+  # failed_when: "'Failed to retrieve the policy list' in check_result.stderr or check_result.rc != 0"
+  environment:
+    CONSUL_HTTP_SSL_VERIFY: "false"
+  register: check_result
+
+- ansible.builtin.set_fact:
+    acl_exists: "{{ check_result.rc == 0 and check_result.stdout != '' }}"
+
+- ansible.builtin.set_fact:
+    tern: "{{ acl_exists | ternary('update', 'create') }}"
+    acl: "{{lookup('file', acl_name +'.hcl') | trim | regex_replace('[\\r\\n]+','\n')}}"
+
+- name: Policy check results
+  ansible.builtin.debug:
+    msg:
+      - "tern result: {{ tern }}"
+      - "check result: {{ check_result }}"
+      - ACL exists? {{ acl_exists }}
+      - "ACL: {{ lookup('file', acl_name +'.hcl') | trim | regex_replace('[\\r\\n]+','\n') }}"
+
+- name: Create ACL {{ acl_name }} policy
+  ansible.builtin.shell:
+    cmd: consul acl policy {{ tern }} -name '{{ acl_name }}' -token={{ consul_bootstrap_token }} -rules -
+    stdin: "{{ acl }}"

@@ -1,0 +1,21 @@
+job "http-echo" {
+
+  type = "service"
+  
+  task "http-echo" {
+    driver = "podman"
+
+    config {
+      image = "hashicorp/http-echo:latest"
+
+      args = [
+        "-text", "'hello world'",
+        "-listen", ":8080",
+      ]
+
+      port_map {
+        http = 8080
+      }
+    }
+  }
+}

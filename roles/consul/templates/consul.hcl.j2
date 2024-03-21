@@ -1,0 +1,71 @@
+{% if server %}
+ui= true
+addresses {
+    http= "0.0.0.0"
+    dns= "0.0.0.0"
+}
+{% else %}
+node_name= "{{ inventory_hostname.split('.')[0] }}"
+{% endif %}
+
+enable_syslog = true
+leave_on_terminate = true
+log_level = "WARN"
+
+data_dir= "{{ datadirs.consul | default(datadir) }}/consul"
+domain= "{{ domain }}"
+datacenter= "{{ datacenter }}"
+bind_addr= "{{ ansible_eth0.ipv4.address }}"
+client_addr = "0.0.0.0"
+advertise_addr= "{{ aansible_eth0.ipv4.address }}"
+advertise_addr_wan = "{{ tailscale_ip }}"
+translate_wan_addrs = true
+ports{
+    #http= {{ consul.ports.http }}
+    https= {{ consul.ports.https }}
+    dns= {{ consul.ports.dns }}
+    grpc_tls= {{ consul.ports.grpc }}
+}
+
+acl = {
+    enabled = true
+    default_policy = "deny"
+    enable_token_persistence = true
+{% if consul_node_token is defined %}
+    tokens = {
+        agent= "{{ consul_node_token }}"
+    }
+{% endif %}
+
+}
+server= {{ "true" if server else "false" }}
+retry_join=[{% for host in groups.servers %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+rejoin_after_leave=true
+
+{% if server %}
+bootstrap_expect={{ groups.servers | length }}
+connect { enabled=true }
+{% endif %}
+
+start_join= [{% for host in groups.servers %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+
+{% if consul_gossip_key is defined %}
+encrypt="{{ consul_gossip_key }}"
+{% endif %}
+
+{% if consul.autoconfig is defined %}
+auto_config {
+    authorization {
+        enabled= true
+        static {
+            oidc_discovery_url= "http://vault-server:8200/v1/identity/oidc"
+            bound_issuer= "http://vault-server:8200/v1/identity/oidc"
+            bound_audiences = ["consul-cluster-dc1"]
+            claim_mappings = {
+                "/consul/hostname" = "node_name"
+            }
+            claim_assertions= ["value.node_name == \"${node}\""]
+        }
+    }
+}
+{% endif %}

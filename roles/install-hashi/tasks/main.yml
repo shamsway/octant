@@ -1,0 +1,71 @@
+---
+- name: Install {{ name }}
+  ansible.builtin.package:
+    name: "{{ name }}"
+    state: present
+
+- name: Register systemd service
+  ansible.builtin.systemd:
+    name: "{{ name }}"
+    enabled: true
+    state: stopped
+
+- name: Ensure directory exists and has proper ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    recurse: true
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    follow: false
+  with_items:
+    - "{{ configdir }}/{{ name }}.d"
+    - "{{ datadirs[name] | default(datadir) }}/{{ name }}"
+
+- name: Delete old directory if any
+  ansible.builtin.file:
+    path: /etc/{{ name }}.d
+    state: absent
+
+- name: Create json config file
+  ansible.builtin.template:
+    src: ./templates/{{ name }}.json.j2
+    dest: "{{ configdir }}/{{ name }}.d/{{ name }}.json"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+  when: name == "consul"
+
+- name: Create hcl config file
+  ansible.builtin.template:
+    src: ./templates/{{ name }}.hcl.j2
+    dest: "{{ configdir }}/{{ name }}.d/{{ name }}.hcl"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+  when: name != "consul"
+
+- name: Create a symbolic link
+  ansible.builtin.file:
+    src: "{{ configdir }}/{{ name }}.d"
+    dest: /etc/{{ name }}.d
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    state: link
+    follow: false
+    force: true
+
+- name: Install service file
+  ansible.builtin.template:
+    src: ./templates/{{ name }}.service.j2
+    dest: /etc/systemd/system/{{ name }}.service
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+
+- name: Register systemd service
+  ansible.builtin.systemd:
+    name: "{{ name }}"
+    enabled: true
+    daemon_reload: true
+    state: stopped

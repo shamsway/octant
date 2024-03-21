@@ -1,0 +1,15 @@
+.DS_Store
+**/.DS_Store
+**/.terraform*
+**/terraform.tfstate*
+packer/output-octantnode
+packer/output-octantnode/*
+examplefacts.json
+.envrc
+.idea
+.consul
+.vault
+.nomad
+.secrets.yml
+hosts.ini
+todo.md

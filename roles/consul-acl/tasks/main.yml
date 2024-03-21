@@ -1,0 +1,77 @@
+---
+- name: Ensure Consul is in a running state
+  ansible.builtin.service:
+    name: consul
+    state: started
+  register: consulServiceDetails
+  until: consulServiceDetails.status.ActiveState == "active"
+  retries: 15
+  delay: 20
+
+- name: Create policies
+  ansible.builtin.include_tasks: write-policies.yml
+  vars:
+    acl_name: "{{ item }}"
+  with_items:
+    - node
+    - nomad_client
+    - nomad_server
+    - traefik
+    - vault
+
+- name: Check tokens
+  ansible.builtin.shell: consul acl token list -token={{ consul_bootstrap_token }} -format=json|jq -r '.[] | .SecretID'
+  failed_when: tokens.stderr != ''
+  register: tokens
+
+- name: Tokens debug
+  ansible.builtin.debug:
+    msg: 
+     - "tokens: {{ tokens | default(None) }}"
+
+- name: Check tokens
+  ansible.builtin.command: consul acl token list -format=json
+  environment:
+    CONSUL_HTTP_TOKEN: "{{ consul_bootstrap_token }}"
+  register: token_list
+
+- name: Extract valid token SecretIDs
+  ansible.builtin.set_fact:
+    valid_tokens: "{{ token_list.stdout | from_json | map(attribute='SecretID') | list }}"
+
+- name: Unset expired tokens
+  ansible.builtin.set_fact:
+    "consul_{{ item }}_token": "{{ hostvars[inventory_hostname]['consul_' + item + '_token'] if hostvars[inventory_hostname]['consul_' + item + '_token'] is defined and hostvars[inventory_hostname]['consul_' + item + '_token'] in valid_tokens else None }}"
+  loop:
+    - node
+    - nomad_server
+    - nomad_client
+    - traefik
+    - vault
+    
+- name: Set default values for undefined variables
+  set_fact:
+    "consul_{{ item }}_token": "{{ lookup('vars', 'consul_' + item + '_token') | default('', true) }}"
+  with_items:
+    - node
+    - nomad_server
+    - nomad_client
+    - traefik
+    - vault
+
+- name: Create Token
+  ansible.builtin.include_tasks: write-tokens.yml
+  vars:
+    acl_name: "{{ item.key }}"
+    acl: "{{ item.value }}"
+  with_dict:
+    node:
+      descr: Node token
+    nomad_server:
+      descr: Nomad server token
+    nomad_client:
+      descr: Nomad client token
+    vault:
+      descr: Vault Service Token
+    traefik:
+      descr: Traefik Catalog Service Token

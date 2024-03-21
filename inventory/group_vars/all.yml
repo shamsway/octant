@@ -1,0 +1,53 @@
+---
+#ansible_ssh_private_key_file: ~/.ssh/id_rsa
+bindir: /usr/bin
+configdir: /opt/homelab/config
+datadir: /opt/homelab/data
+datadirs:
+# nomad: "/opt/nomad"
+# consul: "/opt/consul"
+user: hashi
+group: hashi
+uid: 2000
+gid: 2000
+
+tld: shamsway.net
+domain: shamsway.net
+datacenter: shamsway
+admin_user: matt
+
+user_public_key: /Users/melliott/.ssh/id_rsa.pub
+
+ansible_ssh_pipelining: false
+
+consul:
+  # Check this blog post before enable this variable
+  # https://www.hashicorp.com/blog/protecting-consul-from-rce-risk-in-specific-configurations
+  enable_script_check: false
+
+  cname: consul.shamsway.net
+  # Services #
+  # agent_services: false
+  # service_sanity_healthcheck: true # Perform healthcheck on services priot to registration
+  ports:
+    http: 8500
+    https: 8501
+    dns: 8600
+    grpc: 8502
+  port_list:
+    - 8500/tcp
+    - 8600/tcp
+    - 8502/tcp
+
+podman: true
+
+nomad:
+  ports:
+    http: 4646
+    rpc: 4647
+    gossip: 4648
+  port_list:
+    - 4646/tcp
+    - 4647/tcp
+    - 4648/tcp
+    - 4648/udp

@@ -1,0 +1,38 @@
+---
+- name: Consul config changed
+  ansible.builtin.template:
+    src: consul.json.j2
+    dest: "{{ configdir }}/consul.d/consul.json"
+    owner: hashi
+    group: hashi
+    mode: "0644"
+
+- name: Writing shell profile for ssh user on {{ inventory_hostname.split('.')[0] }}
+  become: false
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: ^export {{ item.key }}
+    line: export {{ item.key }}={{ item.value }}
+    create: true
+  with_dict:
+    # CONSUL_HTTP_TOKEN: "{{ consul_bootstrap_token }}"
+    CONSUL_HTTP_ADDR: https://server.{{ datacenter }}.consul:{{ consul.ports.https }}
+    CONSUL_HTTP_SSL_VERIFY: "false"
+
+- name: Adding environment variables to direnv
+  ansible.builtin.lineinfile:
+    dest: ./.envrc
+    regexp: ^export {{ item.key }}
+    line: export {{ item.key }}={{ item.value }}
+    create: true
+  delegate_to: localhost
+  become: false
+  with_dict:
+    # CONSUL_HTTP_TOKEN: "{{ consul_bootstrap_token }}"
+    CONSUL_HTTP_ADDR: https://server.{{ datacenter }}.consul:{{ consul.ports.https }}
+    CONSUL_HTTP_SSL_VERIFY: "false"
+
+- name: Restart consul
+  ansible.builtin.systemd:
+    name: consul
+    state: restarted

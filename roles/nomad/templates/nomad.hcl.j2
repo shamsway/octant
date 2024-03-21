@@ -1,0 +1,82 @@
+# Full configuration options can be found at https://www.nomadproject.io/docs/configuration
+
+data_dir = "{{ datadirs.nomad | default(datadir) }}/nomad"
+datacenter = "{{ datacenter }}"
+region = "{{ region }}"
+bind_addr = "{{ "0.0.0.0" if region == "home" else hostvars[inventory_hostname].ansible_tailscale0.ipv4.address }}"
+log_level = "warn"
+
+{% if server %}
+server {
+  enabled = true
+  bootstrap_expect = {{ groups.servers | length }}
+  authoritative_region  = "home"
+  heartbeat_grace = "300s"
+  min_heartbeat_ttl = "20s"  
+}
+{% endif %}
+
+client {
+  enabled = true
+  {% for vol in volumes %}
+  host_volume "{{vol.name}}" {
+      path      = "{{vol.path}}"
+      read_only = false
+  }
+  {% endfor %}
+}
+
+{% if (vault | default('', false)) %}
+vault {
+  enabled = true
+  address = "http://{{ consul.cname }}:{{ vault.ports.http }}"
+  token = "{{ vault_nomad_token }}"
+  task_token_ttl = "72h"
+  create_from_role = "nomad-cluster"
+}
+{% endif %}
+
+consul {
+    address = "consul.service.consul:{{ consul.ports.http }}
+{% if (consul_ca_enabled | default('', false)) %}
+    ssl       = true
+    ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
+    cert_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0.pem"
+    key_file = "{{configdir}}/consul.d/{{ datacenter }}-server-consul-0-key.pem"
+{% endif %}
+}
+
+
+{% if podman %}
+plugin "nomad-driver-podman" {
+  config {
+    socket_path="unix://run/user/{{uid}}/podman/podman.sock"
+    volumes {
+      enabled      = true
+    }
+  }
+}
+{% else %}
+plugin "docker" {
+  config {
+    gc {
+      image       = true
+      image_delay = "3m"
+      container   = true
+
+      dangling_containers {
+        enabled        = true
+        dry_run        = false
+        period         = "5m"
+        creation_grace = "5m"
+      }
+    }
+
+    volumes {
+      enabled      = true
+      selinuxlabel = "z"
+    }
+
+  }
+}
+{% endif %}

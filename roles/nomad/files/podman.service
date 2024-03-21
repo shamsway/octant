@@ -1,0 +1,16 @@
+[Unit]
+Description=Podman API Service
+Requires=podman.socket
+Wants=network.target
+After=podman.socket network-online.target
+Documentation=man:podman-system-service(1)
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+Environment=LOGGING="--log-level=info"
+ExecStart=/usr/bin/podman $LOGGING system service
+LimitNOFILE=500000
+
+[Install]
+WantedBy=default.target
