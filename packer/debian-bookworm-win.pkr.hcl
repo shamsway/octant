@@ -21,12 +21,13 @@ variable "builderip" {
 
 source "vmware-iso" "vmware" {
   vm_name              = "octantnode"
-  output_directory     = "output-octant"
+  output_directory     = "output-octantnode"
   format               = "ovf"
   guest_os_type        = "debian12-64"
   memory               = 20480
   disk_size            = 20480
   disk_additional_size = [40960]
+  ovftool_options      = ["--noImageFiles"]
   #network              = "vmnet3"
   vmx_data = {
     "ethernet0.address"         = "00:50:56:BE:EE:EF" 
@@ -99,11 +100,13 @@ build {
       "APPLIANCE_VERSION=1",
       "APPLIANCE_OVA=octantnode"
     ]
-    # Run the Bash script on Linux/macOS
-    only = ["linux", "darwin"] # <-- Comment this line for Windows
-    inline           = [
+
+    use_linux_pathing = false
+
+    # Run the PowerShell script on Windows
+    inline = [
       "cd postprocess-ova-properties",
-      "./add_ovf_properties.sh"
+      "powershell -ExecutionPolicy bypass -file add_ovf_properties.ps1"
     ]
   }
 

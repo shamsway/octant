@@ -8,6 +8,9 @@ servers:
     bobby.shamsway.net:
       server: true
       region: home
+    billy.shamsway.net:
+      server: true
+      region: home
     phil.shamsway.net:
       server: true
       region: gcp
