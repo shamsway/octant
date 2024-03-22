@@ -48,7 +48,9 @@ source "vmware-iso" "vmware" {
     "/preseed.cfg" = file("http/preseed.cfg")
   }   
   boot_command         = [
-  "<esc><wait>auto url=http://${var.builderip}:{{ .HTTPPort }}/preseed.cfg<enter>"
+  "<esc><wait>",
+   "preseed/url=http://${var.builderip}:{{ .HTTPPort }}/preseed.cfg<wait>",
+   "netcfg/choose_interface=eth0<enter"
   ]
 }
 
