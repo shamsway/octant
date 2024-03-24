@@ -74,7 +74,7 @@ resource "cloudflare_record" "phil" {
   allow_overwrite = true
 }
 
-resource "cloudflare_record" "consul-cname01" {
+resource "cloudflare_record" "consul-a01" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "consul"
   value   = cloudflare_record.jerry.value
@@ -83,9 +83,27 @@ resource "cloudflare_record" "consul-cname01" {
   allow_overwrite = true
 }
 
-resource "cloudflare_record" "consul-cname02" {
+resource "cloudflare_record" "consul-a02" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "consul"
+  value   = cloudflare_record.bobby.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = true
+}
+
+resource "cloudflare_record" "nomad-a01" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "nomad"
+  value   = cloudflare_record.jerry.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = true
+}
+
+resource "cloudflare_record" "nomad-a02" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "nomad"
   value   = cloudflare_record.bobby.value
   type    = "A"
   proxied = false
