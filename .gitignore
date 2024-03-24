@@ -4,6 +4,8 @@
 **/terraform.tfstate*
 packer/output-octantnode
 packer/output-octantnode/*
+packer/packer_cache/
+packer/manifest.json
 examplefacts.json
 .envrc
 .idea
