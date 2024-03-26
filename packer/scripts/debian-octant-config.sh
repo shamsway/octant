@@ -121,4 +121,8 @@ EOF
 chmod +x /etc/rc.local
 systemctl daemon-reload
 
+## Update Grub
+sed -i 's/#GRUB_GFXMODE=640x480/GRUB_GFXMODE=1280x1024x8/' /etc/default/grub
+update-grub
+
 echo '> Done'
