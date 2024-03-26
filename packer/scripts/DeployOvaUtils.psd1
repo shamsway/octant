@@ -5,7 +5,12 @@
     Author = 'Your Name'
     CompanyName = 'Octant'
     Description = 'Module for deploying OVAs with custom user-data and hostname configurations'
-    FunctionsToExport = 'Deploy-OvaWithUserData'
+    FunctionsToExport = @(
+        'Deploy-OvaWithUserData',
+        'Start-WorkstationVm',
+        'Stop-WorkstationVm',
+        'Get-WorkstationVmGuestIpAddress'
+    )
     CmdletsToExport = @()
     VariablesToExport = @()
     AliasesToExport = @()
