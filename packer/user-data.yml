@@ -1,0 +1,76 @@
+#cloud-config
+fqdn: billy.shamsway.net
+hostname: billy
+prefer_fqdn_over_hostname: false
+create_hostname_file: true
+manage_etc_hosts: true
+
+# Set the root password
+chpasswd:
+  expire: false
+  users:
+    - name: root
+      type: RANDOM
+
+# Disable password login over SSH
+ssh_pwauth: false
+
+ssh_keys:
+  rsa_private: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
+    NhAAAAAwEAAQAAAQEAsuQ9vLcEdrf9IF3aq/zRwUxP9n+dg1TbakLy9n7mqhWfC0tbfs2M
+    LXx3kNNa9NcMFAkRtVOocKjLpSAD20WAAk49AlVo0EwVjSsSSBB65ucq7BwZTiGMTmXnao
+    JDRsNNcmnv+kbPdr+DaPx858v7v52vAh/0ZVSpNVY6UxyqBDQZ1nY8GIzGC7ugnQLLLB6l
+    1rrm2nWUfMkJEuSpXz7sMVkamW6eRf0cFkNLJgDYYFw3jMX/LPqWShuvh1lU8qGR+QGJy5
+    y3jgtRNVuWYu+IuEg+U0wWKL8eNO0Ta/MYJUHLs+YE9F97RBmnkRcTOiUqYRUAa7lwo+zH
+    hprlvSpaLQAAA9jJ6cYryenGKwAAAAdzc2gtcnNhAAABAQCy5D28twR2t/0gXdqr/NHBTE
+    /2f52DVNtqQvL2fuaqFZ8LS1t+zYwtfHeQ01r01wwUCRG1U6hwqMulIAPbRYACTj0CVWjQ
+    TBWNKxJIEHrm5yrsHBlOIYxOZedqgkNGw01yae/6Rs92v4No/Hzny/u/na8CH/RlVKk1Vj
+    pTHKoENBnWdjwYjMYLu6CdAsssHqXWuubadZR8yQkS5KlfPuwxWRqZbp5F/RwWQ0smANhg
+    XDeMxf8s+pZKG6+HWVTyoZH5AYnLnLeOC1E1W5Zi74i4SD5TTBYovx407RNr8xglQcuz5g
+    T0X3tEGaeRFxM6JSphFQBruXCj7MeGmuW9KlotAAAAAwEAAQAAAQBLOGexQ2+QD9tS0cQS
+    D3OPiOwSpSRxRawhKVeKSF/rYr4GfMBTOFDaC30nG4gibY45mnqkuTGZdZBztVuJxtaFoa
+    pLoeg5tdRWEKdWP/+9ubQ1pbcKQFcD3BuLkIyDY7ncAymSHlY8A1lZOtm2ifIoZ0Bgb1lP
+    hmLD96b8rY/bxeygoNkTjwJECZF0Yc62qKeonFqaf6/x9Ng0aeagRtmVkC8RXpXmI4/8DS
+    uwnN6B6h9le3Wt3BmKSYmjifGrhnknGNzjLxgnci4+jVk9UlMDdlITFrS6PFIz/Q8e5q2c
+    2uuICWfBnm0NiQg/CZ/bu794unnul1GnxjIn8A3YjU7tAAAAgHQLkkJWRd5Ug81QRMntfC
+    yhgdQMRocIuNJ0GPRwD4GpOgAMFMH5WMVpUz7ofOmtTvpdY/dU7oc5LHKaKiIqI8RcCR65
+    NDvfHmqiBQFBd0zqpOBrA357OU9h1u8N3r/Ml1IItx16UcXCg38VrrO6CsdfFOVjgn1XuR
+    8zwc+1HtCVAAAAgQDYWufkPNCxdB8uz0e2clJ7Wr5Wxo9pRSl/j9bTy2bUnI6IuqEmMpn6
+    JAJ0sgzejrPLK416ECEDPOWeirgbAtFADzIU7XxUAwCUpXavXmIqbPlQOAua8+xSI64+Oy
+    OdodhXzstB/kXAJSoFJnhLWW75o63LF/pxWhbfjvDN7r7wywAAAIEA06vxPtsJg0obiMJg
+    TL+ZqdhyvJ+1WxwUrjRSWxIgLrpHJmG8nWLipyzoaQCKSydLiAoOOywDUbjNkzFFFnkdvp
+    Sc92YS+v/lSshcjrPPHAD+7irtBenV3jUhMBnzNjgCuz3Ebtw3o1IVyjHlz9OZHH4tUTSO
+    yju5xvM7MWTp2ecAAAAhbWVsbGlvdHRAbWVsbGlvdHQzTUQ2Ui52bXdhcmUuY29tAQI=
+    -----END OPENSSH PRIVATE KEY-----
+  rsa_public: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCy5D28twR2t/0gXdqr/NHBTE/2f52DVNtqQvL2fuaqFZ8LS1t+zYwtfHeQ01r01wwUCRG1U6hwqMulIAPbRYACTj0CVWjQTBWNKxJIEHrm5yrsHBlOIYxOZedqgkNGw01yae/6Rs92v4No/Hzny/u/na8CH/RlVKk1VjpTHKoENBnWdjwYjMYLu6CdAsssHqXWuubadZR8yQkS5KlfPuwxWRqZbp5F/RwWQ0smANhgXDeMxf8s+pZKG6+HWVTyoZH5AYnLnLeOC1E1W5Zi74i4SD5TTBYovx407RNr8xglQcuz5gT0X3tEGaeRFxM6JSphFQBruXCj7MeGmuW9Klo
+
+# Create a new user
+users:
+  - name: matt
+    gecos: Admin User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC9Jl3HVsJF+xc/3dPTyrhWyunfQ5Fbsc9hmcSb2L37EaSSltJ2JytDdAw7NjNARCbAGRsiWoOjugAr8q/Csu8KPjXlF2uN3IXr53z9+SwLMBTlPYbm8q+gC+1nBbVw3f9dq9hcm3cfxy+dCKK9dq+tJqmKYxKIL0xRki8VBg65+2WkE7d2XidspFJKB1qQGNQ/lM2Hih2iFSWm/LONt6CkXw2iYBVqaxGWLLJuBLuikuTkPTvTMoiH70/ERNROb/7b7wuDB7Ib5UTr6r2sXUegGphJB9gJGE+iK9HYTjEt5myOmddGzvsffBufwqteg6pcujEjeRcoOlaTQXe5JJoVv6NK/DZrEq30Lmzqh7XqPx/yPP9jO+IWZ+eKbzzDUi1Vjd0HJ4LcprpDVycGDIPoNCgdCkyZUA0n4byLcTdh1tufV7XqYqhCTwrpoGCT5+e1FvaUB2hP6+mzMsXeyoZEPfSb/B7a9PuP60AbftrgmoEoP8q3x/J9iS0li+moitM= melliott@melliott-a01.vmware.com
+
+# # Configure network interface
+# write_files:
+#   - path: /etc/network/interfaces
+#     content: |
+#       auto eth0
+#       iface eth0 inet static
+#         address 192.168.252.8
+#         netmask 255.255.255.0
+#         gateway 192.168.252.1
+#         dns-nameservers 192.168.252.1
+
+runcmd:
+  - [ sed, -i, '/^iface eth0 inet dhcp/d', /etc/network/interfaces ]
+  - [ systemctl, restart, networking ]
+#  - echo "Attempting to restart networking service" && systemctl restart networking
+#  - echo "Attempting to create cloud-init.disabled file" && touch /etc/cloud/cloud-init.disabled
+  
