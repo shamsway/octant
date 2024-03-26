@@ -28,7 +28,6 @@ source "vmware-iso" "vmware" {
   disk_size            = 20480
   disk_additional_size = [40960]
   ovftool_options      = ["--noImageFiles"]
-  #network              = "vmnet3"
   vmx_data = {
     "ethernet0.address"         = "00:50:56:BE:EE:EF" 
     "ethernet0.addressType"     = "static"
@@ -43,12 +42,14 @@ source "vmware-iso" "vmware" {
   ssh_password         = var.ssh_password
   ssh_timeout          = "20m"
   shutdown_command     = "sudo shutdown -Ph now"
-  #http_directory       = "http"
+  boot_wait             = "20s"
   http_content = { 
     "/preseed.cfg" = file("http/preseed.cfg")
   }   
   boot_command         = [
-   "<esc><wait>auto url=http://${var.builderip}:{{ .HTTPPort }}/preseed.cfg<wait> netcfg/choose_interface=eth0<enter>"
+   "<esc>auto url=http://${var.builderip}:{{ .HTTPPort }}/preseed.cfg <wait>",
+   "interface=eth0 netcfg/choose_interface=eth0 <wait>",
+   "net.ifnames=0 <enter><wait>" 
   ]
 }
 
@@ -65,7 +66,7 @@ build {
     ]
   } */
 
-  provisioner "file" {
+/*   provisioner "file" {
     destination = "/root/.bash_profile"
     source      = "files/bash_profile.sh"
   }
@@ -74,7 +75,7 @@ build {
     destination = "/root/.bash_prompt"
     source      = "files/bash_prompt.sh"
   }
-
+ */
   provisioner "file" {
     destination = "/tmp/cloud-init.cfg"
     source      = "files/cloud-init.cfg"
@@ -106,7 +107,9 @@ build {
     # Run the PowerShell script on Windows
     inline = [
       "cd postprocess-ova-properties",
-      "powershell -ExecutionPolicy bypass -file add_ovf_properties.ps1"
+      "pwsh -ExecutionPolicy bypass -file add_ovf_properties.ps1",
+      "cd ..",
+      "copy user-data.yml output-octantnode"
     ]
   }
 

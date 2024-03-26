@@ -39,3 +39,17 @@ Set-Content -Path "${OUTPUT_PATH}/${APPLIANCE_NAME}.ovf" -Value $ovfContent
 
 # Run ovftool
 ovftool --skipManifestCheck "${OUTPUT_PATH}/${APPLIANCE_NAME}.ovf" "${OUTPUT_PATH}/${APPLIANCE_NAME}.ova"
+
+# Remove files if they exist
+$files = @(
+    "${OUTPUT_PATH}/${APPLIANCE_NAME}.mf",
+    "${OUTPUT_PATH}/${APPLIANCE_NAME}.ovf",
+    "${OUTPUT_PATH}/${APPLIANCE_NAME}-file1.nvram",
+    "${OUTPUT_PATH}/${APPLIANCE_NAME}-disk1.vmdk"
+)
+
+foreach ($file in $files) {
+    if (Test-Path $file) {
+        Remove-Item $file -Force
+    }
+}

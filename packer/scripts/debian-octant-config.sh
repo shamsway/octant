@@ -68,14 +68,24 @@ apt-get install -y \
 echo '> SSH directory'
 mkdir -vp $HOME/.ssh
 
-echo ' ________  ________ _________  ________  ________   _________' | tee /etc/issue /etc/issue.net > /dev/null   
-echo '|\   __  \|\   ____\\___   ___\\   __  \|\   ___  \|\___   ___\' | tee -a /etc/issue /etc/issue.net > /dev/null 
-echo '\ \  \|\  \ \  \___\|___ \  \_\ \  \|\  \ \  \\ \  \|___ \  \_|' | tee -a /etc/issue /etc/issue.net > /dev/null 
-echo ' \ \  \\\  \ \  \       \ \  \ \ \   __  \ \  \\ \  \   \ \  \' | tee -a /etc/issue /etc/issue.net > /dev/null  
-echo '  \ \  \\\  \ \  \____   \ \  \ \ \  \ \  \ \  \\ \  \   \ \  \' | tee -a /etc/issue /etc/issue.net > /dev/null 
-echo '   \ \_______\ \_______\  \ \__\ \ \__\ \__\ \__\\ \__\   \ \__\' | tee -a /etc/issue /etc/issue.net > /dev/null
-echo '    \|_______|\|_______|   \|__|  \|__|\|__|\|__| \|__|    \|__|' | tee -a /etc/issue /etc/issue.net > /dev/null
-echo "Debian $(cat /etc/debian_version)" | tee -a /etc/issue /etc/issue.net > /dev/null
+## Set banners
+
+cat > /etc/issue << EOL
+       ::::::::   :::::::: ::::::::::: :::     ::::    ::: ::::::::::: 
+    :+:    :+: :+:    :+:    :+:   :+: :+:   :+:+:   :+:     :+:      
+   +:+    +:+ +:+           +:+  +:+   +:+  :+:+:+  +:+     +:+       
+  +#+    +:+ +#+           +#+ +#++:++#++: +#+ +:+ +#+     +#+        
+ +#+    +#+ +#+           +#+ +#+     +#+ +#+  +#+#+#     +#+         
+#+#    #+# #+#    #+#    #+# #+#     #+# #+#   #+#+#     #+#          
+########   ########     ### ###     ### ###    ####     ###    
+EOL
+echo "Debian $(cat /etc/debian_version)" | tee -a /etc/issue > /dev/null
+
+cat > /etc/issue.net << EOL
+   _ \   __| __ __|  \     \ | __ __| 
+  (   | (       |   _ \   .  |    |   
+ \___/ \___|   _| _/  _\ _|\_|   _|   
+EOL
                                                                 
 ## Prep cloud-init
 
@@ -85,7 +95,7 @@ sudo cloud-init clean --logs
 
 ## Enable rc.local
 
-echo '> Enable rc.local facility for debian-init.py'
+echo '> Enable rc.local'
 cat << EOF > /etc/rc.local
 #!/bin/sh -e
 #
@@ -101,8 +111,9 @@ cat << EOF > /etc/rc.local
 # By default this script does nothing.
 
 if [ ! -f /etc/debian.config ]; then
-    /sbin/debian-init.py
+    #/sbin/debian-init.py
     echo "\$(date)" > /etc/debian.config
+    #touch /etc/cloud/cloud-init.disabled
 fi
 
 exit 0
