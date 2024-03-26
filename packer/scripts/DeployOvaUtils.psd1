@@ -1,7 +1,7 @@
 @{
     RootModule = 'DeployOvaUtils.psm1'
     ModuleVersion = '1.0'
-    GUID = 'eb74d7e4-f0d3-4b9d-b8db-fffffffff'
+    GUID = '8f09dcb9-72bb-48d3-a14e-f574b98250ba'
     Author = 'Your Name'
     CompanyName = 'Octant'
     Description = 'Module for deploying OVAs with custom user-data and hostname configurations'
