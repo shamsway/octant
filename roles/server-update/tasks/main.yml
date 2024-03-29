@@ -19,7 +19,7 @@
 
 - name: Add specified repository into sources list
   ansible.builtin.apt_repository:
-    repo: "deb https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    repo: deb https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
     state: present
   when: ansible_facts.pkg_mgr == "apt"
 
@@ -37,7 +37,7 @@
 
 - name: Add specified repository into sources list
   ansible.builtin.apt_repository:
-    repo: "deb https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+    repo: deb https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main
     state: present
   when: ansible_facts.pkg_mgr == "apt"
 

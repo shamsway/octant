@@ -27,6 +27,19 @@
     path: /etc/{{ name }}.d
     state: absent
 
+- name: Get Tailscale IP
+  when: tailscale_ip is not defined
+  block:
+  - name: Get Tailscale IP address
+    ansible.builtin.command:
+      cmd: tailscale ip -4
+    register: tailscale_ip_output
+    changed_when: false
+    
+  - name: Set Tailscale IP address as a variable
+    ansible.builtin.set_fact:
+      tailscale_ip: "{{ tailscale_ip_output.stdout }}"
+
 - name: Create json config file
   ansible.builtin.template:
     src: ./templates/{{ name }}.json.j2

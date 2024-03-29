@@ -32,6 +32,9 @@ ssh-gcp:
 deploy: check-env
 	ansible-playbook homelab.yml -i inventory/groups.yml
 
+deploy-verbose: check-env
+	ansible-playbook -vvv homelab.yml -i inventory/groups.yml
+
 deploy-host: check-env
 	ansible-playbook homelab.yml -i inventory/groups.yml -l $(HOST)
 

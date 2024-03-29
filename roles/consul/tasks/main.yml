@@ -17,7 +17,8 @@
   #when: consul_bootstrap_token is not defined
   when: consul_gossip_key is not defined
 
-- ansible.builtin.include_tasks: ./update-config.yml
+# is this needed?
+#- ansible.builtin.include_tasks: ./update-config.yml
 
 - name: Check that the CA for consul exists
   ansible.builtin.stat:

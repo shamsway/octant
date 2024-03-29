@@ -1,5 +1,0 @@
-[engine]
-runtime="crun"
-
-[containers]
-log_driver="journald"

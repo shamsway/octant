@@ -5,12 +5,6 @@
     name: "{{ inventory_hostname.split('.')[0] }}"
     use: debian
 
-# - name: Set a hostname
-#   become: true
-#   ansible.builtin.hostname:
-#     name: "{{ inventory_hostname.split('.')[0] }}"
-#     use: systemd
-
 # Setup hashi service account
 - name: Ensure group {{ group }} exists
   ansible.builtin.group:
@@ -24,7 +18,7 @@
     uid: "{{ uid }}"
     state: present
     system: true
-    #shell: /usr/bin/false
+    # shell: /usr/bin/false
     shell: /bin/bash
     home: "{{ datadir }}/home"
     groups:
@@ -104,6 +98,99 @@
     owner: root
     group: root
     mode: "0644"
+  register: polkit_rule
+
+- name: Restart polkit service
+  ansible.builtin.service:
+    name: polkit
+    state: restarted
+  when: polkit_rule.changed
+
+# Configure DNS
+- name: Configure dnsmasq for DNS servers
+  when: dnsserver is defined and dnsserver
+  block:
+    - name: Ensure resolv.conf contains only the specified line
+      ansible.builtin.copy:
+        content: nameserver 127.0.0.1
+        dest: /etc/resolv.conf
+
+    - name: Install dnsmasq
+      ansible.builtin.package:
+        name: dnsmasq
+        state: present
+
+    - name: Check if dnsmasq configuration file exists
+      ansible.builtin.stat:
+        path: /etc/dnsmasq.d/shamsway-server.conf
+      register: dnsmasq_conf
+
+    - name: Create dnsmasq server configuration file if it doesn't exist
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.d/shamsway-server.conf
+        content: |
+          server=1.1.1.1
+          server=8.8.8.8
+          server=/.consul/127.0.0.1#8600
+          server=/shamsway.net/127.0.0.1#8600
+        owner: root
+        group: root
+        mode: "0644"
+      when: not dnsmasq_conf.stat.exists
+
+    - name: Restart dnsmasq if configuration file is newly created
+      ansible.builtin.service:
+        name: dnsmasq
+        state: restarted
+      when: not dnsmasq_conf.stat.exists
+
+    - name: Ensure dnsmasq is running
+      ansible.builtin.service:
+        name: dnsmasq
+        state: started
+        enabled: true
+
+- name: Configure dnsmasq for DNS clients
+  when: dnsserver is not defined or not dnsserver
+  block:
+    - name: Ensure resolv.conf contains only the specified line
+      ansible.builtin.copy:
+        content: nameserver 127.0.0.1
+        dest: /etc/resolv.conf
+
+    - name: Install dnsmasq
+      ansible.builtin.package:
+        name: dnsmasq
+        state: present
+
+    - name: Check if dnsmasq configuration file exists
+      ansible.builtin.stat:
+        path: /etc/dnsmasq.d/shamsway-client.conf
+      register: dnsmasq_conf
+
+    - name: Create dnsmasq client configuration file if it doesn't exist
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.d/shamsway-client.conf
+        content: |
+          server=192.168.252.6
+          server=192.168.252.7
+          server=1.1.1.1
+        owner: root
+        group: root
+        mode: "0644"
+      when: not dnsmasq_conf.stat.exists
+
+    - name: Restart dnsmasq if configuration file is newly created
+      ansible.builtin.service:
+        name: dnsmasq
+        state: restarted
+      when: not dnsmasq_conf.stat.exists
+
+    - name: Ensure dnsmasq is running
+      ansible.builtin.service:
+        name: dnsmasq
+        state: started
+        enabled: true
 
 - name: Update all packages
   ansible.builtin.include_role:
@@ -129,6 +216,7 @@
       - net-tools
       - htop
       - bind9-dnsutils
+      - iptables-persistent
       - man
       - golang
       - podman
@@ -141,13 +229,33 @@
       - cockpit-doc
     state: present
 
-# - name: Connect Tailscale
-#   ansible.builtin.include_role:
-#     name: artis3n.tailscale
-#   vars:
-#     # Example pulling the API key from the env vars on the host running Ansible
-#     tailscale_authkey: "{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}"
-#     state: present
+# Override tailscale advertised local routes
+- name: Create systemd service file for internal network routes
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/internal-network-routes.service
+    content: |
+      [Unit]
+      Description=Set routing rules for internal networks
+      After=network.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/bash -c '{% for subnet in internal_subnets %}if ! ip rule show to {{ subnet }} >/dev/null 2>&1; then /sbin/ip rule add to {{ subnet }} priority 2500 lookup main; fi;{% endfor %}'
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: "0644"
+  when: region == "home"
+
+- name: Reload systemd routes
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: internal-network-routes
+    state: started
+    enabled: true
 
 - name: Attempt to check Tailscale IP address
   ansible.builtin.command:
@@ -168,27 +276,56 @@
 - name: Tailscale status
   ansible.builtin.debug:
     msg: "Tailscale instaled: {{ tailscale_installed }}"
-    #msg: "Tailscale IP: {{ tailscale_installed | ternary(tailscale_ip, 'No IP assigned') }}"
+#msg: "Tailscale IP: {{ tailscale_installed | ternary(tailscale_ip, 'No IP assigned') }}"
 
 # Install tailscale
 - name: Install tailscale
   become: true
   ansible.builtin.shell: |
     curl -fsSL https://tailscale.com/install.sh | sh
-    tailscale up --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}"
   when: tailscale_installed == false
 
-- name: Configure routing advertisement
+# Configure tailscale clients
+- name: Bring up tailscale client
   become: true
-  ansible.builtin.command:
-    cmd: tailscale set --advertise-routes={{ tailscale_advertisements }}
-  when: tailscale_advertisements is defined | default(false, true)
+  ansible.builtin.shell: |
+    tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes
+  when: tailscale_advertisements is not defined | default(false, true)
 
-- name: Configure local routing
+# Configure Tailscale Routers
+- name: Configure Tailscale Routers
+  when: tailscale_advertisements is defined | default(false, true)
+  block:
+    # Configure tailscale routers
+    - name: Configure MSS clamping for Tailscale
+      ansible.builtin.command:
+        cmd: iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+      when: tailscale_advertisements is defined | default(false, true)
+
+    - name: Save iptables rules
+      ansible.builtin.shell: /usr/sbin/iptables-save > /etc/iptables/rules.v4
+
+    - name: Bring up tailscale router
+      become: true
+      ansible.builtin.shell: |
+        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --advertise-routes={{ tailscale_advertisements }} --snat-subnet-routes=false --accept-routes
+        iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+
+# - name: Configure routing advertisement
+#   become: true
+#   ansible.builtin.command:
+#     cmd: tailscale set --advertise-routes={{ tailscale_advertisements }}
+#   when: tailscale_advertisements is defined | default(false, true)
+
+- name: Disable Tailscale DNS
   become: true
   ansible.builtin.command:
-    cmd: tailscale set --accept-routes
-  when: tailscale_accept_routes | default(false, true)
+    cmd: tailscale set --accept-dns=false
+
+- name: Disable Tailscale SSH
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale set --ssh=false
 
 - name: Get Tailscale IP address
   ansible.builtin.command:

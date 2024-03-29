@@ -1,6 +1,6 @@
 {
 {% if server %}
-"bootstrap_expect": {{ groups.servers | length }},
+"bootstrap_expect": {{ groups['servers'] | map('extract', hostvars, 'region') | select('eq', 'home') | list | length }},
 "ui": true,
 "connect": { "enabled": true },
 {% else %}
@@ -11,6 +11,7 @@
 "client_addr": "0.0.0.0",
 "datacenter": "{{ datacenter }}",
 "data_dir": "{{ datadirs.consul | default(datadir) }}/consul",
+"recursors": ["1.1.1.1","8.8.8.8"],
 {% if consul_gossip_key is defined %}
 "encrypt": "{{ consul_gossip_key }}",
 {% endif %}
@@ -20,5 +21,5 @@
 "leave_on_terminate": false,
 "skip_leave_on_interrupt": true,
 "rejoin_after_leave": true,
-"retry_join": [{% for host in groups.servers %}"{{ host }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+"retry_join": [{% for host in groups.servers %}{% if hostvars[host]['region'] == "home" %}{% if not loop.first %}, {% endif %}"{{ host }}"{% endif %}{% endfor %}]
 }

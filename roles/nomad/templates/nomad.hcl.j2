@@ -9,7 +9,7 @@ log_level = "warn"
 {% if server %}
 server {
   enabled = true
-  bootstrap_expect = {{ groups.servers | length }}
+  bootstrap_expect = {{ groups['servers'] | map('extract', hostvars, 'region') | select('eq', 'home') | list | length }}
   authoritative_region  = "home"
   heartbeat_grace = "300s"
   min_heartbeat_ttl = "20s"  
@@ -37,7 +37,7 @@ vault {
 {% endif %}
 
 consul {
-    address = "consul.service.consul:{{ consul.ports.http }}
+    address = "consul.service.consul:{{ consul.ports.http }}"
 {% if (consul_ca_enabled | default('', false)) %}
     ssl       = true
     ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
@@ -46,6 +46,11 @@ consul {
 {% endif %}
 }
 
+telemetry {
+  publish_allocation_metrics = true
+  publish_node_metrics       = true
+  prometheus_metrics         = true
+}
 
 {% if podman %}
 plugin "nomad-driver-podman" {

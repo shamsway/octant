@@ -11,10 +11,17 @@ group: hashi
 uid: 2000
 gid: 2000
 
-tld: shamsway.net
-domain: shamsway.net
+tld: net.
+domain: shamsway
 datacenter: shamsway
 admin_user: matt
+
+dns1: 192.168.252.6
+dns2: 192.168.252.7
+
+internal_subnets:
+  - 192.168.252.0/24
+  - 192.168.240.0/24
 
 user_public_key: /Users/melliott/.ssh/id_rsa.pub
 

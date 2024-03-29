@@ -67,6 +67,27 @@
   ansible.builtin.systemd:
     daemon_reload: true
 
+- name: Create podman userspace config
+  file:
+    path: "~/.config/containers"
+    state: directory
+  become: yes
+  become_user: "{{user}}"
+
+- name: Copy podman containers.conf
+  become: true
+  become_user: "{{user}}"
+  ansible.builtin.copy:
+    src: containers.conf
+    dest: ~/.config/containers
+
+- name: Copy docker.io auth
+  become: true
+  become_user: "{{user}}"
+  ansible.builtin.copy:
+    src: auth.json
+    dest: /run/user/{{ uid }}/containers/
+
 - name: Create temporary build directory
   ansible.builtin.tempfile:
     state: directory

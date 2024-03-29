@@ -61,3 +61,4 @@
       tags: consul
     - role: nomad
       tags: nomad
+      when: region == "home"

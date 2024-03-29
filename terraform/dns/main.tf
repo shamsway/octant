@@ -109,3 +109,30 @@ resource "cloudflare_record" "nomad-a02" {
   proxied = false
   allow_overwrite = true
 }
+
+resource "cloudflare_record" "wildcardmad-a01" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "*"
+  value   = cloudflare_record.jerry.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = true
+}
+
+resource "cloudflare_record" "wildcardmad-a02" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "*"
+  value   = cloudflare_record.bobby.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = true
+}
+
+resource "cloudflare_record" "wildcardmad-a03" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "*"
+  value   = cloudflare_record.billy.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = true
+}

@@ -16,7 +16,7 @@
     create: true
   with_dict:
     # CONSUL_HTTP_TOKEN: "{{ consul_bootstrap_token }}"
-    CONSUL_HTTP_ADDR: https://server.{{ datacenter }}.consul:{{ consul.ports.https }}
+    CONSUL_HTTP_ADDR: https://consul.{{ datacenter }}.{{ tld }}:{{ consul.ports.https }}
     CONSUL_HTTP_SSL_VERIFY: "false"
 
 - name: Adding environment variables to direnv
@@ -29,7 +29,7 @@
   become: false
   with_dict:
     # CONSUL_HTTP_TOKEN: "{{ consul_bootstrap_token }}"
-    CONSUL_HTTP_ADDR: https://server.{{ datacenter }}.consul:{{ consul.ports.https }}
+    CONSUL_HTTP_ADDR: https://server.{{ datacenter }}.{{ tld }}:{{ consul.ports.https }}
     CONSUL_HTTP_SSL_VERIFY: "false"
 
 - name: Restart consul
