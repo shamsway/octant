@@ -107,9 +107,7 @@ build {
     # Run the PowerShell script on Windows
     inline = [
       "cd postprocess-ova-properties",
-      "pwsh -ExecutionPolicy bypass -file add_ovf_properties.ps1",
-      "cd ..",
-      "copy user-data.yml output-octantnode"
+      "pwsh -ExecutionPolicy bypass -file add_ovf_properties.ps1"
     ]
   }
 
