@@ -392,6 +392,12 @@
     name: cockpit
     enabled: true
 
+- name: Disable cloud-init
+  ansible.builtin.command: touch /etc/cloud/cloud-init.disabled
+    args:
+      creates: /etc/cloud/cloud-init.disabled
+  
+
 - name: Conditionally reboot the machine based on the 'reboot' inventory variable
   ansible.builtin.reboot: {}
   when: hostvars[inventory_hostname].reboot | default(false) | bool
