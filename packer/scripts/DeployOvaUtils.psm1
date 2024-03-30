@@ -58,31 +58,32 @@ function Deploy-OvaWithUserData {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path -Path $_ -PathType Leaf })]
         [string]$OvaPath,
-
+    
         [Parameter(Mandatory = $true)]
-        [string]$UserDataPath,
-
-        [Parameter(Mandatory = $true)]
-        [string]$MetadataPath,
-
-        [Parameter(Mandatory = $true)]
-        [string]$Hostname,
-
-        [Parameter(Mandatory = $true)]
-        [string]$OutputPath,
-
-        [Parameter(Mandatory = $true)]
-        [string]$ConnectionType
-
-        [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path -Path $_ -PathType Leaf })]
         [string]$UserDataTemplatePath,
-
+    
         [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path -Path $_ -PathType Leaf })]
         [string]$MetadataTemplatePath,
-
+    
         [Parameter(Mandatory = $true)]
-        [hashtable]$Variables        
+        [ValidateNotNullOrEmpty()]
+        [string]$Hostname,
+    
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$OutputPath,
+    
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ConnectionType,
+    
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [hashtable]$Variables       
     )
 
 # Check if the output directory for the deployed VM exists and delete it
@@ -91,16 +92,17 @@ function Deploy-OvaWithUserData {
         Write-Host "Deleting existing output directory: $vmOutputPath"
         Remove-Item -Path $vmOutputPath -Recurse -Force
     }
-    # Encode the user-data file content to Base64
-    # $encodedUserData = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $UserDataPath -Raw)))
-
-    # Encode the Metadata configuration file content to Base64
-    # $encodedMetadata = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $MetadataPath -Raw)))
 
     # Generate the user-data and metadata files
     $userDataPath = Join-Path -Path $env:TEMP -ChildPath "user-data.yml"
     $metadataPath = Join-Path -Path $env:TEMP -ChildPath "metadata.yml"
     New-CloudInitConfig -UserDataTemplatePath $UserDataTemplatePath -MetadataTemplatePath $MetadataTemplatePath -OutputUserDataPath $userDataPath -OutputMetadataPath $metadataPath -Variables $Variables    
+
+    # Encode the user-data file content to Base64
+    $encodedUserData = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $userDataPath -Raw)))
+
+    # Encode the Metadata configuration file content to Base64
+    $encodedMetadata = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $metadataPath -Raw)))
 
     # Construct the ovftool command
     $ovftoolCommand = "ovftool --name=""$Hostname"" --allowExtraConfig --extraConfig:guestinfo.hostname=""$Hostname"" --extraConfig:guestinfo.userdata=""$encodedUserData"" --extraConfig:guestinfo.userdata.encoding=""base64"" --extraConfig:guestinfo.metadata=""$encodedMetadata"" --extraConfig:guestinfo.metadata.encoding=""base64"" ""$OvaPath"" ""$OutputPath"""
@@ -144,13 +146,35 @@ function Start-WorkstationVm {
     )
 
     $vmrunPath = "C:\Program Files (x86)\VMware\VMware Workstation\vmrun"
-    $arguments = @("-T", "ws", "start", "`"$VmxPath`"")
+    $absoluteVmxPath = Resolve-Path -Path $VmxPath
+    $vmxFileName = Split-Path -Path $absoluteVmxPath -Leaf
+    $arguments = @("-T", "ws", "start", "$vmxFileName")
 
     if ($LaunchGui) {
         $arguments += "gui"
     }
 
-    & $vmrunPath $arguments
+    # Change the working directory to the directory containing the VMX file
+    $vmxDirectory = Split-Path -Path $absoluteVmxPath -Parent
+    Push-Location -Path $vmxDirectory
+
+    try {
+        # Execute the command and capture the output
+        $output = & $vmrunPath $arguments 2>&1
+
+        # Display the output
+        Write-Host "Command output:"
+        Write-Host $output
+
+        # Check if an error occurred
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "An error occurred while starting the VM."
+        }
+    }
+    finally {
+        # Restore the original working directory
+        Pop-Location
+    }
 }
 
 <#
@@ -176,9 +200,35 @@ function Stop-WorkstationVm {
     )
 
     $vmrunPath = "C:\Program Files (x86)\VMware\VMware Workstation\vmrun"
-    $arguments = @("-T", "ws", "stop", "`"$VmxPath`"")
+    $absoluteVmxPath = Resolve-Path -Path $VmxPath
+    $vmxFileName = Split-Path -Path $absoluteVmxPath -Leaf
+    $arguments = @("-T", "ws", "stop", "$vmxFileName")
 
-    & $vmrunPath $arguments
+    if ($LaunchGui) {
+        $arguments += "gui"
+    }
+
+    # Change the working directory to the directory containing the VMX file
+    $vmxDirectory = Split-Path -Path $absoluteVmxPath -Parent
+    Push-Location -Path $vmxDirectory
+
+    try {
+        # Execute the command and capture the output
+        $output = & $vmrunPath $arguments 2>&1
+
+        # Display the output
+        Write-Host "Command output:"
+        Write-Host $output
+
+        # Check if an error occurred
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "An error occurred while stopping the VM."
+        }
+    }
+    finally {
+        # Restore the original working directory
+        Pop-Location
+    }
 }
 
 <#
@@ -222,6 +272,25 @@ function Get-WorkstationVmGuestIpAddress {
     }
 }
 
+function Format-PrivateKey {
+    param (
+        [string]$PrivateKey
+    )
+
+    $privateKeyLines = $PrivateKey -split "`n"
+    $formattedLines = foreach ($line in $privateKeyLines) {
+        "    $line"
+    }
+
+    $formattedKey = $formattedLines -join "`n"
+
+    Write-Host "Formatted Private Key:"
+    Write-Host "--------------------------"
+    Write-Host $formattedKey
+    Write-Host "--------------------------"
+
+    return $formattedKey
+}
 function New-CloudInitConfig {
     [CmdletBinding()]
     param (
@@ -241,14 +310,37 @@ function New-CloudInitConfig {
         [hashtable]$Variables
     )
 
-    $userDataTemplate = Get-Content -Path $UserDataTemplatePath -Raw
-    $metadataTemplate = Get-Content -Path $MetadataTemplatePath -Raw
+    try {
+        $userDataTemplate = Get-Content -Path $UserDataTemplatePath -Raw
+        $metadataTemplate = Get-Content -Path $MetadataTemplatePath -Raw
 
-    foreach ($key in $Variables.Keys) {
-        $userDataTemplate = $userDataTemplate.Replace('${' + $key + '}', $Variables[$key])
-        $metadataTemplate = $metadataTemplate.Replace('${' + $key + '}', $Variables[$key])
+        foreach ($key in $Variables.Keys) {
+            if ($key -eq "ssh_host_rsa_private_key") {
+                $formattedPrivateKey = Format-PrivateKey -PrivateKey $Variables[$key]
+                $userDataTemplate = $userDataTemplate.Replace('${' + $key + '}', $formattedPrivateKey)
+            } else {
+                $userDataTemplate = $userDataTemplate.Replace('${' + $key + '}', $Variables[$key])
+            }
+            $metadataTemplate = $metadataTemplate.Replace('${' + $key + '}', $Variables[$key])
+        }
+
+        $userDataTemplate | Set-Content -Path $OutputUserDataPath
+        $metadataTemplate | Set-Content -Path $OutputMetadataPath
+
+        Write-Host "User-data file generated: $OutputUserDataPath"
+        Write-Host "Metadata file generated: $OutputMetadataPath"
+
+        # Output the rendered user-data and metadata
+        Write-Host "Rendered User-data:"
+        Write-Host "--------------------------"
+        Write-Host $userDataTemplate
+        Write-Host "--------------------------"
+        Write-Host "Rendered Metadata:"
+        Write-Host "--------------------------"
+        Write-Host $metadataTemplate
+        Write-Host "--------------------------"
     }
-
-    $userDataTemplate | Set-Content -Path $OutputUserDataPath
-    $metadataTemplate | Set-Content -Path $OutputMetadataPath
+    catch {
+        Write-Error "Error generating cloud-init config files: $_"
+    }
 }

@@ -9,7 +9,9 @@
         'Deploy-OvaWithUserData',
         'Start-WorkstationVm',
         'Stop-WorkstationVm',
-        'Get-WorkstationVmGuestIpAddress'
+        'Get-WorkstationVmGuestIpAddress',
+        'New-CloudInitConfig',
+        'FormatPrivateKey'
     )
     CmdletsToExport = @()
     VariablesToExport = @()
