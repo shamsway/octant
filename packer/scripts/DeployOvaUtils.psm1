@@ -3,22 +3,19 @@
 Deploys an OVA file with custom user-data and hostname configurations, and sets the network adapter connection type.
 
 .DESCRIPTION
-This cmdlet takes an OVA file, a user-data file, a hostname, and a network configuration as input. It encodes the user-data file content to Base64 and then uses the ovftool utility to deploy the OVA with the specified hostname, encoded user-data, and network configuration. After deployment, it updates the VMX file to set the network adapter connection type to the specified value.
+This cmdlet takes an OVA file, user-data and metadata template files, a hostname, a network configuration, and a set of variables as input. It generates the final user-data and metadata files based on the provided templates and variables, encodes the user-data file content to Base64, and then uses the ovftool utility to deploy the OVA with the specified hostname, encoded user-data, and network configuration. After deployment, it updates the VMX file to set the network adapter connection type to the specified value.
 
 .PARAMETER OvaPath
 The path to the OVA file to be deployed.
 
-.PARAMETER UserDataPath
-The path to the user-data file (e.g., cloud-init configuration).
+.PARAMETER UserDataTemplatePath
+The path to the user-data template file (e.g., cloud-init configuration template).
 
-.PARAMETER MetadataPath
-The path to the metadata file (e.g., cloud-init network config).
+.PARAMETER MetadataTemplatePath
+The path to the metadata template file (e.g., cloud-init network config template).
 
 .PARAMETER Hostname
 The desired hostname for the deployed virtual machine.
-
-.PARAMETER Network
-The network configuration for the deployed virtual machine (e.g., "VMnet0" for bridged networking).
 
 .PARAMETER OutputPath
 The path to the directory where the deployed virtual machine files will be extracted.
@@ -26,10 +23,36 @@ The path to the directory where the deployed virtual machine files will be extra
 .PARAMETER ConnectionType
 The desired connection type for the network adapter (e.g., "VMnet0" for bridged networking).
 
-.EXAMPLE
-Deploy-OvaWithUserData -OvaPath "H:\git\octant-private\packer\output-octantnode\octantnode.ova" -UserDataPath "user-data.yml" -Hostname "billy.shamsway.net" -Network "VMnet0" -OutputPath "H:\VMs" -ConnectionType "VMnet0"
+.PARAMETER Variables
+A hashtable containing the variables to be replaced in the user-data and metadata template files.
 
-This example deploys the "octantnode.ova" file with the user-data from "user-data.yml", sets the hostname to "billy.shamsway.net", configures the network to "VMnet0", extracts the virtual machine files to the "H:\VMs" directory, and sets the network adapter connection type to "VMnet0".
+.EXAMPLE
+# Retrieve secrets from 1Password
+$sshHostRsaPrivateKey = op read "op://Dev/billy_ssh/private key"
+$sshHostRsaPublicKey = op read "op://Dev/billy_ssh/public key"
+$adminSshPublicKey = op read "op://Dev/matt ssh/public key"
+$rootSshPublicKey = op read "op://Dev/matt ssh/public key"
+
+# Define variables
+$variables = @{
+    "fqdn" = "billy.shamsway.net"
+    "hostname" = "billy"
+    "ssh_host_rsa_private_key" = $sshHostRsaPrivateKey
+    "ssh_host_rsa_public_key" = $sshHostRsaPublicKey
+    "admin_username" = "matt"
+    "admin_ssh_authorized_key" = $adminSshPublicKey
+    "root_ssh_authorized_key" = $rootSshPublicKey
+    "instance_id" = "billy"
+    "ip_address" = "192.168.252.8"
+    "subnet_mask" = "24"
+    "gateway" = "192.168.252.1"
+    "dns_search_suffixes" = "shamsway.net"
+    "dns_resolvers" = "192.168.252.1"
+}
+
+Deploy-OvaWithUserData -OvaPath "path/to/ova" -UserDataTemplatePath "path/to/user-data-template.yml" -MetadataTemplatePath "path/to/metadata-template.yml" -Hostname "billy.shamsway.net" -OutputPath "path/to/output" -ConnectionType "VMnet0" -Variables $variables
+
+This example deploys the OVA file located at "path/to/ova" with the user-data and metadata generated from the templates at "path/to/user-data-template.yml" and "path/to/metadata-template.yml", respectively. The templates are populated with the values from the $variables hashtable, which includes secrets retrieved from 1Password using the 'op read' command. The resulting virtual machine is set to have the hostname "billy.shamsway.net", and its files are extracted to the "path/to/output" directory. The network adapter connection type is set to "VMnet0".
 #>
 function Deploy-OvaWithUserData {
     [CmdletBinding()]
@@ -51,6 +74,15 @@ function Deploy-OvaWithUserData {
 
         [Parameter(Mandatory = $true)]
         [string]$ConnectionType
+
+        [Parameter(Mandatory = $true)]
+        [string]$UserDataTemplatePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$MetadataTemplatePath,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Variables        
     )
 
 # Check if the output directory for the deployed VM exists and delete it
@@ -60,10 +92,15 @@ function Deploy-OvaWithUserData {
         Remove-Item -Path $vmOutputPath -Recurse -Force
     }
     # Encode the user-data file content to Base64
-    $encodedUserData = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $UserDataPath -Raw)))
+    # $encodedUserData = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $UserDataPath -Raw)))
 
     # Encode the Metadata configuration file content to Base64
-    $encodedMetadata = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $MetadataPath -Raw)))
+    # $encodedMetadata = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((Get-Content -Path $MetadataPath -Raw)))
+
+    # Generate the user-data and metadata files
+    $userDataPath = Join-Path -Path $env:TEMP -ChildPath "user-data.yml"
+    $metadataPath = Join-Path -Path $env:TEMP -ChildPath "metadata.yml"
+    New-CloudInitConfig -UserDataTemplatePath $UserDataTemplatePath -MetadataTemplatePath $MetadataTemplatePath -OutputUserDataPath $userDataPath -OutputMetadataPath $metadataPath -Variables $Variables    
 
     # Construct the ovftool command
     $ovftoolCommand = "ovftool --name=""$Hostname"" --allowExtraConfig --extraConfig:guestinfo.hostname=""$Hostname"" --extraConfig:guestinfo.userdata=""$encodedUserData"" --extraConfig:guestinfo.userdata.encoding=""base64"" --extraConfig:guestinfo.metadata=""$encodedMetadata"" --extraConfig:guestinfo.metadata.encoding=""base64"" ""$OvaPath"" ""$OutputPath"""
@@ -183,4 +220,35 @@ function Get-WorkstationVmGuestIpAddress {
     } else {
         Write-Warning "Could not retrieve guest IP address for $vmxPath"
     }
+}
+
+function New-CloudInitConfig {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$UserDataTemplatePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$MetadataTemplatePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$OutputUserDataPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$OutputMetadataPath,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Variables
+    )
+
+    $userDataTemplate = Get-Content -Path $UserDataTemplatePath -Raw
+    $metadataTemplate = Get-Content -Path $MetadataTemplatePath -Raw
+
+    foreach ($key in $Variables.Keys) {
+        $userDataTemplate = $userDataTemplate.Replace('${' + $key + '}', $Variables[$key])
+        $metadataTemplate = $metadataTemplate.Replace('${' + $key + '}', $Variables[$key])
+    }
+
+    $userDataTemplate | Set-Content -Path $OutputUserDataPath
+    $metadataTemplate | Set-Content -Path $OutputMetadataPath
 }

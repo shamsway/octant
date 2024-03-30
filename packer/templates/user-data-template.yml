@@ -1,0 +1,39 @@
+#cloud-config
+fqdn: ${fqdn}
+hostname: ${hostname}
+prefer_fqdn_over_hostname: false
+create_hostname_file: true
+manage_etc_hosts: true
+
+# Set the root password
+chpasswd:
+  expire: false
+  users:
+    - name: root
+      type: RANDOM
+
+# Disable password login over SSH
+ssh_pwauth: false
+
+ssh_keys:
+  rsa_private: |
+    ${ssh_host_rsa_private_key}
+  rsa_public: ${ssh_host_rsa_public_key}
+
+users:
+  - name: ${admin_username}
+    gecos: Admin User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ${admin_ssh_authorized_key}
+
+  - name: root
+    ssh_authorized_keys:
+      - ${root_ssh_authorized_key}
+
+runcmd:
+  - [ sed, -i, '/^iface eth0 inet dhcp/d', /etc/network/interfaces ]
+  - [ systemctl, restart, networking ]
