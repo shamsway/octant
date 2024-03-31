@@ -1,0 +1,65 @@
+---
+- name: Configure ZFS and NFS
+  hosts: region_home
+  become: true
+
+  vars:
+    zfs_pool_name: tank
+    zfs_dataset_name: data
+    nfs_share_path: /mnt/data
+
+  tasks:
+    - name: Install ZFS and NFS packages
+      package:
+        name:
+          - zfsutils-linux
+          - nfs-kernel-server
+        state: present
+
+    - name: Create ZFS pool
+      zpool:
+        name: "{{ zfs_pool_name }}"
+        state: present
+        devices:
+          - /dev/sdb
+
+    - name: Create ZFS dataset
+      zfs:
+        name: "{{ zfs_pool_name }}/{{ zfs_dataset_name }}"
+        state: present
+
+    - name: Set ZFS dataset mountpoint
+      zfs:
+        name: "{{ zfs_pool_name }}/{{ zfs_dataset_name }}"
+        mountpoint: "{{ nfs_share_path }}"
+
+    - name: Configure NFS share
+      lineinfile:
+        path: /etc/exports
+        line: "{{ nfs_share_path }} *(rw,sync,no_root_squash)"
+        state: present
+
+    - name: Start and enable NFS server
+      service:
+        name: nfs-server
+        state: started
+        enabled: true
+
+    - name: Export NFS share
+      command: exportfs -ar
+
+    - name: Configure firewall for NFS
+      firewalld:
+        service: nfs
+        permanent: true
+        state: enabled
+        immediate: true
+
+    - name: Configure ZFS snapshot and replication
+      cron:
+        name: ZFS snapshot and replication
+        minute: "0"
+        hour: "*/6"
+        job: |-
+          /usr/sbin/zfs snapshot {{ zfs_pool_name }}/{{ zfs_dataset_name }}@$(date +\%Y\%m\%d\%H\%M)
+          /usr/sbin/zfs send -i @$(date -d '6 hours ago' +\%Y\%m\%d\%H\%M) {{ zfs_pool_name }}/{{ zfs_dataset_name }}@$(date +\%Y\%m\%d\%H\%M) | ssh user@remote-host "zfs receive -F backup/{{ zfs_dataset_name }}"
