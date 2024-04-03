@@ -1,5 +1,5 @@
 ---
-- name: Manage NFS across home lab servers
+- name: Manage mountpoints across home lab
   hosts: servers
   user: root
   become: true
