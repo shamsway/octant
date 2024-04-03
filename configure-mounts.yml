@@ -1,0 +1,54 @@
+---
+- name: Manage NFS across home lab servers
+  hosts: servers
+  user: root
+  become: true
+  gather_facts: true
+
+  vars:
+    nfs_shares:
+      - server: 192.168.252.9
+        export_path: /nfs/services
+        mount_path: /mnt/services
+
+  tasks:
+    - name: Install NFS packages
+      ansible.builtin.package:
+        name:
+          - nfs-common
+          - nfs4-acl-tools
+        state: present
+
+    - name: Ensure NFS mount directories exist
+      ansible.builtin.file:
+        path: "{{ item.mount_path }}"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0755"
+      loop: "{{ nfs_shares }}"
+
+    - name: Mount NFS shares
+      ansible.posix.mount:
+        src: "{{ item.server }}:{{ item.export_path }}"
+        path: "{{ item.mount_path }}"
+        fstype: nfs
+        opts: defaults
+        state: mounted
+      loop: "{{ nfs_shares }}"
+
+    - name: Update /etc/fstab with NFS entries
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: "{{ item.server }}:{{ item.export_path }} {{ item.mount_path }} nfs defaults 0 0"
+        state: present
+      loop: "{{ nfs_shares }}"
+
+    - name: Set ownership of mounted directories
+      ansible.builtin.file:
+        path: "{{ item.mount_path }}"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        recurse: true
+      loop: "{{ nfs_shares }}"
