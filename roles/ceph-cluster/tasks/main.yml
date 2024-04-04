@@ -1,0 +1,43 @@
+- name: Pull Ceph container images
+  community.docker.docker_image:
+    name: "{{ item }}"
+    source: pull
+  loop:
+    - ceph/ceph:v17
+    - ceph/ceph-grafana:8.3.5
+    - ceph/ceph-prometheus:v2.34.0
+
+- name: Create Ceph directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: '0755'
+  loop:
+    - /etc/ceph
+    - /var/lib/ceph
+    - /var/log/ceph
+
+- name: Generate Ceph configuration
+  ansible.builtin.template:
+    src: ceph.conf.j2
+    dest: /etc/ceph/ceph.conf
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: '0644'
+
+- name: Deploy Ceph containers with cephadm
+  ansible.builtin.command: |
+    docker run --rm --net=host \
+      -v /etc/ceph:/etc/ceph \
+      -v /var/lib/ceph:/var/lib/ceph \
+      -v /var/log/ceph:/var/log/ceph \
+      --privileged \
+      ceph/ceph:v17 \
+      cephadm bootstrap --mon-ip "{{ mon_ip }}"
+  environment:
+    CEPH_VOLUME_DOCKER_ENV_VARS: "-e CONTAINER_IMAGE={{ ceph_image }}"
+  vars:
+    ceph_image: ceph/ceph:v17
+    mon_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"

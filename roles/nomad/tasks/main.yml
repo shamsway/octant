@@ -68,10 +68,10 @@
     daemon_reload: true
 
 - name: Create podman userspace config
-  file:
-    path: "~/.config/containers"
+  ansible.builtin.file:
+    path: ~/.config/containers
     state: directory
-  become: yes
+  become: true
   become_user: "{{user}}"
 
 - name: Copy podman containers.conf
@@ -128,3 +128,7 @@
     path: "{{ tmpdir.path }}"
     state: absent
   when: tmpdir.path is defined
+
+- name: Restart Nomad nodes one at a time
+  ansible.builtin.include_tasks: restart-node.yml
+  loop: "{{ groups['servers'] }}"

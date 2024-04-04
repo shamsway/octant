@@ -57,6 +57,9 @@
   roles:
     - role: requirements
       tags: requirements
+    - role: docker
+      tags: docker
+      when: cephcluster == true
     - role: consul
       tags: consul
     - role: nomad

@@ -41,6 +41,9 @@ deploy-host: check-env
 deploy-role: check-env
 	ansible-playbook homelab.yml -i inventory/groups.yml --tags "$(ROLE)"
 
+mounts: check-env
+	ansible-playbook configure-mounts.yml -i inventory/groups.yml
+
 run-flush-cache: check-env
 	ansible-playbook homelab.yml -i inventory/groups.yml --flush-cache
 

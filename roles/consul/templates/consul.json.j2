@@ -22,4 +22,5 @@
 "skip_leave_on_interrupt": true,
 "rejoin_after_leave": true,
 "retry_join": [{% for host in groups.servers %}{% if hostvars[host]['region'] == "home" %}{% if not loop.first %}, {% endif %}"{{ host }}"{% endif %}{% endfor %}]
+"ports": { "grpc": 8502 }
 }

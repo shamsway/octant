@@ -208,6 +208,7 @@
       - dnsmasq
       - systemd-container
       - curl
+      - gnupg
       - wget
       - unzip
       - gnupg
@@ -392,12 +393,28 @@
     name: cockpit
     enabled: true
 
-- name: Disable cloud-init
-  ansible.builtin.command: touch /etc/cloud/cloud-init.disabled
-    args:
-      creates: /etc/cloud/cloud-init.disabled
-  
+- name: Check if cloud-init is already disabled
+  ansible.builtin.stat:
+    path: /etc/cloud/cloud-init.disabled
+  register: cloud_init_disabled
 
+- name: Disable cloud-init
+  when: not cloud_init_disabled.stat.exists
+
+  block:
+    - name: Create /etc/cloud directory
+      ansible.builtin.file:
+        path: /etc/cloud
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Create /etc/cloud/cloud-init.disabled file
+      ansible.builtin.file:
+        path: /etc/cloud/cloud-init.disabled
+        state: touch
+        mode: "0644"
+      become: true
 - name: Conditionally reboot the machine based on the 'reboot' inventory variable
   ansible.builtin.reboot: {}
   when: hostvars[inventory_hostname].reboot | default(false) | bool

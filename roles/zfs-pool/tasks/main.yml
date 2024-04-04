@@ -1,11 +1,12 @@
 ---
 - name: Configure ZFS Pool
   become: true
-
   block:
     - name: Add contrib component to APT sources
       ansible.builtin.shell: |
         sed -r -i'.BAK' 's/^deb(.*)$/deb\1 contrib/g' /etc/apt/sources.list
+      args:
+        creates: /etc/apt/sources.list.BAK
 
     - name: Update APT cache
       ansible.builtin.apt:
@@ -35,13 +36,19 @@
       ansible.builtin.debug:
         var: zfs_version_result.stdout_lines
 
+    - name: Gather facts about ZFS pool
+      community.general.zpool_facts:
+        pool: "{{ zfs_pool_name }}"
+      register: pool_facts
+
     - name: Create ZFS pool
       ansible.builtin.command: zpool create {{ zfs_pool_name }} {{ zfs_pool_device }}
       register: zpool_create_result
       failed_when:
         - zpool_create_result.rc != 0
-        - "'pool \\"' ~ zfs_pool_name ~ '\\" already exists' not in zpool_create_result.stderr"
-      changed_when: "'pool \\"' ~ zfs_pool_name ~ '\\" already exists' not in zpool_create_result.stderr"
+        - "'pool \"' ~ zfs_pool_name ~ '\" already exists' not in zpool_create_result.stderr"
+      changed_when: "'pool \"' ~ zfs_pool_name ~ '\" already exists' not in zpool_create_result.stderr"
+      when: pool_facts.ansible_facts.ansible_zfs_pools is not defined
 
     - name: Create ZFS dataset
       community.general.zfs:
@@ -51,8 +58,9 @@
     - name: Set ZFS dataset mountpoint
       community.general.zfs:
         name: "{{ zfs_pool_name }}/{{ zfs_dataset_name }}"
-        mountpoint: "{{ nfs_share_path }}"
         state: present
+        extra_zfs_properties:
+          mountpoint: "{{ nfs_share_path }}"
 
     - name: Configure NFS share
       ansible.builtin.lineinfile:
@@ -60,21 +68,20 @@
         line: "{{ nfs_share_path }} *(rw,sync,no_root_squash)"
         state: present
 
-    - name: Start and enable NFS server
+    - name: Restart NFS server
       ansible.builtin.service:
         name: nfs-server
-        state: started
-        enabled: true
+        state: restarted
 
     - name: Export NFS share
       ansible.builtin.command: exportfs -ar
 
-    - name: Configure firewall for NFS
-      ansible.posix.firewalld:
-        service: nfs
-        permanent: true
-        state: enabled
-        immediate: true
+    # - name: Configure firewall for NFS
+    #   ansible.posix.firewalld:
+    #     service: nfs
+    #     permanent: true
+    #     state: enabled
+    #     immediate: true
 
   # - name: Configure ZFS snapshot and replication
   #   ansible.builtin.cron:

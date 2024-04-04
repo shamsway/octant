@@ -11,7 +11,7 @@ After=consul.service
 
 [Service]
 Restart=on-failure
-ExecStart=/usr/bin/nomad agent -config={{configdir}}/nomad.d/nomad.hcl
+ExecStart=/usr/bin/nomad agent -config={{configdir}}/nomad.d/
 User={{user}}
 Group={{group}}
 ExecReload=/bin/kill -HUP $MAINPID

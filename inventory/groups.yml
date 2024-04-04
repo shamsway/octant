@@ -3,22 +3,51 @@ servers:
   hosts:
     jerry.shamsway.net:
       server: true
+      cephcluster: true
       dnsserver: true
       region: home
       tailscale_advertisements: 192.168.252.0/24,192.168.240.0/24
     bobby.shamsway.net:
       server: true
+      cephcluster: true
       dnsserver: true
       region: home
     billy.shamsway.net:
       server: true
+      cephcluster: true
       region: home
-    phil.shamsway.net:
-      server: true
-      region: gcp
-      tailscale_advertisements: 192.168.250.0/24
+    # phil.shamsway.net:
+    #   server: true
+    #   region: gcp
+    #   tailscale_advertisements: 192.168.250.0/24
   vars:
-    reboot: false
+    reboot: true
     volumes:
-      - name: storage
-        path: /opt/storage
+      - name: traefik-data
+        path: /mnt/services/traefik
+      - name: tvheadend-recordings
+        path: /mnt/recordings/tvheadend
+      - name: tvheadend-config
+        path: /mnt/services/tvheadend       
+      - name: postgres-data
+        path: /mnt/services/postgres
+      - name: redis-data
+        path: /mnt/services/redis
+      - name: influxdb-config
+        path: /mnt/services/influxdb/config
+      - name: influxdb-data
+        path: /mnt/services/influxdb/data
+      - name: grafana-config
+        path: /mnt/services/grafana/config
+      - name: grafana-data
+        path: /mnt/services/grafana/data
+      - name: homeassistant-data
+        path: /mnt/services/homeassistant
+      - name: loki-data
+        path: /mnt/services/loki       
+      - name: prometheus-data
+        path: /mnt/services/prometheus                   
+      - name: backups
+        path: /mnt/services/backups  
+
+

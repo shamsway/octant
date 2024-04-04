@@ -1,4 +1,4 @@
-job "traefik-new" {
+job "traefik" {
   region = "home"
   datacenters = ["shamsway"]
   type = "service"
@@ -33,6 +33,12 @@ job "traefik-new" {
       auto_revert      = true
     }
 
+    volume "traefik-data" {
+      type      = "host"
+      read_only = false
+      source		= "traefik-data"
+    }  
+
     service {
       name = "traefik-http"
       port = "http"
@@ -42,7 +48,6 @@ job "traefik-new" {
         "traefik.http.routers.dashboard.rule=Host(`traefik.shamsway.net`)",
         "traefik.http.routers.dashboard.service=api@internal",
         "traefik.http.routers.dashboard.entrypoints=web,websecure",
-        // ...
       ]
       check {
         name     = "alive"
@@ -72,6 +77,12 @@ job "traefik-new" {
     task "traefik" {
       driver = "podman"
 
+      volume_mount {
+        volume      = "traefik-data"
+        destination = "/acme"
+        read_only   = false
+      }
+
       config {
         image = "docker.io/traefik:v3.0"
         args  = ["--configFile", "/etc/traefik/traefik.toml"]
@@ -81,7 +92,7 @@ job "traefik-new" {
         }
         volumes = [
           "local/traefik.toml:/etc/traefik/traefik.toml",
-          "/opt/storage/acme.json:/acme.json"
+          #"/acme/acme.json:/acme.json"
         ]
       }
 
@@ -139,7 +150,7 @@ data = <<EOH
     scheme = "https"
 [certificatesResolvers.cloudflare.acme]
   email = "mattadamelliott@gmail.com"
-  storage = "/acme.json"
+  storage = "/acme/acme.json"
   [certificatesResolvers.cloudflare.acme.dnsChallenge]
     provider = "cloudflare"
     delayBeforeCheck = 30
