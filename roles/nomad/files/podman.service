@@ -8,7 +8,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=exec
-Environment=LOGGING="--log-level=info"
+Environment=LOGGING="--log-level=warn"
 ExecStart=/usr/bin/podman $LOGGING system service
 LimitNOFILE=500000
 

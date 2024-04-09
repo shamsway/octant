@@ -4,7 +4,7 @@ data_dir = "{{ datadirs.nomad | default(datadir) }}/nomad"
 datacenter = "{{ datacenter }}"
 region = "{{ region }}"
 bind_addr = "{{ "0.0.0.0" if region == "home" else hostvars[inventory_hostname].ansible_tailscale0.ipv4.address }}"
-log_level = "warn"
+log_level = "info"
 
 {% if server %}
 server {
@@ -37,7 +37,7 @@ vault {
 {% endif %}
 
 consul {
-    address = "consul.service.consul:{{ consul.ports.http }}"
+    address = "127.0.0.1:{{ consul.ports.http }}"
 {% if (consul_ca_enabled | default('', false)) %}
     ssl       = true
     ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
@@ -57,10 +57,12 @@ plugin "nomad-driver-podman" {
   config {
     socket_path="unix://run/user/{{uid}}/podman/podman.sock"
     volumes {
-      enabled      = true
+      enabled = true
     }
+    extra_labels = ["job_name", "job_id", "task_group_name", "task_name", "namespace", "node_name", "node_id"]
   }
 }
+
 {% else %}
 plugin "docker" {
   config {

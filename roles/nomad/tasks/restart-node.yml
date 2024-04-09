@@ -1,7 +1,8 @@
+---
 # roles/nomad/tasks/restart-nodes.yml
 - name: Restart Nomad service
   become: true
-  user: root
+  become_user: root
   block:
     - name: Drain Nomad node
       ansible.builtin.command: nomad node drain -self -enable -force -m "nomad config update" -yes
@@ -10,7 +11,7 @@
     - name: Verify Nomad node is drained
       ansible.builtin.command: nomad node status -self
       register: node_status
-      until: "'Drain' in node_status.stdout"
+      until: "'Node drain complete' in node_status.stdout"
       retries: 6
       delay: 5
 
@@ -36,6 +37,6 @@
     - name: Verify Nomad node drain is disabled
       ansible.builtin.command: nomad node status -self
       register: node_status_after
-      until: "'Drain' not in node_status_after.stdout"
+      until: "'ineligible' not in node_status_after.stdout"
       retries: 6
       delay: 5
