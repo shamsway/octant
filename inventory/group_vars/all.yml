@@ -8,7 +8,8 @@ datadirs:
 user: hashi
 group: hashi
 uid: 2000
-gid: 2000
+#gid: 2000
+gid: 100
 
 tld: net.
 domain: shamsway
