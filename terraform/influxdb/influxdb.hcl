@@ -5,8 +5,7 @@ job "influxdb" {
 
   constraint {
     attribute = "${attr.kernel.name}"
-    value     = "(linux|darwin)"
-    operator  = "regexp"
+    value     = "linux"
   }
 
   group "influxdb" {
@@ -66,6 +65,14 @@ job "influxdb" {
         image = "docker.io/influxdb:2.7"
         ports = ["http"]
         userns = "keep-id:uid=1000,gid=1000"
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "influxdb"
+            }
+          ]
+        }        
       }
 
       volume_mount {
@@ -73,6 +80,7 @@ job "influxdb" {
         destination = "/var/lib/influxdb2"
         read_only   = false
       }
+      
       volume_mount {
         volume      = "influxdb-config"
         destination = "/etc/influxdb2"
