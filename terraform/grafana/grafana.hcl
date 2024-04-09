@@ -60,6 +60,14 @@ job "grafana" {
         image = "docker.io/grafana/grafana:10.4.1"
         ports = ["http"]        
         userns = "keep-id:uid=472,gid=472"
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "grafana"
+            }
+          ]
+        }        
       }
 
       volume_mount {
@@ -77,7 +85,8 @@ job "grafana" {
       env {
         GF_PATHS_DATA = "/var/lib/grafana"
         GF_AUTH_BASIC_ENABLED = "false"
-        #GF_INSTALL_PLUGINS = "grafana-piechart-panel"
+        GF_ALLOW_LOADING_UNSIGNED_PLUGINS = "natel-discrete-panel"
+        GF_INSTALL_PLUGINS = "natel-discrete-panel, grafana-piechart-panel, grafana-clock-panel, grafana-simple-json-datasource"
       }
 
       resources {
