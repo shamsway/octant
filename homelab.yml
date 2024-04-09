@@ -65,3 +65,5 @@
     - role: nomad
       tags: nomad
       when: region == "home"
+    - role: telegraf-agent
+      tags: telegraf-agent

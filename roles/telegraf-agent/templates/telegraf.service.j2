@@ -1,0 +1,12 @@
+[Unit]
+Description=Telegraf
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/podman run --name telegraf --cap-add NET_RAW -v /etc/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro docker.io/telegraf
+ExecStop=/usr/bin/podman stop telegraf
+ExecStopPost=/usr/bin/podman rm telegraf
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
