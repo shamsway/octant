@@ -1,7 +1,7 @@
 variable "inventory_vars" {
   description = "Path to Ansible inventory varibles"
   type        = string
-  default     = "~/Documents/git/homelab/inventory/group_vars/all.yml"
+  default     = "../../inventory/group_vars/all.yml"
 }
 
 /* variable "inventory" {
