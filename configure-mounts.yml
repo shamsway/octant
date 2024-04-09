@@ -50,7 +50,7 @@
         src: //{{ item.server }}/{{ item.share_name }}
         path: "{{ item.mount_path }}"
         fstype: cifs
-        opts: username={{ item.username }},password={{ item.password }}
+        opts: username={{ item.username }},password={{ item.password }},cache=strict,uid=2000,gid=100,file_mode=0644,dir_mode=0755,vers=3.0
         state: mounted
       loop: "{{ smb_shares }}"
 
@@ -64,7 +64,7 @@
     - name: Update /etc/fstab with SMB entries
       ansible.builtin.lineinfile:
         path: /etc/fstab
-        line: //{{ item.server }}/{{ item.share_name }} {{ item.mount_path }} cifs username={{ item.username }},password={{ item.password }},vers=1.0 0 0
+        line: "//{{ item.server }}/{{ item.share_name }} {{ item.mount_path }} cifs username={{ item.username }},password={{ item.password }},cache=strict,uid=2000,gid=100,file_mode=0644,dir_mode=0755,vers=3.0 0 0"
         state: present
       loop: "{{ smb_shares }}"
 
