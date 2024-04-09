@@ -1,3 +1,5 @@
+# terraform apply 
+# terraform destroy
 locals {
   config = yamldecode(file(var.inventory_vars))
   #inventory = yamldecode(file(var.inventory))
@@ -9,7 +11,7 @@ provider "nomad" {
 }
 
 data "template_file" "job" {
-  template = "${file("./postgres.hcl.tmpl")}"
+  template = "${file("./postgres.hcl")}"
   vars = {
     region = var.region
     shared_dir = var.shared_dir
