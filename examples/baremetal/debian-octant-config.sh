@@ -1,5 +1,9 @@
 #!/bin/bash
 ## Install needed packages and repos
+if [ -f /etc/debian-octant-config.done ]; then
+    echo "Octant Configuration has already been executed. Exiting."
+    exit 0
+fi
 
 apt-get update
 apt-get -y upgrade
