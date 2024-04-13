@@ -1,5 +1,9 @@
 #!/bin/bash
 ## Install needed packages and repos
+if [ -f /etc/debian-octant-config.done ]; then
+    echo "Octant Configuration has already been executed. Exiting."
+    exit 0
+fi
 
 apt-get update
 apt-get -y upgrade
@@ -91,9 +95,9 @@ EOL
 
 cp /etc/systemd/cloud-init/cloud-init.cfg /etc/cloud/
 cp /etc/systemd/cloud-init/datasource.cfg.d/10_datasource.cfg /etc/cloud/cloud.cfg.d/
+hostname=$(hostname)
+sed -i "s|seedfrom: http://192.168.252.5:8080/|seedfrom: http://192.168.252.5:8080/$hostname/|" /etc/cloud/cloud.cfg.d/10_datasource.cfg
 sudo cloud-init clean --logs
-
-
 
 ## Enable rc.local
 
