@@ -44,7 +44,9 @@ servers:
       - name: homeassistant-data
         path: /mnt/services/homeassistant
       - name: loki-data
-        path: /mnt/services/loki       
+        path: /mnt/services/loki
+      - name: nginx-data
+        path: /mnt/services/nginx/html
       - name: prometheus-data
         path: /mnt/services/prometheus                   
       - name: backups
