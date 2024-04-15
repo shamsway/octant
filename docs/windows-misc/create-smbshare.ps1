@@ -1,5 +1,6 @@
 #New-Item -ItemType Directory -Path "C:\SharedFolder"
-New-SmbShare -Name "Recordings" -Path "H:\Recordings" -FullAccess "Everyone"
+#New-SmbShare -Name "Recordings" -Path "H:\Recordings" -FullAccess "Everyone"
+
 New-NetFirewallRule -DisplayName "SMB Inbound" -Direction Inbound -LocalPort 445 -Protocol TCP -Action Allow
 Set-NetFirewallRule -DisplayGroup "File and Printer Sharing" -Enabled True
 
@@ -14,3 +15,10 @@ $acl.SetAccessRule($accessRule)
 Set-Acl -Path "H:\Recordings" -AclObject $acl
 
 New-SmbShare -Name "Recordings" -Path "H:\Recordings" -FullAccess "smbuser"
+
+$acl = Get-Acl -Path "H:\kodi"
+$accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("smbuser", "ReadAndExecute, Write, Modify", "ContainerInherit, ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($accessRule)
+Set-Acl -Path "H:\kodi" -AclObject $acl
+
+New-SmbShare -Name "Kodi" -Path "H:\kodi" -FullAccess "Everyone"

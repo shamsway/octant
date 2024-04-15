@@ -9,3 +9,16 @@
 - Edit grub.cfg in /boot/grub/grub.cfg
   - Edit the installer option (or copy/paste the installer option to create 'automated installer'). Add these options to the end of the 'linux' line:
   - 'auto file:///cdrom/preseed.cfg interface=eth0 netcfg/choose_interface=eth0 net.ifnames=0'
+
+# Adding nodes
+
+- Install using prepared USB drive
+- Run cloud-init
+- Verify networking / configure as needed
+- Add requirements role
+- Install Ceph dependencies (add this to preseed.cfg or debian-octant-config.sh)
+- Add ceph node
+- Add ceph OSD
+- Add consul role
+- Run configure mounts playbook
+- Add nomad role

@@ -64,6 +64,8 @@ apt-get install -y \
   cockpit-doc \
   open-vm-tools
 
+systemctl disable frr.service
+
 ##
 ## Debian Settings
 ## Misc configuration

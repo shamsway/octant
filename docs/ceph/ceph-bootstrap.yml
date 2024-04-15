@@ -1,0 +1,36 @@
+service_type: host
+hostname: jerry
+addr: 192.168.252.6
+labels:
+  - _admin
+---
+service_type: host
+hostname: bobby
+addr: 192.168.252.7
+labels:
+  - _admin
+---
+service_type: host
+hostname: billy
+addr: 192.168.252.8
+labels:
+  - _admin
+---
+service_type: mon
+placement:
+  hosts:
+    - jerry
+    - bobby
+    - billy
+---
+service_type: osd
+service_id: nomad
+method: raw
+placement:
+  hosts:
+    - jerry
+    - bobby
+    - billy
+data_devices:
+    paths:
+    - /dev/sdb
