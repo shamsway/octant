@@ -75,7 +75,8 @@
         owner: "{{ user }}"
         group: "{{ group }}"
         recurse: true
-      loop: "{{ nfs_shares + smb_shares }}"
+      #loop: "{{ nfs_shares + smb_shares }}"
+      loop: "{{ nfs_shares }}"
 
     - name: Ensure inventory-defined folders exist
       ansible.builtin.file:
