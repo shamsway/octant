@@ -1,0 +1,4 @@
+export AWS_ACCESS_KEY_ID={{ lookup('env', 'B2_APPLICATION_KEY_ID') }}
+export AWS_SECRET_ACCESS_KEY={{ lookup('env', 'B2_APPLICATION_KEY') }}
+export RESTIC_REPOSITORY="{{ restic_repository }}"
+export RESTIC_PASSWORD_FILE=/etc/restic-password

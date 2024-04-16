@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source /etc/restic-env
+
+restic backup \
+  --exclude="*/cache/*" \
+  /etc \
+  /opt/homelab \
+  /home
+
+restic check
