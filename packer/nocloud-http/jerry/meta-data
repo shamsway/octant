@@ -1,14 +1,13 @@
 instance-id: jerry
 local-hostname: jerry
-network:
-  version: 2
-  ethernets:
-    eth0:
-      dhcp4: false
-      set-name: eth0
-      addresses:
-        - 192.168.252.6/24
-      gateway4: 192.168.252.1
-      nameservers:
-        search: [shamsway.net]
-        addresses: [192.168.252.1]
+version: 2
+ethernets:
+  eth0:
+    dhcp4: false
+    set-name: eth0
+    addresses:
+      - 192.168.252.6/24
+    gateway4: 192.168.252.1
+    nameservers:
+      search: [shamsway.net]
+      addresses: [192.168.252.1]

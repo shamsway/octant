@@ -1,0 +1,160 @@
+# root@bobby:/var/log/ceph/bd6dc076-f0e9-11ee-8cdf-000c2961913e# ceph orch ls --export
+service_type: crash
+service_name: crash
+placement:
+  host_pattern: '*'
+---
+service_type: ingress
+service_id: nfs.octantnfs
+service_name: ingress.nfs.octantnfs
+placement:
+  count: 3
+  hosts:
+  - jerry
+  - bobby
+  - billy
+spec:
+  backend_service: nfs.octantnfs
+  first_virtual_router_id: 50
+  frontend_port: 2049
+  monitor_port: 9049
+  virtual_ip: 192.168.252.9/24
+---
+service_type: mds
+service_id: cephfs
+service_name: mds.cephfs
+placement:
+  count: 2
+  hosts:
+  - jerry
+  - bobby
+  - billy
+---
+service_type: mgr
+service_name: mgr
+placement:
+  count: 2
+---
+service_type: mon
+service_name: mon
+placement:
+  hosts:
+  - jerry
+  - bobby
+  - billy
+---
+service_type: nfs
+service_id: octantnfs
+service_name: nfs.octantnfs
+placement:
+  count: 3
+  hosts:
+  - jerry
+  - bobby
+  - billy
+spec:
+  port: 12049
+---
+service_type: osd
+service_name: osd
+unmanaged: true
+spec:
+  filter_logic: AND
+  objectstore: bluestore
+---
+service_type: osd
+service_id: all-available-devices
+service_name: osd.all-available-devices
+placement:
+  host_pattern: '*'
+spec:
+  data_devices:
+    all: true
+  filter_logic: AND
+  objectstore: bluestore
+---
+service_type: osd
+service_id: nomad
+service_name: osd.nomad
+placement:
+  hosts:
+  - jerry
+  - bobby
+  - billy
+spec:
+  data_devices:
+    paths:
+    - /dev/sdb
+  filter_logic: AND
+  method: raw
+  objectstore: bluestore
+
+
+# Suggested spec
+
+service_type: osd
+service_id: nomad
+service_name: osd.nomad
+placement:
+  hosts:
+  - jerry
+  - billy
+spec:
+  data_devices:
+    paths:
+    - /dev/sdb
+  filter_logic: AND
+  method: raw
+  objectstore: bluestore
+---
+service_type: osd
+service_id: nomad-bobby
+service_name: osd.nomad-bobby
+placement:
+  hosts:
+  - bobby
+spec:
+  data_devices:
+    paths:
+    - nvme0n1
+  filter_logic: AND
+  method: raw
+  objectstore: bluestore
+
+
+# root@jerry:~# cat ceph-bootstrap.yml
+service_type: host
+hostname: jerry
+addr: 192.168.252.6
+labels:
+  - _admin
+---
+service_type: host
+hostname: bobby
+addr: 192.168.252.7
+labels:
+  - _admin
+---
+service_type: host
+hostname: billy
+addr: 192.168.252.8
+labels:
+  - _admin
+---
+service_type: mon
+placement:
+  hosts:
+    - jerry
+    - bobby
+    - billy
+---
+service_type: osd
+service_id: nomad
+placement:
+  hosts:
+    - jerry
+    - bobby
+    - billy
+data_devices:
+    paths:
+    - /dev/sdb

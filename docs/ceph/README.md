@@ -5,6 +5,9 @@ cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.252.6 --cluster-netwo
 
 sudo ceph cephadm set-user hashi
 
+NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client before bootstrapping the new node. This is to avoid the NFS client from interfering with the Ceph bootstrap process.
+
+ceph orch host add jerry 192.168.252.6 --labels _admin
 ceph orch host add bobby 192.168.252.7 --labels _admin
 ceph orch host add billy 192.168.252.8 --labels _admin
 
@@ -48,7 +51,58 @@ ceph orch daemon add osd *<host>*:*<device-path>*
 
 ceph orch daemon add osd bobby:/dev/ceph-vg/ceph-lv
 
+### Updating settings for "V2P" hosts
+Some fixes for things when a VM is converted to a physical host
+
+Edit and redeploy the spec
+`ceph orch apply -i ceph-osd.yml`
+
+```
+service_type: osd
+service_id: nomad
+service_name: osd.nomad
+placement:
+  hosts:
+  - jerry
+  - billy
+spec:
+  data_devices:
+    paths:
+    - /dev/sdb
+  filter_logic: AND
+  method: raw
+  objectstore: bluestore
+---
+service_type: osd
+service_id: nomad-bobby
+service_name: osd.nomad-bobby
+placement:
+  hosts:
+  - bobby
+spec:
+  data_devices:
+    paths:
+    - /dev/ceph-vg/ceph-lv
+  filter_logic: AND
+  method: raw
+  objectstore: bluestore
+```
+
+Redeploy haproxy ingress
+`ceph orch daemon redeploy haproxy.nfs.octantnfs.[hostname].[identifier]`
+
+NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client if you having issues deploying haproxy
+
+# Maintenance
+
+ceph orch host maintenance enter <hostname> --force --yes-i-really-mean-it
+ceph orch host maintenance exit <hostname>
+ceph orch host ok-to-stop  <hostname>
+
 # Remove a Ceph node
+
+Check existing specs
+`ceph orch ls --export`
 
 Check the storage cluster’s capacity:
 
@@ -82,7 +136,7 @@ ceph osd in {osd-num} # small clusters
 ceph osd crush reweight osd.{osd-num} 0 # small clusters
 
 sudo systemctl stop ceph-osd@{osd-num}
-ceph osd purge 1 --yes-i-really-mean-it
+ceph osd purge {osd-num} --yes-i-really-mean-it
 ```
 
 
@@ -112,7 +166,9 @@ ceph orch host ls
 Drain all the daemons from the host:
 
 ```
-ceph orch host drain host02
+ceph orch host drain {hostname}
+
+or ceph orch host maintenance enter {hostname} --force --yes-i-really-mean-it ?
 ```
 
 The _no_schedule label is automatically applied to the host which blocks deployment.
@@ -128,7 +184,7 @@ When no placement groups (PG) are left on the OSD, the OSD is decommissioned and
 Check if all the daemons are removed from the storage cluster:
 
 ``
-ceph orch ps [host]]
+ceph orch ps [host]
 ```
 
 Remove the host:
@@ -150,3 +206,36 @@ sgdisk --zap-all /dev/sdb
 
 ceph osd unset noscrub
 ceph osd unset nodeep-scrub
+
+# Troubleshooting
+
+## Time sync issues
+
+ceph time-sync-status
+
+ntpq -p
+
+/etc/ntp.cfg
+
+driftfile /var/lib/ntp/ntp.drift
+statistics loopstats peerstats clockstats
+filegen loopstats file loopstats type day enable
+filegen peerstats file peerstats type day enable
+filegen clockstats file clockstats type day enable
+
+server 0.debian.pool.ntp.org iburst
+server 1.debian.pool.ntp.org iburst
+server 2.debian.pool.ntp.org iburst
+server 3.debian.pool.ntp.org iburst
+
+restrict -4 default kod notrap nomodify nopeer noquery limited
+restrict -6 default kod notrap nomodify nopeer noquery limited
+
+restrict 127.0.0.1
+restrict ::1
+
+## Host noout
+
+ceph health detail reports "host [hostname] has flags noout"
+
+Fix: `ceph osd unset-group noout jerry`

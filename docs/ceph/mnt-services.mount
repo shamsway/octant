@@ -1,0 +1,16 @@
+# /etc/systemd/system/mnt-services.mount
+[Unit]
+Description=/mnt/services
+After=network-online.target
+Wants=network-online.target
+After=ceph.target
+Requires=ceph.target
+
+[Mount]
+What=192.168.252.9:/nfs/services
+Where=/mnt/services
+Type=nfs
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target

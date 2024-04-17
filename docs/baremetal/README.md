@@ -16,9 +16,49 @@
 - Run cloud-init
 - Verify networking / configure as needed
 - Add requirements role
+  - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "requirements"`
 - Install Ceph dependencies (add this to preseed.cfg or debian-octant-config.sh)
 - Add ceph node
 - Add ceph OSD
 - Add consul role
+  - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "consul"`
 - Run configure mounts playbook
+  - `ansible-playbook configure-mounts.yml -i inventory/groups.yml -l` [host]
 - Add nomad role
+  - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "consul"`
+- Join cluster
+  - `nomad server join "192.168.252.7:4648"`
+- Clean up old data
+  - `nomad system gc`
+- Add telegraf role
+  - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "telegraf-agent"` 
+- Add restic role
+  - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "restic"` 
+  - repo must be initialized before first use: `restic -r s3:[url]/[bucket] init`
+## Linux briding config
+
+sudo apt install bridge-utils
+sudo brctl addbr br0
+sudo brctl addif br0 eth2
+sudo brctl addif br0 eth3
+sudo ifconfig br0 192.168.230.1 netmask 255.255.255.0 up
+
+(?)
+sudo ifconfig eth0 0.0.0.0 up
+sudo ifconfig eth1 0.0.0.0 up
+
+### Persistent config
+# /etc/network/interfaces.d/br0.cfg
+auto br0
+iface br0 inet static
+    address 192.168.230.1
+    netmask 255.255.255.0
+    bridge_ports eth2 eth3
+    bridge_stp off
+    bridge_fd 0
+
+# Node maintenance
+
+## Drain Nomad Jobs
+
+`nomad node drain -self -enable -force -m "node maintenance" -yes`

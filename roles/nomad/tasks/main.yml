@@ -81,6 +81,13 @@
     src: containers.conf
     dest: ~/.config/containers
 
+- name: Configure root podman docker.io unqualified search registries
+  become: true
+  become_user: root
+  ansible.builtin.copy:
+    src: dockerio.registry.conf
+    dest: /etc/containers/registries.conf.d
+
 - name: Copy docker.io auth
   become: true
   become_user: "{{user}}"
@@ -129,6 +136,6 @@
     state: absent
   when: tmpdir.path is defined
 
-- name: Restart Nomad nodes one at a time
-  ansible.builtin.include_tasks: restart-node.yml
-  loop: "{{ groups['servers'] }}"
+# - name: Restart Nomad nodes one at a time
+#   ansible.builtin.include_tasks: restart-node.yml
+#   loop: "{{ groups['servers'] }}"
