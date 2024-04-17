@@ -9,6 +9,12 @@ variable "image" {
     default = "restic/restic:latest"
 }
 
+variable "restic_hostname" {
+  description = "Restic hostname"
+  type        = string
+  default     = "octant-backup"
+}
+
 variable "restic_password" {
   description = "Restic backup password"
   type        = string

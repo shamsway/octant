@@ -8,27 +8,36 @@ job "restic-backup" {
     prohibit_overlap = true
   }
 
-  %{ for volume in backup_volumes ~}
-  volume "${volume.name}" {
-    type      = "host"
-    read_only = true
-    source    = "${volume.name}"
-  }
-  %{ endfor ~}
-
   group "backup" {
+    %{ for volume in jsondecode(backup_volumes) ~}
+    volume "${volume.name}" {
+        type      = "host"
+        read_only = true
+        source    = "${volume.name}"
+    }
+    %{ endfor ~}
+
     task "restic" {
       driver = "podman"
 
       config {
         image = "${image}"
-        args = [
-          "backup",
-          "--repo", "${restic_repository}",
+        hostname = "octant-backup"
+        args = [  
+          "backup", "-v",
+          "--repo", "${restic_repository}/nfs",
           %{ for volume in jsondecode(backup_volumes) ~}
           "/${volume.name}",
           %{ endfor ~}
         ]
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "restic"
+            }
+          ]
+        } 
       }
 
       env {

@@ -26,6 +26,7 @@ internal_subnets:
 user_public_key: /Users/melliott/.ssh/id_rsa.pub
 #ansible_ssh_pipelining: false
 
+restic_repository: "s3:s3.us-west-000.backblazeb2.com/octant-backup"
 
 consul:
   # Check this blog post before enable this variable
