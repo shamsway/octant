@@ -1,19 +1,53 @@
+podman run --rm --name=tvheadend \
+-p 9981:9981 \
+-p 9982:9982 \
+-e PUID=2000 \
+-e PGID=2000 \
+-v /mnt/services/tvheadend/config:/config \
+-v /mnt/recordings/tvheadend/:/recordings \
+--privileged \
+lscr.io/linuxserver/tvheadend:latest
+
+podman run -d --name=tvheadend \
+-e PUID=2000 \
+-e PGID=2000 \
+-v /mnt/services/tvheadend/config:/config \
+-v /mnt/recordings/tvheadend/:/recordings \
+--privileged --network=host \
+lscr.io/linuxserver/tvheadend:latest
+
+// podman exec -it tvheadend /bin/bash
+
 job "tvheadend" {
   datacenters = ["shamsway"]
   type        = "service"
 
+  constraint {
+    attribute = "${attr.kernel.name}"
+    value     = "linux"
+  }
+
   group "tvheadend" {
     count = 1
 
-    volume "tvheadend-data" {
+    volume "tvheadend-config" {
       type      = "host"
       read_only = false
-      source    = "tvheadend-data"
+      source    = "tvheadend-config"
+    }
+
+    volume "tvheadend-recordings" {
+      type      = "host"
+      read_only = false
+      source    = "tvheadend-recordings"
     }
 
     network {
       port "http" {
-        to = 9981
+        static = 9981
+      }
+      port "htsp" {
+        static = 9982
       }
     }
 
@@ -39,23 +73,35 @@ job "tvheadend" {
     }
 
     task "tvheadend" {
-      driver = "podman"
-
+      driver = "podman"      
       config {
         image = "docker.io/linuxserver/tvheadend"
-        ports = ["http"]
+        ports = ["http","htsp"]
+      }
+
+      env {
+        PUID  = 2000
+        PGID  = 2000
+        TZ    = "America/New_York"
       }
 
       volume_mount {
-        volume      = "tvheadend-data"
-        destination = "/recordings"
+        volume      = "tvheadend-config"
+        destination = "/config"
         read_only   = false
       }
+
+      volume_mount {
+        volume      = "tvheadend-recordings"
+        destination = "/recordings"
+        read_only   = false
+      }      
 
       resources {
         cpu    = 500
         memory = 256
       }
+     }
     }
   }
-}
+  
