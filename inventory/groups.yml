@@ -25,31 +25,45 @@ servers:
     volumes:
       - name: traefik-data
         path: /mnt/services/traefik
+        backup: true
       - name: tvheadend-recordings
         path: /mnt/recordings/tvheadend
+        backup: false
       - name: tvheadend-config
-        path: /mnt/services/tvheadend       
+        path: /mnt/services/tvheadend  
+        backup: true             
       - name: postgres-data
         path: /mnt/services/postgres
+        backup: true        
       - name: redis-data
         path: /mnt/services/redis
+        backup: false        
       - name: influxdb-config
         path: /mnt/services/influxdb/config
+        backup: true        
       - name: influxdb-data
         path: /mnt/services/influxdb/data
+        backup: false
       - name: grafana-config
         path: /mnt/services/grafana/config
+        backup: true        
       - name: grafana-data
         path: /mnt/services/grafana/data
+        backup: false
       - name: homeassistant-data
         path: /mnt/services/homeassistant
+        backup: true
       - name: loki-data
         path: /mnt/services/loki
+        backup: false
       - name: nginx-data
         path: /mnt/services/nginx/html
+        backup: true        
       - name: prometheus-data
-        path: /mnt/services/prometheus                   
+        path: /mnt/services/prometheus
+        backup: false                     
       - name: backups
-        path: /mnt/services/backups  
+        path: /mnt/services/backups
+        backup: true        
 
 

@@ -21,6 +21,18 @@ variable "restic_password" {
   sensitive   = true
 }
 
+variable "AWS_ACCESS_KEY_ID" {
+  description = "Backblaze key ID for restic"
+  type        = string
+  sensitive   = true
+}
+
+variable "AWS_SECRET_ACCESS_KEY" {
+  description = "Backblaze key for restic"
+  type        = string
+  sensitive   = true
+}
+
 variable "region" {
     type = string
     default = "home"
