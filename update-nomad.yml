@@ -7,12 +7,20 @@
   serial: 1
   max_fail_percentage: 0
   tasks:
-    - name: Update Podman config
+    - name: Update Podman user config
       become: true
       become_user: "{{ user }}"
       ansible.builtin.copy:
         src: roles/nomad/files/containers.conf
         dest: ~/.config/containers
+        mode: "0644"
+
+    - name: Update system container registries
+      become: true
+      become_user: "root"
+      ansible.builtin.copy:
+        src: roles/nomad/files/registries.conf
+        dest: /etc/containers/registries.conf
         mode: "0644"
 
     - name: Update Nomad config
