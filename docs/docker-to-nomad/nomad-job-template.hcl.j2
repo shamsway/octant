@@ -1,0 +1,70 @@
+job "converted-job" {
+  datacenters = ["dc1"]
+  type        = "service"
+
+  {% for service in services %}
+  group "{{ service.name }}" {
+    volume "{{ service.name }}-data" {
+      type = "host"
+      read_only = false
+      source = "{{ service.name }}-data"
+    }
+
+    task "{{ service.name }}" {
+      driver = "podman"
+
+      config {
+        image = "{{ service.image }}"
+        ports = [{% for port in service.ports %}"{{ port.split(':')[1] }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        user = "non-root-user"
+      }
+
+      volume_mount {
+        volume = "{{ service.name }}-data"
+        destination = "/{{ service.name }}"
+        read_only = false
+      }
+
+      env {
+        {% for env in service.environment %}
+        {{ env.split('=')[0] }} = "{{ env.split('=')[1] }}"
+        {% endfor %}
+      }
+
+      resources {
+        cpu    = 500
+        memory = 256
+      }
+
+      service {
+        name = "{{ service.name }}"
+        provider = "consul"
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.{{ service.name }}.rule=Host(`{{ service.name }}.shamsway.net`)",
+          "traefik.http.routers.{{ service.name }}.entrypoints=web,websecure",
+          "traefik.http.routers.{{ service.name }}.tls.certresolver=cloudflare",
+          "traefik.http.routers.{{ service.name }}.middlewares=redirect-web-to-websecure@internal",
+        ]
+        check {
+          name = "alive"
+          type = "http"
+          path = "/health"
+          interval = "10s"
+          timeout = "2s"
+        }
+      }
+    }
+  }
+  {% endfor %}
+
+  network {
+    {% for service in services %}
+    {% for port in service.ports %}
+    port "{{ service.name }}_{{ port.split(':')[1] }}" {
+      static = {{ port.split(':')[1] }}
+    }
+    {% endfor %}
+    {% endfor %}
+  }
+}
