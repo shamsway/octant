@@ -10,16 +10,15 @@ Please convert the following docker-compose YAML to a Nomad job configuration:
 ```
 
 Consider the following requirements:
-Use Podman instead of Docker for running the containers.
-The containers should run as a non-root user.
+Use Podman for running the containers.
 Map the services to corresponding Nomad job tasks.
 Handle volumes, ports, and environment variables appropriately.
-Set the necessary Podman-specific configuration options.
 Define appropriate job-level settings, such as job name, datacenters, and constraints.
 Add Traefik tags for each service, including the job-specific hostname and other required tags.
 Mount volumes exposed to Nomad properly using the 'volume' block in the job definition and 'volume_mount' within the task block.
-Set the 'provider' to "consul" in the service definition and configure a health check.
-Provide podman commands to run the container from the commandline to verify it works when running rootless
+Set the 'provider' to "consul" in the service definition and configure a health check with a default path of "/".
+Ensure the output follows the general structure of the provided example.
+Please provide the converted Nomad job configuration in HCL format.
 
 ## Instructions
 

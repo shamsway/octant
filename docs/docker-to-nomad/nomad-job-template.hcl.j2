@@ -1,13 +1,19 @@
-job "converted-job" {
-  datacenters = ["dc1"]
+{% for service in services %}
+job "{{ service.name }}" {
+  datacenters = ["shamsway"]
   type        = "service"
 
-  {% for service in services %}
   group "{{ service.name }}" {
-    volume "{{ service.name }}-data" {
-      type = "host"
+    network {
+      port "http" {
+        static = {{ service.ports[0].split(':')[1] }}
+      }
+    }
+
+    volume "{{ service.name }}" {
+      type      = "host"
       read_only = false
-      source = "{{ service.name }}-data"
+      source    = "{{ service.name }}"
     }
 
     task "{{ service.name }}" {
@@ -15,14 +21,33 @@ job "converted-job" {
 
       config {
         image = "{{ service.image }}"
-        ports = [{% for port in service.ports %}"{{ port.split(':')[1] }}"{% if not loop.last %}, {% endif %}{% endfor %}]
-        user = "non-root-user"
+        ports = ["http"]
       }
 
       volume_mount {
-        volume = "{{ service.name }}-data"
-        destination = "/{{ service.name }}"
-        read_only = false
+        volume      = "{{ service.name }}"
+        destination = "/app"
+        read_only   = false
+      }
+
+      service {
+        name = "{{ service.name }}"
+        provider = "consul"
+        port = "http"
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.{{ service.name }}.rule=Host(`{{ service.name }}.shamsway.net`)",
+          "traefik.http.routers.{{ service.name }}.entrypoints=web,websecure",
+          "traefik.http.routers.{{ service.name }}.tls.certresolver=cloudflare",
+          "traefik.http.routers.{{ service.name }}.middlewares=redirect-web-to-websecure@internal",
+        ]
+        check {
+          name     = "alive"
+          type     = "http"
+          path     = "/"
+          interval = "10s"
+          timeout  = "2s"
+        }
       }
 
       env {
@@ -35,36 +60,7 @@ job "converted-job" {
         cpu    = 500
         memory = 256
       }
-
-      service {
-        name = "{{ service.name }}"
-        provider = "consul"
-        tags = [
-          "traefik.enable=true",
-          "traefik.http.routers.{{ service.name }}.rule=Host(`{{ service.name }}.shamsway.net`)",
-          "traefik.http.routers.{{ service.name }}.entrypoints=web,websecure",
-          "traefik.http.routers.{{ service.name }}.tls.certresolver=cloudflare",
-          "traefik.http.routers.{{ service.name }}.middlewares=redirect-web-to-websecure@internal",
-        ]
-        check {
-          name = "alive"
-          type = "http"
-          path = "/health"
-          interval = "10s"
-          timeout = "2s"
-        }
-      }
     }
-  }
-  {% endfor %}
-
-  network {
-    {% for service in services %}
-    {% for port in service.ports %}
-    port "{{ service.name }}_{{ port.split(':')[1] }}" {
-      static = {{ port.split(':')[1] }}
-    }
-    {% endfor %}
-    {% endfor %}
   }
 }
+{% endfor %}
