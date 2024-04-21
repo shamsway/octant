@@ -64,6 +64,10 @@ servers:
         backup: false                     
       - name: backups
         path: /mnt/services/backups
-        backup: true        
-
-
+        backup: true
+      - name: open-webui
+        path: /mnt/services/open-webui
+        backup: true
+      - name: litellm
+        path: /mnt/services/litellm
+        backup: true

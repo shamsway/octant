@@ -68,21 +68,22 @@
         state: present
       loop: "{{ smb_shares }}"
 
-    - name: Set ownership of mounted directories
-      ansible.builtin.file:
-        path: "{{ item.mount_path }}"
-        state: directory
-        owner: "{{ user }}"
-        group: "{{ group }}"
-        recurse: true
-      #loop: "{{ nfs_shares + smb_shares }}"
-      loop: "{{ nfs_shares }}"
-
-    - name: Ensure inventory-defined folders exist
+    - name: Ensure existence and set ownership of mounted directories
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: directory
         owner: "{{ user }}"
         group: "{{ group }}"
+        recurse: false
         mode: "0755"
+      #loop: "{{ nfs_shares + smb_shares }}"
       loop: "{{ volumes }}"
+
+    # - name: Ensure inventory-defined folders exist
+    #   ansible.builtin.file:
+    #     path: "{{ item.path }}"
+    #     state: directory
+    #     owner: "{{ user }}"
+    #     group: "{{ group }}"
+    #     mode: "0755"
+    #   loop: "{{ volumes }}"
