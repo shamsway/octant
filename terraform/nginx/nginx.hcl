@@ -18,7 +18,7 @@ job "nginx" {
       }
 
       port "https" {
-        static = 8443
+        static = 9443
       }      
     }
 
