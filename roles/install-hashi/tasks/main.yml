@@ -40,15 +40,6 @@
     ansible.builtin.set_fact:
       tailscale_ip: "{{ tailscale_ip_output.stdout }}"
 
-- name: Create json config file
-  ansible.builtin.template:
-    src: ./templates/{{ name }}.json.j2
-    dest: "{{ configdir }}/{{ name }}.d/{{ name }}.json"
-    owner: "{{ user }}"
-    group: "{{ group }}"
-    mode: "0644"
-  when: name == "consul"
-
 - name: Create hcl config file
   ansible.builtin.template:
     src: ./templates/{{ name }}.hcl.j2
@@ -56,7 +47,6 @@
     owner: "{{ user }}"
     group: "{{ group }}"
     mode: "0644"
-  when: name != "consul"
 
 - name: Create a symbolic link
   ansible.builtin.file:

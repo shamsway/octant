@@ -19,6 +19,7 @@ Mount volumes exposed to Nomad properly using the 'volume' block in the job defi
 Set the 'provider' to "consul" in the service definition and configure a health check with a default path of "/".
 Ensure the output follows the general structure of the provided example.
 Please provide the converted Nomad job configuration in HCL format.
+Provide podman commands to run the container from the command line to verify it works when running rootless
 
 ## Instructions
 
