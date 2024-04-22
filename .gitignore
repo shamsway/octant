@@ -15,3 +15,6 @@ examplefacts.json
 .secrets.yml
 hosts.ini
 todo.md
+bundle*
+file_tree.txt
+settings.json
