@@ -11,7 +11,40 @@ job "threadfin" {
     attribute = "${node.unique.name}"
     operator  = "regexp"
     value     = "-root$"
-  } 
+  }  
+
+  group "ingress" {
+    network {
+      mode = "bridge"
+
+      # This example will enable plain HTTP traffic to access the uuid-api connect
+      # native example service on port 8080.
+      # port "inbound" {
+      #   static = 8080
+      #   to     = 8080
+      # }
+    } 
+
+    service {
+      name = "ingress"
+      port = 34401
+
+      connect {
+        gateway {
+          proxy { }
+          ingress {
+            listener { 
+              protocol = "tcp"
+              port = 34401
+              service {
+                name = "threadfin"
+              }
+            }
+          }
+        }
+      }      
+    }
+  }
 
   group "threadfin" {
     volume "threadfin" {
@@ -29,9 +62,7 @@ job "threadfin" {
     network {
       mode = "bridge"
 
-      port "http" { 
-        to = 34400
-      }
+      port "http" { to = 34400 }
     }
 
     task "gluetun" {
@@ -69,7 +100,6 @@ Endpoint = 193.148.18.82:51820
 EOH
         destination = "local/wg0.conf"
       }
-
       lifecycle {
         hook    = "prestart"
         sidecar = true
@@ -89,38 +119,6 @@ EOH
         image        = "fyb3roptik/threadfin"
         network_mode = "container:gluetun-${NOMAD_ALLOC_ID}"
         volumes      = ["local/:/tmp/xteve:rw"]
-        ports        = ["http"]
-        logging = {
-          driver = "journald"
-          options = [
-            {
-              "tag" = "threadfin"
-            }
-          ]
-        }        
-      }
-
-      service {
-        name = "threadfin"
-        provider = "consul"
-        port = "http"
-
-        tags = [
-          "traefik.enable=true",
-          "traefik.http.routers.threadfin.rule=Host(`threadfin.shamsway.net`)",
-          "traefik.http.routers.threadfin.entrypoints=web,websecure",
-          "traefik.http.routers.threadfin.tls.certresolver=cloudflare",
-          "traefik.http.routers.threadfin.middlewares=redirect-web-to-websecure@internal",
-          "traefik.http.services.nginx.loadbalancer.server.port=${NOMAD_PORT_http}",         
-        ]
-        
-        check {
-          name     = "alive"
-          type     = "http"
-          path     = "/web"
-          interval = "10s"
-          timeout  = "2s"
-        }      
       }
 
       env {
@@ -128,6 +126,89 @@ EOH
         PGID = "2000"
         TZ   = "America/New_York"
       }
+
+      service {
+        name = "threadfin"
+        port = "http"
+        connect {
+          native = true
+        }
+      }
     }
   }
 }
+
+#####
+from claude
+
+group "ingress" {
+  network {
+    mode = "bridge"
+  }
+
+  service {
+    name = "ingress"
+    port = 34401
+
+    connect {
+      sidecar_task {
+        driver = "podman"
+      }
+
+      gateway {
+        proxy {
+        }
+
+        ingress {
+          listener {
+            port     = 34401
+            protocol = "tcp"
+            
+            service {
+              name = "threadfin"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+#####
+
+snip
+
+  group "ingress" {
+    network {
+      mode = "bridge"
+
+      # This example will enable plain HTTP traffic to access the uuid-api connect
+      # native example service on port 8080.
+      # port "inbound" {
+      #   static = 8080
+      #   to     = 8080
+      # }
+    } 
+
+    service {
+      name = "ingress"
+      port = 34401    
+      
+      connect {
+        sidecar_task { driver = "podman" }          
+        gateway {
+          proxy { }
+          ingress {
+            listener { 
+              protocol = "tcp"
+              port = 34401
+              service {
+                name = "threadfin"
+              }
+            }
+          }
+        }
+      }      
+    }
+  }

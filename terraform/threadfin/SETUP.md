@@ -21,3 +21,24 @@ podman run -d \
   -e VPN_TYPE="wireguard" \
   -e WIREGUARD_IMPLEMENTATION="userspace" \
   qmcgaw/gluetun
+
+podman run -d \
+  --name hashi --rm \
+  -u hashi --userns="keepid:uid=31337,gid=31337" \
+  -v /tmp:/tmp/xteve \
+  -p 34400:34400/tcp \
+  -e PUID="2000" \
+  -e PGID="2000" \
+  -e TZ="America/New_York" \
+  fyb3roptik/threadfin
+
+podman run -d \
+  --name threadfin --rm \
+  -u 2000 \
+  -v /tmp:/tmp/xteve \
+  -v /mnt/services/threadfin:/home/threadfin/conf \
+  -p 34400:34400/tcp \
+  -e PUID="2000" \
+  -e PGID="2000" \
+  -e TZ="America/New_York" \
+  fyb3roptik/threadfin
