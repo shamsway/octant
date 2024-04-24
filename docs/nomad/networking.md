@@ -225,8 +225,25 @@ By following this approach and providing the appropriate Traefik tags for each t
 
 # Consul Connect
 
+## Prompt
+
+Assume this scenario in my home lab. I need your help figuring out how to do some advanced networking use cases with containers. 
+
+- nomad servers running across three hosts
+- 2 nomad agents per server, 1 running as root, 1 running rootless
+- podman used for container runtime
+- consul servers running across three hosts
+- 2 consul agents per server, 1 running as root (serving nomad root agent), 1 running rootless (serving nomad rootless agent)
+- traefik providing reverse proxy, let's encrypt TLS certificates
+
+I want to run a container named "gluetun" that provides wireguard VPN connectivity. this needs to run as root to be able to build a wireguard tunnel. I want to run a second container, threadfin. this container should:
+- expose a web interface I can access
+- run in a separate job in a rootless manner
+- otherwise, route or proxy all traffic through the gluetun container
+
 ## Links
 
+- (watch) https://www.youtube.com/watch?v=wTA5HxB_uuk - Understanding Nomad Networking Patterns
 - https://github.com/hashicorp/nomad-connect-examples/tree/main
 - https://www.hashicorp.com/blog/consul-connect-native-tasks-in-hashicorp-nomad-0-12
 - https://www.mattmoriarity.com/2021-02-21-scraping-prometheus-metrics-with-nomad-and-consul-connect/
@@ -237,6 +254,7 @@ By following this approach and providing the appropriate Traefik tags for each t
 - Docs
   - https://developer.hashicorp.com/nomad/docs/job-specification/sidecar_service
   - https://developer.hashicorp.com/nomad/docs/job-specification/sidecar_task
+
 
 
 ### Consul Docs & Background info
@@ -250,3 +268,13 @@ Tutorials: https://developer.hashicorp.com/tutorials/library?query=connect&produ
 - https://developer.hashicorp.com/consul/tutorials/get-started-vms/virtual-machine-gs-monitoring
 - https://developer.hashicorp.com/consul/tutorials/archive/service-mesh-gateways
 - https://developer.hashicorp.com/consul/tutorials/secure-services/secure-services-intentions
+
+- https://developer.hashicorp.com/consul/docs/connect/proxies
+- https://developer.hashicorp.com/consul/docs/connect/proxies/proxy-config-reference
+- https://developer.hashicorp.com/consul/docs/connect/gateways
+
+- https://medium.com/navin-nair/practical-hashicorp-nomad-and-consul-a-little-more-than-hello-world-part-1-991d2a54fd64
+- https://medium.com/@arunlogo.kct/practical-hashicorp-nomad-and-consul-ci-cd-pipeline-to-deploy-the-api-and-webapp-part-2-c07117bbb27d
+- https://medium.com/@jawaharsbs/practical-hashicorp-nomad-and-consul-monitoring-autoscaling-using-prometheus-grafana-part-3-8e032fbf1357
+- https://srivastavaankita080.medium.com/practical-hashicorp-nomad-and-consul-part-4-consul-kv-store-ef837e0e4ffc
+- 

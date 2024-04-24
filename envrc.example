@@ -1,0 +1,24 @@
+# Example of using 1password CLI to grab a secret:
+# DOCKERHUB_PASSWORD="$(op read 'op://Dev/Docker Hub/password')
+export DOCKERHUB_USERNAME="[replace]"
+export DOCKERHUB_PASSWORD="[replace]"
+export TAILSCALE_API_KEY="[replace]"
+export TAILSCALE_CLOUD_KEY="[replace]"
+export TF_VAR_TAILSCALE_API_KEY=$TAILSCALE_API_KEY
+export TF_VAR_TAILSCALE_KEY=$TAILSCALE_CLOUD_KEY
+export INVENTORY_VARS="[path to]/all.yml"
+export CLOUDFLARE_TOKEN="[replace]"
+export CF_DNS_API_TOKEN=$CLOUDFLARE_TOKEN
+export TF_VAR_cloudflare_token=$CLOUDFLARE_TOKEN
+
+export CONSUL_HTTP_ADDR=http://[consul address]:8500
+export CONSUL_HTTP_SSL_VERIFY=false
+
+export PKR_VAR_builderip="$(ipconfig getifaddr en0)"
+
+export RESTIC_PASSWORD="[replace]"
+export TF_VAR_restic_password=$RESTIC_PASSWORD
+export B2_APPLICATION_KEY_ID="[replace]"
+export B2_APPLICATION_KEY="[replace]"
+export TF_VAR_AWS_ACCESS_KEY_ID=$B2_APPLICATION_KEY_ID
+export TF_VAR_AWS_SECRET_ACCESS_KEY=$B2_APPLICATION_KEY

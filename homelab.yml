@@ -65,6 +65,8 @@
     - role: nomad
       tags: nomad
       when: region == "home"
+    - role: nomad-root
+      tags: nomad-root      
     - role: restic
       tags: restic      
     - role: telegraf-agent

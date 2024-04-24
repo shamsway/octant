@@ -32,6 +32,40 @@
     create: true
     line: "{{ user }} ALL=(ALL) NOPASSWD: ALL"
 
+- name: Create netns group
+  group:
+    name: netns
+    state: present
+
+- name: Add hashi user to netns group
+  user:
+    name: "{{ user }}"
+    groups: netns
+    append: yes
+
+- name: Ensure /var/run/netns directory exists
+  file:
+    path: /var/run/netns
+    state: directory
+    owner: root
+    group: netns
+    mode: '0770'
+
+- name: Set ownership and permissions for /var/run/netns
+  file:
+    path: /var/run/netns
+    owner: root
+    group: netns
+    mode: '0770'
+
+- name: Create sudoers file for nomad-netns
+  copy:
+    content: |
+      {{ user }} ALL=(root) NOPASSWD: /bin/mount --make-rshared /var/run/netns
+    dest: /etc/sudoers.d/nomad-netns
+    validate: visudo -cf %s
+    mode: '0440'
+
 # Setup Admin account
 - name: Create user {{ admin_user }}
   ansible.builtin.user:

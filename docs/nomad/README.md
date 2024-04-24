@@ -9,6 +9,21 @@
 - Run update-nomad.yml playbook, one host at a time. This playbook drains the host, updates the Nomad configuration, and restarts the Nomad agent.
   - Single host: 'ansible-playbook update-nomad.yml -i inventory/groups.yml -l [hostname]'
 
+## Troubleshooting
+
+Look at all consul and nomad logs
+`journalctl -u consul -u nomad -u nomad-root --since "$(date -d '-5 minutes' '+%Y-%m-%d %H:%M:%S')" -f | grep -i "register\|deregister\|threadfin"`
+
+Get local node status
+`nomad node status -self -verbose`
+
+Get remote/root node status
+`nomad node status -address=http://127.0.0.1:5646 -verbose`
+
+List CSI plugins
+`nomad operator api /v1/plugins?type=csi | jq`
+
+
 ## Running multiple Nomad agents
 
 Yes, it is possible to run multiple Nomad agents on a single server. This can be useful in scenarios where you want to have separate Nomad environments or handle different types of workloads with different configurations.

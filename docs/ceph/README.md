@@ -1,4 +1,9 @@
 # Add a Ceph node
+
+Disable local NFS server
+sudo systemctl disable nfs-server.service
+sudo systemctl mask nfs-server.service
+
 sudo apt install ceph-common ceph-mon ceph-osd ceph-mds ceph-mgr ceph-fuse ceph-base python3-ceph ceph-mgr-dashboard cephadm
 
 cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.252.6 --cluster-network 192.168.252.0/24 --ssh-user hashi --ssh-private-key /opt/homelab/data/home/.ssh/id_rsa --ssh-public-key /opt/homelab/data/home/.ssh/id_rsa.pub --apply-spec ceph-bootstrap.yml --allow-overwrite
@@ -95,11 +100,42 @@ NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client if you
 
 # Maintenance
 
+## Reboot a ceph node 
+
+To reboot the Ceph Storage nodes, follow this process:
+
+- Select the first Ceph Storage node to reboot and log into it.
+- Disable Ceph Storage cluster rebalancing temporarily:
+```
+sudo ceph osd set noout
+sudo ceph osd set norebalance
+```
+
+Reboot the node:
+`sudo reboot`
+
+Wait until the node boots. Log into the node and check the cluster status:
+`sudo ceph -s`
+
+Check that the pgmap reports all pgs as normal (active+clean).
+Log out of the node, reboot the next node, and check its status. Repeat this process until you have rebooted all Ceph storage nodes.
+
+When complete, enable cluster rebalancing again:
+```
+sudo ceph osd unset noout
+sudo ceph osd unset norebalance
+```
+
+Perform a final status check to make sure the cluster reports HEALTH_OK:
+`sudo ceph status`
+
+## Put a node in maintenance mode
+
 ceph orch host maintenance enter <hostname> --force --yes-i-really-mean-it
 ceph orch host maintenance exit <hostname>
 ceph orch host ok-to-stop  <hostname>
 
-# Remove a Ceph node
+## Remove a Ceph node
 
 Check existing specs
 `ceph orch ls --export`
