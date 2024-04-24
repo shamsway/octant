@@ -1,0 +1,42 @@
+name = "{{ inventory_hostname.split('.')[0] }}-root"
+data_dir = "{{ nomad_root_datadir }}/nomad-root"
+datacenter = "{{ datacenter }}"
+region = "{{ region }}"
+bind_addr = "{{ "0.0.0.0" if region == "home" else hostvars[inventory_hostname].ansible_tailscale0.ipv4.address }}"
+log_level = "info"
+
+server {
+  enabled = false
+}
+
+consul {
+    address = "127.0.0.1:{{ consul_root_ports.http }}"
+}
+
+ports {
+  http = {{ nomad_root_ports.http }}
+  rpc  = {{ nomad_root_ports.rpc }}
+  serf = {{ nomad_root_ports.serf }} 
+}
+
+client {
+  enabled = true
+  {% for vol in volumes %}
+  host_volume "{{vol.name}}" {
+      path      = "{{vol.path}}"
+      read_only = false
+  }
+  {% endfor %}  
+}
+
+{% if podman %}
+plugin "nomad-driver-podman" {
+  config {
+    socket_path = "unix:///run/podman/podman.sock"
+    volumes {
+      enabled = true
+    }
+    extra_labels = ["job_name", "job_id", "task_group_name", "task_name", "namespace", "node_name", "node_id"]
+  }
+}
+{% endif %}

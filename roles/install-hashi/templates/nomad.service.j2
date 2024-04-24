@@ -1,7 +1,7 @@
 [Unit]
 Description=nomad agent
 Requires=network-online.target tailscaled.service
-After=network-online.target tailscaled.service
+After=network-online.target tailscaled.service ceph.target mnt-services.mount mnt-recordings.mount
 Documentation=https://www.nomadproject.io/docs/agent/options
 # When using Nomad with Consul it is not necessary to start Consul first. These
 # lines start Consul before Nomad as an optimization to avoid Nomad logging

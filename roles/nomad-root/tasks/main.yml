@@ -1,0 +1,156 @@
+---
+
+### STANARDIZE NAMING
+
+- name: Install containernetworking-plugins
+  package:
+    name: containernetworking-plugins
+    state: present
+
+- name: Create CNI plugins directory
+  file:
+    path: /opt/cni/bin
+    state: directory
+    mode: '0755'
+
+- name: Find containernetworking-plugins files
+  find:
+    paths: /usr/lib/cni
+    patterns: "*"
+  register: cni_plugins
+
+- name: Link CNI plugins to /opt/cni/bin
+  file:
+    src: "{{ item.path }}"
+    dest: "/opt/cni/bin/{{ item.path | basename }}"
+    state: link
+  loop: "{{ cni_plugins.files }}"
+
+- name: Ensure consul-root directories exist and has proper ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    recurse: true
+    owner: "{{ consul_root_user }}"
+    group: "{{ consul_root_group }}"
+    follow: false
+  with_items:
+    - "{{ consul_root_configdir }}/consul-root.d"
+    - "{{ consul_root_datadir }}/consul-root"
+
+- name: Create consul-root configuration file
+  template:
+    src: consul-root.hcl.j2
+    dest: "{{ consul_root_configdir }}/consul-root.d/consul.hcl"
+    owner: "{{ consul_root_user }}"
+    group: "{{ consul_root_group }}"
+
+- name: Create consul-root config symbolic link
+  ansible.builtin.file:
+    src: "{{ consul_root_configdir }}/consul-root.d"
+    dest: /etc/consul-root.d
+    owner: "{{ consul_root_user }}"
+    group: "{{ consul_root_group }}"
+    state: link
+    follow: false
+    force: true
+
+- name: Create Consul systemd service
+  template:
+    src: consul-root.service.j2
+    dest: /etc/systemd/system/consul-root.service
+    owner: root
+    group: root
+
+- name: Start and enable Consul service
+  systemd:
+    name: consul-root
+    state: started
+    enabled: yes
+    daemon_reload: true
+
+- name: Ensure nomad-root directories exist and has proper ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    recurse: true
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    follow: false
+  with_items:
+    - "{{ nomad_root_configdir }}/nomad-root.d"
+    - "{{ nomad_root_datadir }}/nomad"
+
+- name: Create nomad-root hcl config file
+  ansible.builtin.template:
+    src: nomad-root.hcl.j2
+    dest: "{{ nomad_root_configdir }}/nomad-root.d/nomad.hcl"
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    mode: "0644"
+
+- name: Create nomad-root config symbolic link
+  ansible.builtin.file:
+    src: "{{ nomad_root_configdir }}/nomad-root.d"
+    dest: /etc/nomad-root.d
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    state: link
+    follow: false
+    force: true
+
+- name: Install service file
+  ansible.builtin.template:
+    src: nomad-root.service.j2
+    dest: /etc/systemd/system/nomad-root.service
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    mode: "0644"
+
+- name: Create temporary build directory
+  ansible.builtin.tempfile:
+    state: directory
+  register: tmpdir
+
+- name: Download Nomad Podman driver
+  ansible.builtin.get_url:
+    url: https://releases.hashicorp.com/nomad-driver-podman/0.5.2/nomad-driver-podman_0.5.2_linux_amd64.zip
+    dest: "{{ tmpdir.path }}/nomad-driver-podman_0.5.2_linux_amd64.zip"
+    mode: "0644"
+
+- name: Unzip Nomad Podman driver
+  ansible.builtin.unarchive:
+    src: "{{ tmpdir.path }}/nomad-driver-podman_0.5.2_linux_amd64.zip"
+    dest: "{{ tmpdir.path }}"
+    mode: "0755"
+    remote_src: true
+
+- name: Ensure plugins directory exists and has proper ownership
+  ansible.builtin.file:
+    path: "{{ nomad_root_datadir }}/nomad-root/plugins"
+    state: directory
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    follow: false
+
+- name: Copy driver to nomad plugins dir
+  ansible.builtin.copy:
+    src: "{{ tmpdir.path }}/nomad-driver-podman"
+    dest: "{{ nomad_root_datadir }}/nomad-root/plugins"
+    remote_src: true
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    mode: "0755"
+
+- name: Remove temp folder
+  ansible.builtin.file:
+    path: "{{ tmpdir.path }}"
+    state: absent
+  when: tmpdir.path is defined
+
+- name: Start and enable Nomad root service
+  ansible.builtin.systemd:
+    name: nomad-root
+    state: started
+    enabled: true
+    daemon_reload: true

@@ -30,4 +30,5 @@ retry_join = [{% for host in groups.servers %}{% if hostvars[host]['region'] == 
 
 ports {
   grpc = 8502
+  grpc_tls = 8503
 }
