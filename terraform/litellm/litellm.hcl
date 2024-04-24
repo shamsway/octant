@@ -2,11 +2,17 @@ job "litellm" {
   datacenters = ["shamsway"]
   type        = "service"
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  } 
+  
   group "litellm" {
 
     network {
         port "http" {
-            static = 4000
+            to = 4000
         }
     }
 
@@ -16,6 +22,28 @@ job "litellm" {
         source    = "litellm"
     }    
 
+    service {
+      name = "litellm"
+      provider = "consul"
+      port = "http"
+      tags = [
+        "traefik.enable=true",
+				"traefik.consulcatalog.connect=false",
+        "traefik.http.routers.litellm.rule=Host(`litellm.shamsway.net`)",
+        "traefik.http.routers.litellm.entrypoints=web,websecure",
+        "traefik.http.routers.litellm.tls.certresolver=cloudflare",
+        "traefik.http.services.litellm.loadbalancer.server.port=${NOMAD_HOST_PORT_http}"
+      ]
+      
+      check {
+        name     = "alive"
+        type     = "http"
+        path     = "/health/liveliness"
+        interval = "60s"
+        timeout  = "5s"
+      }
+    }       
+    
     task "litellm" {
       driver = "podman"
 
@@ -28,27 +56,7 @@ job "litellm" {
         volume      = "litellm"
         destination = "/app"
         read_only   = false
-      }
-
-      service {
-        name = "litellm"
-        provider = "consul"
-        port = "http"
-        tags = [
-          "traefik.enable=true",
-          "traefik.http.routers.litellm.rule=Host(`litellm.shamsway.net`)",
-          "traefik.http.routers.litellm.entrypoints=web,websecure",
-          "traefik.http.routers.litellm.tls.certresolver=cloudflare",
-          "traefik.http.routers.litellm.middlewares=redirect-web-to-websecure@internal",
-        ]
-        check {
-          name     = "alive"
-          type     = "http"
-          path     = "/health/liveliness"
-          interval = "10s"
-          timeout  = "2s"
-        }
-      }      
+      }   
       
       env {
         AZURE_API_KEY = "sk-123"

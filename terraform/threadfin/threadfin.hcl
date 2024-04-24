@@ -1,4 +1,4 @@
-job "threadfin" {
+job "iptv-tools" {
   datacenters = ["shamsway"]
   type        = "service"
 
@@ -30,7 +30,11 @@ job "threadfin" {
       mode = "bridge"
 
       port "http" { 
-        to = 34400
+        static = 34400
+      }
+
+      port "http-m3u" { 
+        static = 8901
       }
     }
 
@@ -78,7 +82,11 @@ EOH
 
     task "threadfin" {
       driver = "podman"
-      user   = "2000"
+      user   = "31337"
+
+      resources {
+        cores = 2
+      }
 
       volume_mount {
         volume      = "threadfin"
@@ -87,7 +95,6 @@ EOH
 
       config {
         image        = "fyb3roptik/threadfin"
-        network_mode = "container:gluetun-${NOMAD_ALLOC_ID}"
         volumes      = ["local/:/tmp/xteve:rw"]
         ports        = ["http"]
         logging = {
@@ -111,22 +118,72 @@ EOH
           "traefik.http.routers.threadfin.entrypoints=web,websecure",
           "traefik.http.routers.threadfin.tls.certresolver=cloudflare",
           "traefik.http.routers.threadfin.middlewares=redirect-web-to-websecure@internal",
-          "traefik.http.services.nginx.loadbalancer.server.port=${NOMAD_PORT_http}",         
+          "traefik.http.services.threadfin.loadbalancer.server.port=${NOMAD_PORT_http}",         
         ]
         
         check {
           name     = "alive"
           type     = "http"
-          path     = "/web"
-          interval = "10s"
-          timeout  = "2s"
+          path     = "/"
+          interval = "60s"
+          timeout  = "10s"
         }      
       }
 
       env {
-        PUID = "2000"
-        PGID = "2000"
+        THREADFIN_DEBUG = "2"
+        THREADFIN_LOG = "/home/threadfin/conf/threadfin.log"
         TZ   = "America/New_York"
+      }
+    }
+
+    task "m3ufilter" {
+      driver = "podman"
+      # user   = "2000"
+
+      volume_mount {
+        volume      = "threadfin"
+        destination = "/home/threadfin/conf"
+      }
+
+      config {
+        image = "ghcr.io/euzu/m3u-filter:latest"
+        ports = ["http-m3u"]
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "m3u-filter"
+            }
+          ]
+        }        
+      }
+
+      service {
+        name = "m3u-filter"
+        provider = "consul"
+        port = "http-m3u"
+
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.m3u-filter.rule=Host(`m3u-filter.shamsway.net`)",
+          "traefik.http.routers.m3u-filter.entrypoints=web,websecure",
+          "traefik.http.routers.m3u-filter.tls.certresolver=cloudflare",
+          "traefik.http.routers.m3u-filter.middlewares=redirect-web-to-websecure@internal",
+          "traefik.http.services.m3u-filter.loadbalancer.server.port=${NOMAD_PORT_http-m3u}",         
+        ]
+        
+        check {
+          name     = "alive"
+          type     = "http"
+          path     = "/"
+          interval = "60s"
+          timeout  = "10s"
+        }      
+      }
+
+      env {
+        TZ = "America/New_York"
       }
     }
   }

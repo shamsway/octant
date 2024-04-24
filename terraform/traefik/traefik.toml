@@ -1,70 +1,62 @@
 [global]
   checkNewVersion = false
   sendAnonymousUsage = false
-
 [metrics]
-
-[metrics.prometheus]
-  entrypoint = "metrics"
-
+  [metrics.prometheus]
+    entrypoint = "metrics"
 [entryPoints]
-
-[entryPoints.web]
-  address = ":80"
-
-[entryPoints.web.http.redirections.entryPoint]
-  to = "websecure"
-  scheme = "https"
-
-[entryPoints.traefik]
-  address = ":9002"
-
-[entryPoints.websecure]
-  address = ":443"
-
-[entryPoints.metrics]
-  address = ":8082"
-
-[accessLog]
-  format = "json"
-
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+			to = "websecure"
+      scheme = "https"
+  [entryPoints.traefik]
+    address = ":9002"
+  [entryPoints.websecure]
+    address = ":443"
+  [entryPoints.metrics]
 [http.middlewares]
-
-[http.middlewares.https-redirect.redirectscheme]
-  scheme = "https"
-
+  [http.middlewares.https-redirect.redirectscheme]
+    scheme = "https"
 [certificatesResolvers.cloudflare.acme]
   email = "mattadamelliott@gmail.com"
   storage = "/acme/acme.json"
-
-[certificatesResolvers.cloudflare.acme.dnsChallenge]
-  provider = "cloudflare"
-  delayBeforeCheck = 30
-  resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
-
+  [certificatesResolvers.cloudflare.acme.dnsChallenge]
+    provider = "cloudflare"
+    delayBeforeCheck = 30
+    resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
 [log]
   level = "INFO"
-
+[accessLog]
+  format = "json"
+  filePath = "/logs/traefik.log"
+  [accessLog.fields]
+    defaultMode = "keep"
+    [accessLog.fields.names]
+      "ClientUsername" = "drop"
+    [accessLog.fields.headers]
+      defaultMode = "keep"
+      [accessLog.fields.headers.names]
+        "User-Agent" = "redact"
+        "Authorization" = "drop"
+        "Content-Type" = "keep"
+  bufferingSize = 100
+  [accessLog.filters]
+    statusCodes = ["200-599"]
+    retryAttempts = true
+    minDuration = "10ms"
 [api]
   dashboard = true
   insecure = true
-
 [ping]
-
-[providers.consul]
-  endpoints = ["consul.shamsway.net:8500"]
-  rootKey = "traefik"
-
 [providers.consulcatalog]
   exposedByDefault = false
   prefix = "traefik"
   defaultRule = "Host(`{{ .Name }}.shamsway.net`)"
   connectAware = true
-  connectByDefault = true
-  serviceName = "traefik-ingress"
-
-[providers.consulcatalog.endpoint]
-  address = "consul.shamsway.net:8500"
-  scheme = "http"
-  datacenter = "shamsway"
-  endpointWaitTime = "15s"
+  connectByDefault = true        
+  [providers.consulcatalog.endpoint]
+    address = "consul.shamsway.net:8500"
+    scheme = "http"
+    datacenter = "shamsway"
+    endpointWaitTime = "15s"

@@ -12,6 +12,12 @@ job "postgres" {
     value     = "linux"
   }
 
+  constraint {
+    attribute = "$${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  } 
+
   group "db" {
     count = 1
 

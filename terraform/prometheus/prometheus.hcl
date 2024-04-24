@@ -3,6 +3,12 @@ job "prometheus" {
   datacenters = ["shamsway"]
   type        = "service"
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  } 
+
   group "monitoring" {
     count = 1
 

@@ -33,8 +33,28 @@ job "threadfin" {
       provider = "consul" 
 
       connect {
-        native = true
-      }          
+        sidecar_service {}
+        sidecar_task {
+        name = "connect-proxy-threadfin"
+
+        driver = "podman"
+
+        config {
+            image = "${meta.connect.sidecar_image}"
+            #       "${meta.connect.gateway_image}" when used as a gateway
+
+            args = [
+            "-c",
+            "${NOMAD_SECRETS_DIR}/envoy_bootstrap.json",
+            "-l",
+            "${meta.connect.log_level}",
+            "--concurrency",
+            "${meta.connect.proxy_concurrency}",
+            "--disable-hot-restart"
+            ]
+          }    
+        }
+      }
 
       tags = [
         "traefik.enable=true",
@@ -43,30 +63,26 @@ job "threadfin" {
         "traefik.http.routers.threadfin.entrypoints=web,websecure",
         "traefik.http.routers.threadfin.tls.certresolver=cloudflare",
         "traefik.http.routers.threadfin.middlewares=redirect-web-to-websecure@internal",
-        "traefik.http.services.threadfin.loadbalancer.server.port=${NOMAD_HOST_PORT_http}"        
+        "traefik.http.services.threadfin.loadbalancer.server.port=${NOMAD_HOST_PORT_http}",         
       ]
 
       check {
         name     = "alive"
         type     = "http"
-        path     = "/"
-        interval = "60s"
-        timeout  = "10s"
+        path     = "/web"
+        interval = "10s"
+        timeout  = "2s"
       }        
     }
 
     network {
-      port "http" { static = 34400 }
+      port "http" { to = 34400 }
       mode = "bridge"
     }
 
     task "threadfin" {
       driver = "podman"
-      user   = "31337"
-
-      resources {
-        cores = 2
-      }
+      #user   = "2000"
 
       volume_mount {
         volume      = "threadfin"
@@ -75,10 +91,9 @@ job "threadfin" {
 
       config {
         image  = "fyb3roptik/threadfin"
-		    #userns = "keep-id:uid=31337,gid=31337"
+		userns = "keep-id:uid=31337,gid=31337"
         #network_mode = "container:gluetun-${NOMAD_ALLOC_ID}"
-        volumes = ["local/:/tmp/xteve:rw"]
-        ports = ["http"]
+        volumes      = ["local/:/tmp/xteve:rw"]
         logging = {
           driver = "journald"
           options = [
@@ -90,59 +105,10 @@ job "threadfin" {
       }
 
       env {
+        PUID = "2000"
+        PGID = "2000"
         TZ   = "America/New_York"
-        THREADFIN_DEBUG = "2"
-        THREADFIN_LOG = "/home/threadfin/conf/threadfin.log"
       }
     }
-    
-    task "gluetun" {
-      driver = "podman"
-      config {
-        image      = "qmcgaw/gluetun"
-        cap_add    = ["NET_ADMIN","SYS_ADMIN"]
-        devices    = ["/dev/net/tun"]
-        volumes    = ["local/wg0.conf:/gluetun/wireguard/wg0.conf"]
-        privileged = true
-        logging = {
-          driver = "journald"
-          options = [
-            {
-              "tag" = "gluetun"
-            }
-          ]
-        }        
-      }
-      env {
-        VPN_TYPE                 = "wireguard"
-        VPN_SERVICE_PROVIDER     = "custom"
-        WIREGUARD_IMPLEMENTATION = "userspace"
-      }
-      template {
-        data = <<EOH
-[Interface]
-# Key for gluetun
-# Bouncing = 1
-# NetShield = 1
-# Moderate NAT = off
-# NAT-PMP (Port Forwarding) = off
-# VPN Accelerator = on
-PrivateKey = IFlrcEPSAhcWrkSm0bKHQYz8eTRTtJw557T7lO/25GU=
-Address = 10.2.0.2/32
-DNS = 10.2.0.1
-
-[Peer]
-# US-NY#25
-PublicKey = R8Of+lrl8DgOQmO6kcjlX7SchP4ncvbY90MB7ZUNmD8=
-AllowedIPs = 0.0.0.0/0
-Endpoint = 193.148.18.82:51820
-EOH
-        destination = "local/wg0.conf"
-      }
-      lifecycle {
-        hook    = "prestart"
-        sidecar = true
-      }
-    }    
   }
 }

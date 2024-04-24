@@ -3,6 +3,12 @@ job "restic-backup" {
   datacenters = ["${datacenter}"]
   type        = "batch"
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  } 
+
   periodic {
     cron             = "0 2 * * *"
     prohibit_overlap = true

@@ -9,6 +9,12 @@ job "nginx" {
     operator  = "regexp"
   }
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  } 
+
   group "nginx" {
     count = 1 
 

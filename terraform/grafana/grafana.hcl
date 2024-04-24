@@ -9,6 +9,12 @@ job "grafana" {
     operator  = "regexp"
   }
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  }  
+
   group "grafana" {
     count = 1 
 

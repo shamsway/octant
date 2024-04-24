@@ -1,26 +1,30 @@
-podman run --rm --name=tvheadend \
--p 9981:9981 \
--p 9982:9982 \
--e PUID=2000 \
--e PGID=2000 \
--v /mnt/services/tvheadend/config:/config \
--v /mnt/recordings/tvheadend/:/recordings \
---privileged \
-lscr.io/linuxserver/tvheadend:latest
+// podman run --rm --name=tvheadend \
+// -p 9981:9981 \
+// -p 9982:9982 \
+// -e PUID=2000 \
+// -e PGID=2000 \
+// -v /mnt/services/tvheadend/config:/config \
+// -v /mnt/recordings/tvheadend/:/recordings \
+// --privileged \
+// lscr.io/linuxserver/tvheadend:latest
 
-podman run -d --name=tvheadend \
--e PUID=2000 \
--e PGID=2000 \
--v /mnt/services/tvheadend/config:/config \
--v /mnt/recordings/tvheadend/:/recordings \
---privileged --network=host \
-lscr.io/linuxserver/tvheadend:latest
-
-// podman exec -it tvheadend /bin/bash
+// podman run -d --name=tvheadend \
+// -e PUID=2000 \
+// -e PGID=2000 \
+// -v /mnt/services/tvheadend/config:/config \
+// -v /mnt/recordings/tvheadend/:/recordings \
+// --privileged --network=host \
+// lscr.io/linuxserver/tvheadend:latest
 
 job "tvheadend" {
   datacenters = ["shamsway"]
   type        = "service"
+
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "-root$"
+  } 
 
   constraint {
     attribute = "${attr.kernel.name}"
@@ -29,6 +33,12 @@ job "tvheadend" {
 
   group "tvheadend" {
     count = 1
+
+    affinity {
+      attribute = "${node.unique.name}"
+      value     = "bobby-root"
+      weight    = 100
+    }
 
     volume "tvheadend-config" {
       type      = "host"
@@ -46,15 +56,37 @@ job "tvheadend" {
       port "http" {
         static = 9981
       }
-      port "htsp" {
+      port "htsp-2" {
         static = 9982
       }
+      port "htsp-3" {
+        static = 9983
+      }
+      port "htsp-4" {
+        static = 9984
+      }
+      port "htsp-5" {
+        static = 9985
+      }
+      port "htsp-6" {
+        static = 9986
+      }
+      port "htsp-7" {
+        static = 9987
+      }
+      port "htsp-8" {
+        static = 9988
+      }                                   
     }
 
     service {
       name = "tvheadend"
       port = "http"
       provider = "consul"
+
+      connect {
+        native = true
+      }   
 
       tags = [
         "traefik.enable=true",
@@ -76,7 +108,19 @@ job "tvheadend" {
       driver = "podman"      
       config {
         image = "docker.io/linuxserver/tvheadend"
-        ports = ["http","htsp"]
+        ports = ["http","htsp-2","htsp-3","htsp-4","htsp-5","htsp-6","htsp-7","htsp-8"]
+        volumes = [
+          "/config/confg:/config"
+        ]        
+        privileged = true
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "tvheadend"
+            }
+          ]
+        }          
       }
 
       env {
@@ -96,11 +140,6 @@ job "tvheadend" {
         destination = "/recordings"
         read_only   = false
       }      
-
-      resources {
-        cpu    = 500
-        memory = 256
-      }
      }
     }
   }

@@ -9,6 +9,12 @@ job "loki" {
 #    value     = "true"
 #  }
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  }
+
   group "monitoring" {
     network {
       port "loki" {

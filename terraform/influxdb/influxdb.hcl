@@ -8,6 +8,12 @@ job "influxdb" {
     value     = "linux"
   }
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "regexp"
+    value     = "^.*[^-][^r][^o][^o][^t]$"
+  } 
+
   group "influxdb" {
     count = 1
 

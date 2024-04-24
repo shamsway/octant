@@ -62,13 +62,10 @@ job "traefik" {
         interval = "10s"
         timeout  = "5s"
       }
-      connect {
-        native = true
-      }
     }
 
     service {
-      name = "traefik-secure"
+      name = "traefik"
       port = "https"
       check {
         type     = "tcp"
@@ -170,18 +167,17 @@ data = <<EOH
     delayBeforeCheck = 30
     resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
 [log]
-  level = "INFO"
+  level = "DEBUG"
 [api]
   dashboard = true
   insecure = true
 [ping]
-[providers.consul]
-  endpoints = ["consul.shamsway.net:8500"]
-  rootKey = "traefik"
 [providers.consulcatalog]
   exposedByDefault = false
   prefix = "traefik"
   defaultRule = "Host(`{{ .Name }}.shamsway.net`)"
+  connectAware = true
+  connectByDefault = true        
   [providers.consulcatalog.endpoint]
     address = "consul.shamsway.net:8500"
     scheme = "http"
