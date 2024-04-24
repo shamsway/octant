@@ -48,8 +48,12 @@
       retries: 3
       delay: 10
       with_items:
-        - consul
-        - nomad
+        - consul-server
+        - consul-agent
+        - consul-agent-root
+        - nomad-server
+        - nomad-agent
+        - nomad-agent-root
 
   vars_files:
     - .secrets.yml
@@ -59,14 +63,21 @@
       tags: requirements
     - role: docker
       tags: docker
-      when: cephcluster == true
-    - role: consul
-      tags: consul
-    - role: nomad
-      tags: nomad
+      when: docker == true
+    - role: consul-server
+      tags: consul-server
+      when: region == "home"      
+    - role: consul-agent
+      tags: consul-agent
+    - role: consul-agent-root
+      tags: consul-agent-root         
+    - role: nomad-server
+      tags: nomad-server
       when: region == "home"
-    - role: nomad-root
-      tags: nomad-root      
+    - role: nomad-agent
+      tags: nomad-agent    
+    - role: nomad-agent-root
+      tags: nomad-agent-root   
     - role: restic
       tags: restic      
     - role: telegraf-agent

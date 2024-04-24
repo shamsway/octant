@@ -1,10 +1,21 @@
 ---
 bindir: /usr/bin
 configdir: /opt/homelab/config
+configdirs:
+  - consul-server: "/opt/homelab/config/consul-server.d"
+  - nomad-server: "/opt/homelab/config/nomad-server.d"
+  - consul-agent: "/opt/homelab/config/consul-agent.d"
+  - nomad-agent: "/opt/homelab/config/nomad-agent.d"
+  - consul-agent-root: "/opt/homelab/config/consul-agent-root.d"
+  - nomad-agent-root: "/opt/homelab/config/nomad-agent-root.d"
 datadir: /opt/homelab/data
 datadirs:
-# nomad: "/opt/nomad"
-# consul: "/opt/consul"
+  - consul-server: "/opt/homelab/data/consul-server"
+  - nomad-server: "/opt/homelab/data/nomad-server"
+  - consul-agent: "/opt/homelab/data/consul-agent"
+  - nomad-agent: "/opt/homelab/data/nomad-agent"
+  - consul-agent-root: "/opt/homelab/data/consul-agent-root"
+  - nomad-agent-root: "/opt/homelab/data/nomad-agent-root"
 user: hashi
 group: hashi
 uid: 2000
@@ -32,7 +43,7 @@ consul:
   # Check this blog post before enable this variable
   # https://www.hashicorp.com/blog/protecting-consul-from-rce-risk-in-specific-configurations
   enable_script_check: false
-
+  ca_enabled: true
   cname: consul.shamsway.net
   # Services #
   # agent_services: false
@@ -48,6 +59,7 @@ consul:
     - 8502/tcp
 
 podman: true
+docker: false
 
 nomad:
   ports:
