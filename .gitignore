@@ -19,3 +19,4 @@ bundle*
 file_tree.txt
 settings.json
 volumes.csv
+*.vmdk
