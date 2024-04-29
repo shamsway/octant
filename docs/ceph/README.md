@@ -100,6 +100,11 @@ NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client if you
 
 # Maintenance
 
+## Start a service
+
+Example: mon
+`ceph orch daemon start mon.[hostname]`
+
 ## Reboot a ceph node 
 
 To reboot the Ceph Storage nodes, follow this process:
