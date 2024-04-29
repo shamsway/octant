@@ -3,16 +3,9 @@ job "loki" {
   datacenters = ["shamsway"]
   type        = "service"
 
-#  constraint {
-#    attribute = "${meta.shared_mount}"
-#    operator  = "="
-#    value     = "true"
-#  }
-
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
+    attribute = "${meta.rootless}"
+    value = "true"
   }
 
   group "monitoring" {

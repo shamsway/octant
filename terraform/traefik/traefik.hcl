@@ -4,10 +4,9 @@ job "traefik" {
   type = "service"
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
-  } 
+    attribute = "${meta.rootless}"
+    value = "true"
+  }
 
   meta {
     version = "1"
@@ -167,7 +166,8 @@ data = <<EOH
     delayBeforeCheck = 30
     resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
 [log]
-  level = "DEBUG"
+  level = "INFO"
+  #level = "DEBUG"
 [api]
   dashboard = true
   insecure = true

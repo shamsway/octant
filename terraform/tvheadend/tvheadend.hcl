@@ -21,10 +21,9 @@ job "tvheadend" {
   type        = "service"
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "-root$"
-  } 
+    attribute = "${meta.rootless}"
+    value = "false"
+  }
 
   constraint {
     attribute = "${attr.kernel.name}"
@@ -108,10 +107,7 @@ job "tvheadend" {
       driver = "podman"      
       config {
         image = "docker.io/linuxserver/tvheadend"
-        ports = ["http","htsp-2","htsp-3","htsp-4","htsp-5","htsp-6","htsp-7","htsp-8"]
-        volumes = [
-          "/config/confg:/config"
-        ]        
+        ports = ["http","htsp-2","htsp-3","htsp-4","htsp-5","htsp-6","htsp-7","htsp-8"]      
         privileged = true
         logging = {
           driver = "journald"

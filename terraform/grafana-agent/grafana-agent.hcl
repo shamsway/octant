@@ -2,6 +2,11 @@ job "grafana-agent" {
   region      = "home"
   datacenters = ["shamsway"]
   type        = "system"
+  
+  constraint {
+    attribute = "${meta.rootless}"
+    value = "true"
+  }
 
   group "monitoring" {
 

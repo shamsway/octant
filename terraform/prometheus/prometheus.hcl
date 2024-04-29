@@ -4,10 +4,9 @@ job "prometheus" {
   type        = "service"
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
-  } 
+    attribute = "${meta.rootless}"
+    value = "true"
+  }
 
   group "monitoring" {
     count = 1
@@ -22,6 +21,33 @@ job "prometheus" {
       type      = "host"
       read_only = false
       source    = "prometheus-data"
+    }
+
+
+    service {
+      name = "prometheus"
+      port = "http"
+      provider = "consul"
+      connect {
+          native = true
+        }
+
+        tags = [
+            "traefik.enable=true",
+            "traefik.consulcatalog.connect=false",
+            "traefik.http.routers.prometheus.rule=Host(`prometheus.shamsway.net`)",
+            "traefik.http.routers.prometheus.entrypoints=web,websecure",
+            "traefik.http.routers.prometheus.tls.certresolver=cloudflare",
+            "traefik.http.routers.prometheus.middlewares=redirect-web-to-websecure@internal",       
+        ]
+
+        check {
+          type     = "http"
+          path     = "/-/healthy"
+          name     = "http"
+          interval = "5s"
+          timeout  = "2s"
+        }
     }
 
     task "prometheus" {
@@ -53,27 +79,6 @@ job "prometheus" {
         ]
       }
 
-      service {
-        name = "prometheus"
-        port = "http"
-        provider = "consul"
-        tags = [
-            "traefik.enable=true",
-            "traefik.http.routers.prometheus.rule=Host(`prometheus.shamsway.net`)",
-            "traefik.http.routers.prometheus.entrypoints=web,websecure",
-            "traefik.http.routers.prometheus.tls.certresolver=cloudflare",
-            "traefik.http.routers.prometheus.middlewares=redirect-web-to-websecure@internal",       
-        ]
-
-        check {
-          type     = "http"
-          path     = "/-/healthy"
-          name     = "http"
-          interval = "5s"
-          timeout  = "2s"
-        }
-      }
-
       # main configuration file
       template {
         data = <<EOH
@@ -94,9 +99,9 @@ scrape_configs:
   - job_name: 'ceph'
     honor_labels: true
     static_configs:
-      - targets: ['jerry.shamsway.net:9283']
+      - targets: ['bobby.shamsway.net:9283']
         labels:
-          instance: jerry.shamsway.net
+          instance: bobby.shamsway.net
           alias: ceph-exporter
 
   - job_name: 'traefik'

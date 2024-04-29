@@ -9,6 +9,11 @@ job "influxdb" {
     operator  = "regexp"
   }
 
+  constraint {
+    attribute = "${meta.rootless}"
+    value = "true"
+  }
+
   group "influxdb" {
     count = 1
 
@@ -64,7 +69,7 @@ job "influxdb" {
       }
 
       config {
-        image = "influxdb:2.7"
+        image = "docker.io/influxdb:2.7"
         ports = ["http"]
         userns = "keep-id:uid=1000,gid=1000"
       }

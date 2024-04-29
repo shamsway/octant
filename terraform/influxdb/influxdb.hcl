@@ -9,10 +9,9 @@ job "influxdb" {
   }
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
-  } 
+    attribute = "${meta.rootless}"
+    value = "true"
+  }
 
   group "influxdb" {
     count = 1

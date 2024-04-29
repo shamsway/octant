@@ -4,10 +4,9 @@ job "restic-backup" {
   type        = "batch"
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
-  } 
+    attribute = "$${meta.rootless}"
+    value = "true"
+  }
 
   periodic {
     cron             = "0 2 * * *"
