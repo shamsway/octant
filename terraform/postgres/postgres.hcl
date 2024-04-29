@@ -1,3 +1,6 @@
+# terraform apply -auto-approve
+# terraform destroy -auto-approve
+
 job "postgres" {
   region = "${region}"
   datacenters = ["${datacenter}"]
@@ -13,10 +16,9 @@ job "postgres" {
   }
 
   constraint {
-    attribute = "$${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
-  } 
+    attribute = "$${meta.rootless}"
+    value = "true"
+  }
 
   group "db" {
     count = 1
@@ -38,6 +40,22 @@ job "postgres" {
       interval = "30m"
       delay    = "15s"
       mode     = "fail"
+    }
+
+    service {
+      name = "postgres"
+      provider = "consul"        
+      port = "postgres"
+      connect {
+        native = true
+      }
+
+      check {
+        type     = "tcp"
+        port     = "postgres"
+        interval = "30s"
+        timeout  = "5s"
+      }
     }
 
     task "postgres" {
@@ -68,26 +86,6 @@ job "postgres" {
         POSTGRES_USER     = "postgres"
         POSTGRES_PASSWORD = "${postgres_password}"
         PGDATA            = "/appdata/postgres"
-      }
-
-      service {
-        name = "postgres"
-        provider = "consul"        
-        port = "postgres"
-        tags = [
-          "traefik.enable=true",
-          "traefik.tcp.routers.postgres.rule=HostSNI(`*`)",
-          "traefik.http.routers.postgres.entrypoints=postgres",
-          "traefik.tcp.routers.postgres.service=postgres",
-          "traefik.http.routers.postgres.loadbalancer.server.port=5432",
-        ]
-
-        check {
-          type     = "tcp"
-          port     = "postgres"
-          interval = "30s"
-          timeout  = "2s"
-        }
       }
 
       resources {

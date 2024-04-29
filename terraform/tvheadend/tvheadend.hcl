@@ -1,20 +1,3 @@
-// podman run --rm --name=tvheadend \
-// -p 9981:9981 \
-// -p 9982:9982 \
-// -e PUID=2000 \
-// -e PGID=2000 \
-// -v /mnt/services/tvheadend/config:/config \
-// -v /mnt/recordings/tvheadend/:/recordings \
-// --privileged \
-// lscr.io/linuxserver/tvheadend:latest
-
-// podman run -d --name=tvheadend \
-// -e PUID=2000 \
-// -e PGID=2000 \
-// -v /mnt/services/tvheadend/config:/config \
-// -v /mnt/recordings/tvheadend/:/recordings \
-// --privileged --network=host \
-// lscr.io/linuxserver/tvheadend:latest
 
 job "tvheadend" {
   datacenters = ["shamsway"]
@@ -55,6 +38,9 @@ job "tvheadend" {
       port "http" {
         static = 9981
       }
+      port "http" {
+        static = 9981
+      }
       port "htsp-2" {
         static = 9982
       }
@@ -75,7 +61,8 @@ job "tvheadend" {
       }
       port "htsp-8" {
         static = 9988
-      }                                   
+      }
+      mode = "bridge"                  
     }
 
     service {
@@ -87,19 +74,11 @@ job "tvheadend" {
         native = true
       }   
 
-      tags = [
-        "traefik.enable=true",
-        "traefik.http.routers.tvheadend.rule=Host(`tvheadend.shamsway.net`)",
-        "traefik.http.routers.tvheadend.entrypoints=web,websecure",
-        "traefik.http.routers.tvheadend.tls.certresolver=cloudflare",
-        "traefik.http.routers.tvheadend.middlewares=redirect-web-to-websecure@internal",
-      ]
-
       check {
         type     = "http"
         path     = "/"
-        interval = "10s"
-        timeout  = "2s"
+        interval = "60s"
+        timeout  = "4s"
       }
     }
 

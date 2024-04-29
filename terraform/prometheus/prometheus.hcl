@@ -29,25 +29,25 @@ job "prometheus" {
       port = "http"
       provider = "consul"
       connect {
-          native = true
-        }
+        native = true
+      }
 
-        tags = [
-            "traefik.enable=true",
-            "traefik.consulcatalog.connect=false",
-            "traefik.http.routers.prometheus.rule=Host(`prometheus.shamsway.net`)",
-            "traefik.http.routers.prometheus.entrypoints=web,websecure",
-            "traefik.http.routers.prometheus.tls.certresolver=cloudflare",
-            "traefik.http.routers.prometheus.middlewares=redirect-web-to-websecure@internal",       
-        ]
+      tags = [
+          "traefik.enable=true",
+          "traefik.consulcatalog.connect=false",
+          "traefik.http.routers.prometheus.rule=Host(`prometheus.shamsway.net`)",
+          "traefik.http.routers.prometheus.entrypoints=web,websecure",
+          "traefik.http.routers.prometheus.tls.certresolver=cloudflare",
+          "traefik.http.routers.prometheus.middlewares=redirect-web-to-websecure@internal",       
+      ]
 
-        check {
-          type     = "http"
-          path     = "/-/healthy"
-          name     = "http"
-          interval = "5s"
-          timeout  = "2s"
-        }
+      check {
+        type     = "http"
+        path     = "/-/healthy"
+        name     = "http"
+        interval = "5s"
+        timeout  = "2s"
+      }
     }
 
     task "prometheus" {
@@ -109,34 +109,41 @@ scrape_configs:
     static_configs:
       - targets: ['traefik.shamsway.net:8082']
 
-  - job_name: 'nomad-jobs'
-    metrics_path: /metrics
-    consul_sd_configs:
-      - server: 'consul.shamsway.net:8500'
-        tags: ['metrics']
-        scheme: http
-    relabel_configs:
-      - source_labels: ['__meta_consul_dc']
-        target_label:  'dc'
-      - source_labels: [__meta_consul_service]
-        target_label:  'job'
-      - source_labels: ['__meta_consul_node']
-        target_label:  'host'
-      - source_labels: ['__meta_consul_tags']
-        target_label: 'tags'
-      - source_labels: ['__meta_consul_tags']
-        regex: '.*job-(.*?)(,.*)'
-        replacement: '${1}'
-        target_label: 'job_name'
+  # - job_name: 'nomad-jobs'
+  #   metrics_path: /metrics
+  #   consul_sd_configs:
+  #     - server: 'consul.shamsway.net:8500'
+  #       tags: ['metrics']
+  #       scheme: http
+  #   relabel_configs:
+  #     - source_labels: ['__meta_consul_dc']
+  #       target_label: 'dc'
+  #     - source_labels: ['__meta_consul_service']
+  #       target_label: 'job'
+  #     - source_labels: ['__meta_consul_node']
+  #       target_label: 'host'
+  #     - source_labels: ['__meta_consul_tags']
+  #       target_label: 'tags'
+  #     - source_labels: ['__meta_consul_tags']
+  #       regex: '.*job-(.+?)(,.*)?'
+  #       replacement: '${1}'
+  #       target_label: 'job_name'
+  #     - source_labels: ['__meta_consul_address']
+  #       target_label: '__address__'
+  #       replacement: '${1}:'
+  #     - source_labels: ['__address__', '__meta_consul_service_port']
+  #       target_label: '__address__'
+  #       regex: '(.+)(?::\d+);(\d+)'
+  #       replacement: '${1}:${2}'
 
-  - job_name: 'consul-server'
+  - job_name: 'consul'
     metrics_path: /v1/agent/metrics
     honor_labels: true
     params:
       format: ['prometheus']
     consul_sd_configs:
-      - server: '{{ env "NOMAD_IP_http" }}:8500'
-        services: ['nomad-client']
+      - server: 'consul.shamsway.net:8500'
+        services: ['consul']
         scheme: http
     relabel_configs:
       - source_labels: ['__meta_consul_dc']
@@ -151,9 +158,27 @@ scrape_configs:
         replacement: $1:8500
         target_label: __address__
 
+  - job_name: 'nomad'
+    consul_sd_configs:
+    - server: 'consul.shamsway.net:8500'
+      services: ['nomad']
+      tags: ['http']
+      scheme: http
+    scrape_interval: 10s
+    metrics_path: /v1/metrics
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: ['__meta_consul_dc']
+        target_label:  'dc'
+      - source_labels: [__meta_consul_service]
+        target_label:  'job'
+      - source_labels: ['__meta_consul_node']
+        target_label:  'host'
+
   - job_name: 'nomad-client'
     consul_sd_configs:
-    - server: '{{ env "NOMAD_IP_http" }}:8500'
+    - server: 'consul.shamsway.net:8500'
       services: ['nomad-client']
       tags: ['http']
       scheme: http

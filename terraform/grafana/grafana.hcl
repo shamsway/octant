@@ -10,11 +10,10 @@ job "grafana" {
   }
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
-  }  
-
+    attribute = "${meta.rootless}"
+    value = "true"
+  }
+  
   group "grafana" {
     count = 1 
 
@@ -27,10 +26,15 @@ job "grafana" {
     service {
         name = "grafana"
         port = "http"
-        provider = "consul"       
+        provider = "consul"
+
+        connect {
+          native = true
+        }        
 
         tags = [
             "traefik.enable=true",
+            "traefik.consulcatalog.connect=false",
             "traefik.http.routers.grafana.rule=Host(`grafana.shamsway.net`)",
             "traefik.http.routers.grafana.entrypoints=web,websecure",
             "traefik.http.routers.grafana.tls.certresolver=cloudflare",
