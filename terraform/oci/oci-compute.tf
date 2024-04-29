@@ -242,7 +242,7 @@ resource "oci_core_instance" "pigpen" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo sed -i 's/127.0.0.1 localhost/127.0.0.1 localhost ${oci_core_instance.pigpen.display_name}/' /etc/hosts",
+      "sudo sed -i 's/127.0.0.1\tlocalhost/127.0.0.1\tlocalhost ${oci_core_instance.pigpen.display_name}/' /etc/hosts",
       "sudo useradd -md /home/${var.admin_user} -s /bin/bash ${var.admin_user}",
       "sudo usermod -aG sudo ${var.admin_user}",
       "sudo echo '${var.admin_user} ALL=(ALL) NOPASSWD: ALL' | tee /etc/sudoers.d/${var.admin_user}",
@@ -254,7 +254,7 @@ resource "oci_core_instance" "pigpen" {
       "sudo sed -i -e 's/#PermitRootLogin no/PermitRootLogin without-password/' -e 's/PermitRootLogin no/PermitRootLogin without-password/' /etc/ssh/sshd_config", 
       "curl -fsSL https://tailscale.com/install.sh | sh",
       "sudo tailscale up --accept-routes --accept-dns=false --authkey=${tailscale_tailnet_key.pigpen_key.key}",      
-      "sudo systemctl restart sshd"
+      "sudo systemctl restart sshd"  
     ]
   }
 
@@ -294,7 +294,7 @@ resource "oci_core_instance" "tom" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo sed -i 's/127.0.0.1 localhost/127.0.0.1 localhost ${oci_core_instance.tom.display_name}/' /etc/hosts",
+      "sudo sed -i 's/127.0.0.1\tlocalhost/127.0.0.1\tlocalhost ${oci_core_instance.tom.display_name}/' /etc/hosts",
       "sudo useradd -md /home/${var.admin_user} ${var.admin_user}",
       "sudo mkdir /home/${var.admin_user}/.ssh",
       "sudo cp ~/.ssh/authorized_keys /home/${var.admin_user}/.ssh",
@@ -349,8 +349,9 @@ resource "oci_core_instance" "mickey" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo sed -i 's/127.0.0.1 localhost/127.0.0.1 localhost ${oci_core_instance.mickey.display_name}/' /etc/hosts",
+      "sudo sed -i 's/127.0.0.1\tlocalhost/127.0.0.1\tlocalhostlocalhost ${oci_core_instance.mickey.display_name}/' /etc/hosts",
       "sudo useradd -md /home/${var.admin_user} ${var.admin_user}",
+      "sudo usermod -aG sudo ${var.admin_user}",
       "sudo mkdir /home/${var.admin_user}/.ssh",
       "sudo cp ~/.ssh/authorized_keys /home/${var.admin_user}/.ssh",
       "sudo chown -R ${var.admin_user}:${var.admin_user} /home/${var.admin_user}/.ssh",
