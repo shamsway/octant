@@ -9,7 +9,7 @@
     user: root
     group: root
 
-- name: No value for consul_gossip_key - Performing inital Consul config
+- name: Check for consul_gossip_key and generate if needed
   ansible.builtin.include_role:
     name: configure-consul
   when: consul_gossip_key is not defined

@@ -17,6 +17,8 @@ advertise_addr = "{{ GetInterfaceIP \"tailscale0\" }}"
 
 {% if consul_gossip_key is defined %}
 encrypt = "{{ consul_gossip_key }}"
+encrypt_verify_incoming = false
+encrypt_verify_outgoing = false
 {% endif %}
 
 log_level = "INFO"

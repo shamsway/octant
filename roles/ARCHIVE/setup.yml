@@ -1,0 +1,80 @@
+---
+- hosts: remote_hosts
+  user: root
+
+  tasks:
+    - name: Create new user
+      ansible.builtin.user:
+        name: "{{ user_name }}"
+        groups: sudo
+        shell: /bin/bash
+        state: present
+
+    - name: Allow 'matt' to have passwordless sudo
+      ansible.builtin.lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: ^{{ user_name }} ALL=
+        line: "{{ user_name }} ALL=(ALL) NOPASSWD: ALL"
+
+    - name: Set up authorized keys for 'matt'
+      ansible.posix.authorized_key:
+        user: "{{ user_name }}"
+        key: "{{ lookup('file', user_public_key) }}"
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+          - net-tools
+          - htop
+          - bind9-dnsutils
+          - man
+        state: present
+
+    - name: Install Podman
+      ansible.builtin.apt:
+        name: podman
+        state: present
+        update_cache: true
+
+    - name: Install Nomad
+      ansible.builtin.apt:
+        name: nomad
+        state: present
+
+    - name: Install Consul
+      ansible.builtin.apt:
+        name: consul
+        state: present
+
+    - name: Install Cockpit
+      ansible.builtin.apt:
+        name:
+          - cockpit
+          - cockpit-podman
+          - cockpit-pcp
+          - cockpit-doc
+        state: present
+
+    - name: Add Tailscale GPG key
+      ansible.builtin.apt_key:
+        url: https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg
+        state: present
+
+    - name: Add Tailscale repository
+      ansible.builtin.apt_repository:
+        repo: deb https://pkgs.tailscale.com/stable/debian/ bookworm main
+        state: present
+        filename: tailscale
+
+    - name: Install Tailscale
+      ansible.builtin.apt:
+        name: tailscale
+        state: present
+        update_cache: true

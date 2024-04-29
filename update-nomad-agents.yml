@@ -1,0 +1,91 @@
+---
+- name: Apply updates to Nomad Agents
+  hosts: servers
+  user: root
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  tasks:
+    - name: Update Podman user config
+      become: true
+      become_user: "{{ user }}"
+      ansible.builtin.copy:
+        src: roles/podman-rootless/files/containers.conf
+        dest: ~/.config/containers
+        mode: "0644"
+
+    - name: Update nomad-agent config
+      ansible.builtin.template:
+        src: roles/nomad-agent/templates/nomad-agent.hcl.j2
+        dest: "{{ configdirs['nomad-agent'] }}/nomad-agent.hcl"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0644"
+      vars:
+        role_name: nomad-agent
+
+    - name: Restart nomad-agent services
+      become: true
+      become_user: root
+      block:
+        - name: Drain {{ inventory_hostname }} nomad-agent
+          ansible.builtin.command: "nomad node drain --address=http://127.0.0.1:{{ nomad.ports.agent_http }} -self -enable -force -m 'nomad config update' -yes"
+          changed_when: false
+          register: drain_output
+
+        - name: Verify {{ inventory_hostname }} nomad-agent is drained
+          ansible.builtin.command: "nomad node status --address=http://127.0.0.1:{{ nomad.ports.agent_http }} -self"
+          changed_when: false
+          register: node_status
+          until: "'Node drain complete' in node_status.stdout"
+          retries: 6
+          delay: 5
+
+        - name: Restart Podman service
+          become: true
+          become_user: "{{ user }}"
+          ansible.builtin.systemd_service:
+            name: podman.service
+            state: restarted
+            scope: user
+          changed_when: false
+
+        - name: Restart Podman socket
+          become: true
+          become_user: "{{ user }}"
+          ansible.builtin.systemd_service:
+            name: podman.socket
+            state: restarted
+            scope: user
+          changed_when: false
+
+        - name: Restart nomad-agent service
+          ansible.builtin.service:
+            name: nomad-agent
+            state: restarted
+          changed_when: false
+
+        - name: Wait for {{ inventory_hostname }} nomad-agent to start
+          ansible.builtin.wait_for:
+            port: "{{ nomad.ports.agent_http }}"
+            timeout: 60
+          changed_when: false
+
+        - name: Verify {{ inventory_hostname }} nomad-agent is running
+          ansible.builtin.command: "nomad node status --address=http://127.0.0.1:{{ nomad.ports.agent_http }} -self"
+          register: nomad_status
+          changed_when: false
+
+        - name: Disable {{ inventory_hostname }} nomad-agent node drain
+          ansible.builtin.command: "nomad node drain --address=http://127.0.0.1:{{ nomad.ports.agent_http }} -self -disable"
+          changed_when: false
+          register: disable_drain_output
+
+        - name: Verify {{ inventory_hostname }} node-agent drain is disabled
+          ansible.builtin.command: "nomad node status --address=http://127.0.0.1:{{ nomad.ports.agent_http }} -self"
+          changed_when: false
+          register: node_status_after
+          until: "'ineligible' not in node_status_after.stdout"
+          retries: 6
+          delay: 5

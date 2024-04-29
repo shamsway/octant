@@ -144,3 +144,9 @@ servers:
       - name: affine
         path: /mnt/services/affine/config
         backup: true
+      - name: librenms-config
+        path: /mnt/services/librenms/config
+        backup: true
+      - name: nautobot-config
+        path: /mnt/services/nautobot/config
+        backup: true

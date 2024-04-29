@@ -1,22 +1,22 @@
 ---
-- name: Ensure consul-server is in a running state
+- name: Ensure nomad-server is in a running state
   service:
-    name: consul-server
+    name: nomad-server
     state: started
   register: consulServiceDetails
   until: consulServiceDetails.status.ActiveState == "active"
   retries: 5
   delay: 10
 
-- name: Generate Consul gossip key
-  ansible.builtin.command: consul keygen
-  register: consul_gossip_key_output
+- name: Generate Nomad gossip key
+  ansible.builtin.command: openssl rand -base64 32
+  register: nomad_gossip_key_output
 
-- name: Set Consul gossip key fact
+- name: Set Nomad gossip key fact
   ansible.builtin.set_fact:
-    consul_gossip_key: "{{ consul_gossip_key_output.stdout }}"
+    consul_gossip_key: "{{ nomad_gossip_key_output.stdout }}"
 
-- name: Save Consul values to .secrets.yml
+- name: Save Nomad values to .secrets.yml
   ansible.builtin.lineinfile:
     path: "{{ playbook_dir }}/.secrets.yml"
     regexp: '^{{ item.name }}:'
@@ -25,4 +25,4 @@
   delegate_to: localhost
   become: false
   loop:
-    - { name: consul_gossip_key, value: "{{ consul_gossip_key }}" }
+    - { name: nomad_gossip_key, value: "{{ nomad_gossip_key }}" }
