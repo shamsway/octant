@@ -1,0 +1,64 @@
+name = "{{ inventory_hostname.split('.')[0] }}-agent"
+data_dir = "{{ datadirs[role_name] }}"
+datacenter = "{{ datacenter }}"
+region = "{{ region }}"
+bind_addr = "{{ "0.0.0.0" if region == "home" else hostvars[inventory_hostname].ansible_tailscale0.ipv4.address }}"
+log_level = "info"
+
+meta {
+  rootless = true
+}
+
+server {
+  enabled = false
+}
+
+ports {
+  http = {{ nomad.ports.agent_http }}
+  rpc  = {{ nomad.ports.agent_rpc }}
+  serf = {{ nomad.ports.agent_gossip }}
+}
+
+consul {
+    address = "127.0.0.1:{{ consul.ports.agent_http }}"
+{% if (consul_ca_enabled | default('', false)) %}
+    ssl       = true
+    ca_file = "{{ configdir }}/consul.d/consul-agent-ca.pem"
+    cert_file = "{{ configdir }}/consul.d/{{ datacenter }}-server-consul-0.pem"
+    key_file = "{{ configdir }}/consul.d/{{ datacenter }}-server-consul-0-key.pem"
+{% endif %}
+}
+
+telemetry {
+  publish_allocation_metrics = true
+  publish_node_metrics       = true
+  prometheus_metrics         = true
+}
+
+{% if podman %}
+plugin "nomad-driver-podman" {
+  config {
+    socket_path="unix://run/user/{{uid}}/podman/podman.sock"
+    volumes {
+      enabled = true
+    }
+    extra_labels = ["job_name", "job_id", "task_group_name", "task_name", "namespace", "node_name", "node_id"]
+  }
+}
+{% endif %}
+
+plugin "raw_exec" {
+  config {
+    enabled = true
+  }
+}
+
+client {
+  enabled = true
+  {% for vol in volumes %}
+  host_volume "{{ vol.name }}" {
+      path      = "{{ vol.path }}"
+      read_only = false
+  }
+  {% endfor %}
+}

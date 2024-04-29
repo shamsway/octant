@@ -1,16 +1,32 @@
 ---
+- name: Set variables for {{ name }}
+  set_fact:
+    config_dir: "{{ configdirs[name] }}"
+    data_dir: "{{ datadirs[name] }}"
+  when: name in configdirs and name in datadirs
+
+- name: Using these variables
+  debug:
+    msg: "Config Directory: {{ config_dir }} Data Directory: {{ data_dir }}"
+
+- name: Delete old directory /etc/{{ name }}.d
+  ansible.builtin.file:
+    path: /etc/{{ name }}.d
+    state: absent
+
 - name: Install {{ name }}
   ansible.builtin.package:
-    name: "{{ name }}"
+    name: "{{ package }}"
     state: present
 
-- name: Register systemd service
-  ansible.builtin.systemd:
-    name: "{{ name }}"
-    enabled: true
-    state: stopped
+# Performed later in the script. Remove?
+# - name: Register systemd service
+#   ansible.builtin.systemd:
+#     name: "{{ name }}"
+#     enabled: true
+#     state: stopped
 
-- name: Ensure directory exists and has proper ownership
+- name: Ensure config and data directories exist with proper ownership
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -19,38 +35,12 @@
     group: "{{ group }}"
     follow: false
   with_items:
-    - "{{ configdir }}/{{ name }}.d"
-    - "{{ datadirs[name] | default(datadir) }}/{{ name }}"
+    - "{{ config_dir }}"
+    - "{{ data_dir }}"
 
-- name: Delete old directory if any
+- name: Create a symbolic link from {{ config_dir }} to /etc
   ansible.builtin.file:
-    path: /etc/{{ name }}.d
-    state: absent
-
-- name: Get Tailscale IP
-  when: tailscale_ip is not defined
-  block:
-  - name: Get Tailscale IP address
-    ansible.builtin.command:
-      cmd: tailscale ip -4
-    register: tailscale_ip_output
-    changed_when: false
-    
-  - name: Set Tailscale IP address as a variable
-    ansible.builtin.set_fact:
-      tailscale_ip: "{{ tailscale_ip_output.stdout }}"
-
-- name: Create hcl config file
-  ansible.builtin.template:
-    src: ./templates/{{ name }}.hcl.j2
-    dest: "{{ configdir }}/{{ name }}.d/{{ name }}.hcl"
-    owner: "{{ user }}"
-    group: "{{ group }}"
-    mode: "0644"
-
-- name: Create a symbolic link
-  ansible.builtin.file:
-    src: "{{ configdir }}/{{ name }}.d"
+    src: "{{ config_dir }}"
     dest: /etc/{{ name }}.d
     owner: "{{ user }}"
     group: "{{ group }}"
@@ -58,17 +48,17 @@
     follow: false
     force: true
 
-- name: Install service file
+- name: Install service file for {{ name }}
   ansible.builtin.template:
-    src: ./templates/{{ name }}.service.j2
-    dest: /etc/systemd/system/{{ name }}.service
+    src: "{{ name }}.service.j2"
+    dest: "/etc/systemd/system/{{ name }}.service"
     owner: "{{ user }}"
     group: "{{ group }}"
     mode: "0644"
 
-- name: Register systemd service
+- name: Register {{ name }} systemd service
   ansible.builtin.systemd:
     name: "{{ name }}"
     enabled: true
     daemon_reload: true
-    state: stopped
+    state: started

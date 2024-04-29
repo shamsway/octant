@@ -1,0 +1,25 @@
+[Unit]
+Description=Nomad agent
+Requires=network-online.target nomad-server.service
+After=network-online.target nomad-server.service
+Wants=nomad-server.service
+Documentation=https://www.nomadproject.io/docs/agent/options
+
+[Service]
+ExecStart=/usr/bin/nomad agent -config={{ configdirs[name] }}
+User={{ user }}
+Group={{ group }}
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+LimitNOFILE=65535
+Restart=on-failure
+RestartSec=2
+StartLimitBurst=3
+StartLimitInterval=10
+TasksMax=infinity
+OOMScoreAdjust=-1000
+LimitNPROC=infinity
+
+[Install]
+WantedBy=multi-user.target

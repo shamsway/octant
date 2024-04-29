@@ -3,22 +3,18 @@
   ansible.builtin.include_role:
     name: install-hashi
   vars:
-    name: nomad-agent-root
-    package: nomad
+    name: nomad-server
+    package: consul
     user: root
-    group: root    
+    group: root
 
-- name: Ensure {{ role-name }}.d directory ownership
+- name: Ensure {{ role_name }} config directory ownership
   ansible.builtin.file:
     path: "{{ configdirs[role_name] }}"
     state: directory
     owner: "{{ user }}"
     group: "{{ group }}"
     recurse: true
-
-- name: Include podman-root role
-  include_role:
-    name: podman-root
 
 - name: Create {{ role_name }} config
   ansible.builtin.template:
@@ -30,5 +26,5 @@
 
 - name: Restart {{ role_name }}
   ansible.builtin.systemd:
-    name:  "{{ role_name }}"
+    name: nomad
     state: restarted

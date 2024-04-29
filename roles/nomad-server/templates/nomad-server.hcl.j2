@@ -1,0 +1,38 @@
+# Full configuration options can be found at https://www.nomadproject.io/docs/configuration
+name = "{{ inventory_hostname.split('.')[0] }}-server"
+data_dir = "{{ datadirs[role_name] }}"
+datacenter = "{{ datacenter }}"
+region = "{{ region }}"
+bind_addr = "{{ "0.0.0.0" if region == "home" else hostvars[inventory_hostname].ansible_tailscale0.ipv4.address }}"
+log_level = "info"
+
+server {
+  enabled = true
+  bootstrap_expect = {{ groups['servers'] | map('extract', hostvars, 'region') | select('eq', 'home') | list | length }}
+  authoritative_region  = "home"
+  heartbeat_grace = "300s"
+  min_heartbeat_ttl = "20s"
+  server_join {
+    retry_join = [{% for host in groups.servers %}{% if hostvars[host]['region'] == "home" %}{% if not loop.first %}, {% endif %}"{{ host }}:{{ nomad.ports.gossip }}"{% endif %}{% endfor %}]
+  }
+}
+
+consul {
+    address = "127.0.0.1:{{ consul.ports.http }}"
+    # server_service_name = "{{ inventory_hostname.split('.')[0] }}-server"
+    # auto_advertise = true
+    # server_auto_join = true
+    # client_auto_join = true    
+{% if (consul.ca_enabled | default('', false)) %}
+    # ssl       = true
+    # ca_file = "{{ configdirs["consul-server"] }}/consul-agent-ca.pem"
+    # cert_file = "{{ configdirs["consul-server"] }}/{{ datacenter }}-server-consul-0.pem"
+    # key_file = "{{ configdirs["consul-server"] }}/{{ datacenter }}-server-consul-0-key.pem"
+{% endif %}
+}
+
+telemetry {
+  publish_allocation_metrics = true
+  publish_node_metrics       = true
+  prometheus_metrics         = true
+}

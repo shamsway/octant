@@ -252,6 +252,7 @@
       - htop
       - bind9-dnsutils
       - iptables-persistent
+      - traceroute
       - man
       - golang
       - podman
@@ -264,33 +265,36 @@
       - cockpit-doc
     state: present
 
-# Override tailscale advertised local routes
-- name: Create systemd service file for internal network routes
-  ansible.builtin.copy:
-    dest: /etc/systemd/system/internal-network-routes.service
-    content: |
-      [Unit]
-      Description=Set routing rules for internal networks
-      After=network.target
+# Section below removed in favor of setting --accept-routes=false for local servers
+# Override tailscale advertised local
+# - name: Override tailscale advertised local routes
+#   when: region == "home"
+#   block:
+#   - name: Create systemd service file for internal network routes
+#     ansible.builtin.copy:
+#       dest: /etc/systemd/system/internal-network-routes.service
+#       content: |
+#         [Unit]
+#         Description=Set routing rules for internal networks
+#         After=network.target
 
-      [Service]
-      Type=oneshot
-      ExecStart=/bin/bash -c '{% for subnet in internal_subnets %}if ! ip rule show to {{ subnet }} >/dev/null 2>&1; then /sbin/ip rule add to {{ subnet }} priority 2500 lookup main; fi;{% endfor %}'
-      RemainAfterExit=yes
+#         [Service]
+#         Type=oneshot
+#         ExecStart=/bin/bash -c '{% for subnet in internal_subnets %}if ! ip rule show to {{ subnet }} >/dev/null 2>&1; then /sbin/ip rule add to {{ subnet }} priority 2500 lookup main; fi;{% endfor %}'
+#         RemainAfterExit=yes
 
-      [Install]
-      WantedBy=multi-user.target
-    owner: root
-    group: root
-    mode: "0644"
-  when: region == "home"
+#         [Install]
+#         WantedBy=multi-user.target
+#       owner: root
+#       group: root
+#       mode: "0644"
 
-- name: Reload systemd routes
-  ansible.builtin.systemd:
-    daemon_reload: true
-    name: internal-network-routes
-    state: started
-    enabled: true
+#   - name: Reload systemd routes
+#     ansible.builtin.systemd:
+#       daemon_reload: true
+#       name: internal-network-routes
+#       state: started
+#       enabled: true
 
 - name: Attempt to check Tailscale IP address
   ansible.builtin.command:
@@ -320,12 +324,17 @@
     curl -fsSL https://tailscale.com/install.sh | sh
   when: tailscale_installed == false
 
-# Configure tailscale clients
+# Configure tailscale clients. Tailscale clients that aren't acting as routes should not accept routes
 - name: Bring up tailscale client
   become: true
   ansible.builtin.shell: |
-    tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes
-  when: tailscale_advertisements is not defined | default(false, true)
+    {% if tailscale_advertisements is not defined or not tailscale_advertisements %}
+      {% if region == 'home' %}
+        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes=false
+      {% else %}
+        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes
+      {% endif %}
+    {% endif %}
 
 # Configure Tailscale Routers
 - name: Configure Tailscale Routers
@@ -377,15 +386,6 @@
   ansible.builtin.debug:
     msg: "Tailscale IP address: {{ tailscale_ip }}"
 
-# - name: Add IP address of all hosts to all hosts
-#   ansible.builtin.lineinfile:
-#     dest: /etc/hosts
-#     regexp: .*{{ item }}$
-#     line: "{{ hostvars[item].ansible_ssh_host }} {{ item }}"
-#     state: present
-#   when: hostvars[item].ansible_ssh_host is defined
-#   with_items: "{{ groups.all }}"
-
 - name: Add hostname to /etc/hosts
   vars:
     comment: "# added by ansible"
@@ -432,9 +432,8 @@
     path: /etc/cloud/cloud-init.disabled
   register: cloud_init_disabled
 
-- name: Disable cloud-init
-  when: not cloud_init_disabled.stat.exists
-
+- name: Disable cloud-init for home servers (leave cloud-based servers enbled)
+  when: not cloud_init_disabled.stat.exists and region == "home"
   block:
     - name: Create /etc/cloud directory
       ansible.builtin.file:
@@ -449,6 +448,35 @@
         state: touch
         mode: "0644"
       become: true
+
+- name: Disable SSH root login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+
+- name: Disable debian user
+  user:
+    name: debian
+    shell: /usr/sbin/nologin
+    password: '*'
+    state: present
+
+- name: Remove debian user from sudoers
+  lineinfile:
+    path: /etc/sudoers
+    regexp: '^debian'
+    state: absent
+
+- name: Lock debian user
+  command: usermod -L debian
+
+- name: Restart SSH service
+  service:
+    name: sshd
+    state: restarted
+
 - name: Conditionally reboot the machine based on the 'reboot' inventory variable
   ansible.builtin.reboot: {}
   when: hostvars[inventory_hostname].reboot | default(false) | bool

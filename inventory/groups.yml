@@ -20,6 +20,10 @@ servers:
     #   server: true
     #   region: gcp
     #   tailscale_advertisements: 192.168.250.0/24
+    # pigpen.shamsway.net:
+    #   region: oci
+    # tom.shamsway.net:
+    #   region: oci
   vars:
     reboot: false
     volumes:
@@ -73,4 +77,70 @@ servers:
         backup: true
       - name: threadfin
         path: /mnt/services/threadfin
+        backup: true
+      - name: xteve
+        path: /mnt/services/xteve
+        backup: true
+      - name: registry-config/
+        path: /mnt/services/registry/config
+        backup: true
+      - name: registry-data/
+        path: /mnt/services/registry/config
+        backup: true
+      - name: emby-config
+        path: /mnt/services/emby/config
+        backup: true
+      - name: emby-data
+        path: /mnt/services/emby/config
+        backup: false
+      - name: unifi-config
+        path: /mnt/services/unifi/config
+        backup: true
+      - name: unifi-data
+        path: /mnt/services/unifi/data
+        backup: true
+      - name: neo4j-config
+        path: /mnt/services/neo4j/config
+        backup: true
+      - name: neo4j-data
+        path: /mnt/services/neo4j/data
+        backup: false
+      - name: 1password-config
+        path: /mnt/services/1password/config
+        backup: true
+      - name: weaviate-config
+        path: /mnt/services/weviate/config
+        backup: true
+      - name: weaviate-data
+        path: /mnt/services/weviate/data
+        backup: false
+      - name: rss-config
+        path: /mnt/services/rss-config
+        backup: true
+      - name: jaegar-config
+        path: /mnt/services/jaegar/config
+        backup: true
+      - name: librechat-config
+        path: /mnt/services/librechat/config
+        backup: true
+      - name: open-webui-config
+        path: /mnt/services/open-webui/config
+        backup: true
+      - name: memgpt-config
+        path: /mnt/services/memgpt/config
+        backup: true
+      - name: langfuse-config
+        path: /mnt/services/langfuse/config
+        backup: true
+      - name: langsmith-config
+        path: /mnt/services/langsmith/config
+        backup: true
+      - name: gpt4all-config
+        path: /mnt/services/gpt4all/config
+        backup: true
+      - name: semaphoreui
+        path: /mnt/services/semaphore/config
+        backup: true
+      - name: affine
+        path: /mnt/services/affine/config
         backup: true

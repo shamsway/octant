@@ -1,0 +1,51 @@
+node_name = "{{ inventory_hostname.split('.')[0] }}-agent"
+server = false
+datacenter = "{{ datacenter }}"
+data_dir = "{{ datadirs[role_name] }}"
+
+{% if hostvars[inventory_hostname]['region'] == "home" %}
+client_addr = "0.0.0.0"
+bind_addr = "0.0.0.0"
+advertise_addr = "{{ ansible_eth0.ipv4.address }}"
+{% else %}
+{% raw %}
+client_addr = "{{ GetInterfaceIP \"tailscale0\" }}"
+bind_addr = "{{ GetInterfaceIP \"tailscale0\" }}"
+advertise_addr = "{{ GetInterfaceIP \"tailscale0\" }}"
+{% endraw %}
+{% endif %}
+
+{% if consul_gossip_key is defined %}
+encrypt = "{{ consul_gossip_key }}"
+{% endif %}
+
+log_level = "INFO"
+enable_syslog = true
+enable_debug = true
+leave_on_terminate = false
+skip_leave_on_interrupt = true
+rejoin_after_leave = true
+
+# Use inventory hostnames for home, insert .ts before .shamsway.net for cloud-based servers
+
+{% if hostvars[inventory_hostname]['region'] == "home" %}
+retry_join = [
+{% for host in groups.servers %}
+{% if hostvars[host]['server'] | default(false) %}{% if not loop.first %}, {% endif %}"{{ host }}:8301"{% endif %}
+{% endfor %}]
+{% else %}
+retry_join_wan = [
+{% for host in groups.servers %}
+{% if hostvars[host]['server'] | default(false) %}{% if not loop.first %}, {% endif %}"{{ host.split('.')[0] }}.ts.{{ '.'.join(host.split('.')[1:]) }}:8301"{% endif %}
+{% endfor %}]
+{% endif %}
+
+ports {
+  http = {{ consul.ports.agent_http }}
+  https = {{ consul.ports.agent_https }}
+  dns = {{ consul.ports.agent_dns }}
+  grpc = {{ consul.ports.agent_grpc }}
+  grpc_tls = {{ consul.ports.agent_grpc_tls }}
+  serf_lan = {{ consul.ports.agent_serf_lan }}
+  serf_wan = {{ consul.ports.agent_serf_wan }}
+}

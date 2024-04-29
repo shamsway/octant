@@ -1,56 +1,44 @@
 ---
-# Install consul and base config
-- name: Install consul
+- name: Install {{ role_name }}
   ansible.builtin.include_role:
     name: install-hashi
   vars:
-    name: consul
-
-- name: Install consul-template
-  ansible.builtin.package:
-    name: consul-template
-    state: present
-
-- name: Ensure consul bootstrap is ok
-  ansible.builtin.include_role:
-    name: bootstrap-consul
-  #when: consul_bootstrap_token is not defined
-  when: consul_gossip_key is not defined
-
-# is this needed?
-#- ansible.builtin.include_tasks: ./update-config.yml
-
-- name: Check that the CA for consul exists
-  ansible.builtin.stat:
-    path: "{{ configdir }}/consul.d/consul-agent-ca.pem"
-  register: stat_result
-
-- name: Consul TLS client
-  ansible.builtin.shell: consul tls ca create && consul tls cert create -server -dc {{ datacenter }} && consul tls cert create -client -dc {{ datacenter }}
-  args:
-    chdir: "{{ configdir }}/consul.d"
-  when: not stat_result.stat.exists
+    name: consul-agent
+    package: consul
 
 - name: Ensure consul.d directory ownership
   ansible.builtin.file:
-    path: "{{ configdir }}/consul.d"
+    path: "{{ configdirs[role_name] }}"
     state: directory
-    owner: hashi
-    group: hashi
+    owner: "{{ user }}"
+    group: "{{ group }}"
     recurse: true
 
-# - name: Write Roles and policies
-#   ansible.builtin.include_role:
-#     name: consul-acl
+# Are tailscale IP plays still necessary?
 
-- ansible.builtin.include_tasks: ./update-config.yml
+- name: Get Tailscale IP
+  when: tailscale_ip is not defined
+  block:
+  - name: Get Tailscale IP address
+    ansible.builtin.command:
+      cmd: tailscale ip -4
+    register: tailscale_ip_output
+    changed_when: false
+    
+  - name: Set Tailscale IP address as a variable
+    ansible.builtin.set_fact:
+      tailscale_ip: "{{ tailscale_ip_output.stdout }}"
 
-- name: Configure dnsmasq forwarding
-  ansible.builtin.copy:
-    content: |
-      server=/consul/127.0.0.1#8600
-      server=/shamsway.net/127.0.0.1#8600
-    dest: /etc/dnsmasq.d/shamsway.conf
-    owner: root
-    group: root
+- name: Create {{ role_name }} config
+  ansible.builtin.template:
+    src: "{{ role_name }}.hcl.j2"
+    dest: "{{ configdirs[role_name]}}/{{ role_name }}.hcl"
+    owner: "{{ user }}"
+    group: "{{ group }}"
     mode: "0644"
+
+- name: Restart {{ role_name }}
+  ansible.builtin.systemd:
+    name:  "{{ role_name }}"
+    state: restarted
+

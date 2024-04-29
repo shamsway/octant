@@ -1,7 +1,7 @@
 ---
 - name: Beginning Homelab Deploy
   hosts: servers
-  user: root
+  user: matt
   become: true
   gather_facts: true
   tasks:

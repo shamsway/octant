@@ -57,4 +57,4 @@ update_groups_yml('volumes.csv', 'inventory/groups.yml')
 run_ansible_playbook('configure-mounts.yml', 'inventory/groups.yml')
 
 # Run the update-nomad.yml playbook
-run_ansible_playbook('update-nomad.yml',  'inventory/groups.yml')
+#run_ansible_playbook('update-nomad.yml',  'inventory/groups.yml')
