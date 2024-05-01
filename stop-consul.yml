@@ -1,0 +1,25 @@
+---
+- name: Stop all Consul Servers and Agents
+  hosts: servers
+  user: root
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Stop consul-agent
+      ansible.builtin.service:
+        name: "consul-agent"
+        state: stopped
+
+    - name: Stop consul-agent-root
+      ansible.builtin.service:
+        name: "consul-agent-root"
+        state: stopped
+
+    - name: Stop consul-server
+      ansible.builtin.service:
+        name: "consul-server"
+        state: stopped

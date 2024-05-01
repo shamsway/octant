@@ -1,0 +1,38 @@
+---
+- name: Stop all Nomad Servers and Agents
+  ansible.builtin.include_tasks: 
+    file: stop-nomad.yml
+
+- name: Clear Consul Data Directories
+  hosts: servers
+  user: root
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Prompt for confirmation
+      pause:
+        prompt: "Are you sure you want to delete all Nomad data directories? (yes/no)"
+      register: confirmation
+
+    - name: Delete all files in {{ datadirs['nomad-agent'] }}
+      file:
+        path: "{{ datadirs['nomad-agent'] }}"
+        state: "{{ item }}"
+      with_items:
+        - absent
+        - directory
+      when: confirmation.user_input | lower == 'yes'
+
+    - name: Delete all files in {{ datadirs['nomad-agent-root'] }}
+      file:
+        path: "{{ datadirs['nomad-agent-root'] }}"
+        state: "{{ item }}"
+      with_items:
+        - absent
+        - directory
+      when: confirmation.user_input | lower == 'yes'
+

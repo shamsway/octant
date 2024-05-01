@@ -47,8 +47,32 @@ update-mounts: check-env
 update-nomad: check-env
 	ansible-playbook update-nomad.yml -i inventory/groups.yml -l $(HOST)
 
+update-consul-configs: check-env
+	ansible-playbook update-consul-configs.yml -i inventory/groups.yml
+
+update-nomad-configs: check-env
+	ansible-playbook update-nomad-configs.yml -i inventory/groups.yml
+
+reset-consul: check-env
+	ansible-playbook reset-consul.yml -i inventory/groups.yml
+
+reset-nomad: check-env
+	ansible-playbook reset-nomad.yml -i inventory/groups.yml
+
 run-flush-cache: check-env
 	ansible-playbook homelab.yml -i inventory/groups.yml --flush-cache
+
+start-nomad: check-env
+	ansible-playbook start-nomad.yml -i inventory/groups.yml
+
+start-consul: check-env
+	ansible-playbook start-consul.yml -i inventory/groups.yml
+
+stop-consul: check-env
+	ansible-playbook stop-consul.yml -i inventory/groups.yml
+
+stop-nomad: check-env
+	ansible-playbook stop-nomad.yml -i inventory/groups.yml
 
 tf-apply-gcp: 
 	cd terraform/gcp ; terraform apply -auto-approve
@@ -61,6 +85,8 @@ tf-update-dns:
 
 reset-server:
 	ansible-playbook reset-server.yml -i inventory/groups.yml
+
+
 
 lint:
 	find . -type f -name '*.yml' -exec ansible-lint --fix {} +

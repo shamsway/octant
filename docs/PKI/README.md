@@ -1,6 +1,6 @@
 # Bootstrapping a Consul CA and Generating Certificates
 
-This document provides the necessary commands to bootstrap a Consul CA and generate individual certificates using Consul's built-in CA functionality.
+This document provides the necessary commands to bootstrap a Consul CA and generate individual certificates using Consul's built-in CA functionality. CA private keys should be removed from disk and stored in a safe place after bootstrapping. Any remaining private keys should be secured with `chmod 600`.
 
 ## Prerequisites
 
@@ -19,12 +19,135 @@ To bootstrap a Consul CA, follow these steps:
 
 2. Generate server and client certificates
    ```bash
-   consul tls cert create -server -dc=[datacenter]
+   consul tls cert create -server -dc=[datacenter] 
    consul tls cert create -client -dc=[datacenter]
    consul tls cert create -cli -dc=[datacenter]
+   chown hashi:root [agent cert]
+   chown hashi:root [agent key]
    ```
 
-Docs: https://developer.hashicorp.com/consul/commands/tls/ca
+Example:
+
+- Servers
+`consul tls cert create -server -dc=shamsway -additional-dnsname=consul.shamsway.net -additional-dnsname=jerry.shamsway.net -additional-dnsname=bobby.shamsway.net -additional-dnsname=billy.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8`
+- Agents
+`consul tls cert create -client -dc=shamsway -additional-dnsname=consul.shamsway.net -additional-dnsname=jerry-agent.shamsway.net -additional-dnsname=bobby-agent.shamsway.net -additional-dnsname=billy-agent.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8`
+- Root Agents
+`consul tls cert create -client -dc=shamsway -additional-dnsname=consul.shamsway.net -additional-dnsname=jerry-agent-root.shamsway.net -additional-dnsname=bobby-agent-root.shamsway.net -additional-dnsname=billy-agent-root.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8`
+- CLI
+`consul tls cert create -cli -dc=shamsway -additional-dnsname=consul.shamsway.net -additional-dnsname=jerry.shamsway.net -additional-dnsname=bobby.shamsway.net -additional-dnsname=billy.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8`
+- Set permissions
+```bash
+chown hashi:root [agent cert]
+chown hashi:root [agent key]
+```
+
+ 1. (Optional) verify certificate fino
+    ```bash
+    openssl x509 -in [cert] -text -noout
+    ```
+* Consul TLS Configuration: https://developer.hashicorp.com/consul/tutorials/archive/tls-encryption-secure-existing-datacenter
+* Config block: https://developer.hashicorp.com/consul/commands/tls/ca
+* Gossip Key Encryption guide: https://mpolinowski.github.io/docs/DevOps/Hashicorp/2021-08-14--hashicorp-consul-tls-encryption/2021-08-14/
+
+### Generating Nomad Certs
+
+Docs say to create a separate root CA for Nomad, but we have an existing Consul CA. These commands generate the necessary Nomad certs using the Consul CA.
+
+- Servers
+`nomad tls cert create -server -ca=consul-agent-ca.pem -key=consul-agent-ca-key.pem -region=home -additional-dnsname=nomad.shamsway.net -additional-dnsname=jerry.shamsway.net -additional-dnsname=bobby.shamsway.net -additional-dnsname=billy.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8`
+- Agents
+`nomad tls cert create -client -ca=consul-agent-ca.pem -key=consul-agent-ca-key.pem -region=home -additional-dnsname=nomad.shamsway.net -additional-dnsname=jerry-agent.shamsway.net -additional-dnsname=bobby-agent.shamsway.net -additional-dnsname=billy-agent.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8`
+<!-- - Root Agents
+`nomad tls cert create -client -ca=consul-agent-ca.pem -key=consul-agent-ca-key.pem -region=home -additional-dnsname=nomad.shamsway.net -additional-dnsname=jerry-agent-root.shamsway.net -additional-dnsname=bobby-agent-root.shamsway.net -additional-dnsname=billy-agent-root.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8` -->
+- CLI
+`nomad tls cert create -cli -ca=consul-agent-ca.pem -key=consul-agent-ca-key.pem -region=home -additional-dnsname=nomad.shamsway.net -additional-dnsname=jerry.shamsway.net -additional-dnsname=bobby.shamsway.net -additional-dnsname=billy.shamsway.net -additional-ipaddress 192.168.252.6 -additional-ipaddress 192.168.252.7 -additional-ipaddress 192.168.252.8`
+- Set permissions
+```bash
+chown hashi:root [agent cert]
+chown hashi:root [agent key]
+```
+
+* Nomad TLS docs: https://developer.hashicorp.com/nomad/tutorials/transport-security/security-enable-tls
+  * Pay attention to the "Switching an existing cluster to TLS" if your cluster is already running
+* Nomad Gossip Encryption docs: https://developer.hashicorp.com/nomad/tutorials/transport-security/security-gossip-encryption
+* Nomad/Consul Blog: https://admantium.medium.com/encrypt-status-communication-messages-in-consul-and-nomad-ef3944bb4eba
+
+### Generate Traefik Cert
+
+- Create Server and Client Keys:
+`consul tls cert create -server -dc <datacenter> -days <validity_days> -node <node_name>`
+`consul tls cert create -client -dc <datacenter> -days <validity_days> -node <node_name>`
+
+- Example:
+```bash
+consul tls cert create -server -ca=consul-agent-ca.pem -key=consul-agent-ca-key.pem -dc shamsway -days 1460 -node traefik -additional-dnsname=traefik.shamsway.net
+mv shamsway-server-consul-1.pem shamsway-server-traefik-1.pem
+mv shamsway-server-consul-1-key.pem shamsway-server-traefik-1-key.pem
+```
+```bash
+consul tls cert create -client -ca=consul-agent-ca.pem -key=consul-agent-ca-key.pem -days 1460 -dc shamsway -additional-dnsname=traefik.shamsway.net
+mv shamsway-client-consul-2.pem shamsway-client-traefik-1.pem
+mv shamsway-client-consul-2-key.pem shamsway-client-traefik-1-key.pem
+```
+
+- Copy certs to Traefik persistent storage
+```bash
+cat consul-agent-ca.pem >> shamsway-server-traefik-1.pem
+cp shamsway-client-traefik* /mnt/services/traefik/
+cp shamsway-server-traefik* /mnt/services/traefik/
+chown hashi:hashi /mnt/services/traefik/*.pem
+```
+
+## Consul Connect CA config
+
+- View Consul Connect CA certificates
+`curl http://127.0.0.1:8500/v1/connect/ca/roots | jq`
+
+- View Consul Connect config
+`consul connect ca get-config`
+
+- Create Consul Connect CA payload
+`./create-consul-connect-ca-payload.sh`
+
+- Set Consul Connect config
+`consul connect ca set-config -config-file=[file.json]`
+
+- Check for and fix missing proxy defaults (bug?)
+`curl http://localhost:8500/v1/config/proxy-defaults/global`
+Error? Run this curl command
+```bash
+curl --location --request PUT 'http://localhost:8500/v1/config' \
+--header 'Content-Type: application/json' \
+--data '{ "Kind": "proxy-defaults", "Name": "global", "Protocol":"http" }'
+```
+- Verify cert
+`curl http://127.0.0.1:8500/v1/agent/connect/ca/leaf/web | jq`
+
+Consul Connect CA docs: https://developer.hashicorp.com/consul/docs/connect/ca
+Consul Connect CA commands: https://developer.hashicorp.com/consul/commands/connect/ca
+Consul Connect API docs: https://developer.hashicorp.com/consul/api-docs/connect/ca#update-ca-configuration
+
+### Permissive mTLS
+
+Allow outgoing non-mTLS traffic
+```hcl
+Kind = "mesh"
+
+TransparentProxy {
+  MeshDestinationsOnly = false
+}
+```
+
+Allow permissive mTLS modes for incoming traffic
+```hcl
+Kind = "mesh"
+
+AllowEnablingPermissiveMutualTLS = true
+TransparentProxy {
+  MeshDestinationsOnly = false
+}
+```
 
 ## Generating Individual Certificates
 
@@ -38,7 +161,7 @@ Once the Consul CA is bootstrapped, you can generate individual certificates for
 
    Example:
    ```bash
-   consul tls cert create -server -dc dc1 -days 365 -service web
+   consul tls cert create -server -dc shamsway -days 1460 -service nomad
    ```
 
 2. Generate a certificate for a node:
@@ -67,12 +190,6 @@ Once the Consul CA is bootstrapped, you can generate individual certificates for
 ## Additional Commands
 
 Here are a few additional commands that you may find useful when working with Consul's CA:
-
-- List all certificates:
-  ```bash
-  consul tls cert list
-  ```
-  This command lists all the certificates managed by Consul.
 
 - Revoke a certificate:
   ```bash

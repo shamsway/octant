@@ -1,0 +1,25 @@
+---
+- name: Stop all Nomad Servers and Agents
+  hosts: servers
+  user: root
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Stop nomad-agent
+      ansible.builtin.service:
+        name: "nomad-agent"
+        state: stopped
+
+    - name: Stop nomad-agent-root
+      ansible.builtin.service:
+        name: "nomad-agent-root"
+        state: stopped
+
+    - name: Stop nomad-server
+      ansible.builtin.service:
+        name: "nomad-server"
+        state: stopped
