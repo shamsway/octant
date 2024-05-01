@@ -114,9 +114,11 @@ job "threadfin" {
         }        
       }
       env {
-        VPN_TYPE                 = "wireguard"
-        VPN_SERVICE_PROVIDER     = "custom"
-        WIREGUARD_IMPLEMENTATION = "userspace"
+        VPN_TYPE                  = "wireguard"
+        VPN_SERVICE_PROVIDER      = "custom"
+        WIREGUARD_IMPLEMENTATION  = "userspace"
+        FIREWALL_OUTBOUND_SUBNETS = "192.168.252.0/24,10.88.0.1/16"
+        HTTP_CONTROL_SERVER       = ":8000" 
       }
       template {
         data = <<EOH
