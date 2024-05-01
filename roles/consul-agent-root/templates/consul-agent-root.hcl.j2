@@ -3,6 +3,11 @@ server = false
 datacenter = "{{ datacenter }}"
 data_dir = "{{ datadirs[role_name] }}"
 
+connect {
+  enabled = true
+  ca_provider = "consul"
+}
+
 {% if hostvars[inventory_hostname]['region'] == "home" %}
 client_addr = "0.0.0.0"
 bind_addr = "0.0.0.0"
@@ -17,9 +22,20 @@ advertise_addr = "{{ GetInterfaceIP \"tailscale0\" }}"
 
 {% if consul_gossip_key is defined %}
 encrypt = "{{ consul_gossip_key }}"
-encrypt_verify_incoming = false
-encrypt_verify_outgoing = false
+encrypt_verify_incoming = true
+encrypt_verify_outgoing = true
 {% endif %}
+
+tls {
+  defaults {
+    ca_file = "{{ configdirs['tls'] }}/consul-agent-ca.pem"
+    cert_file = "{{ configdirs['tls'] }}/{{ datacenter }}-client-consul-1.pem"
+    key_file = "{{ configdirs['tls'] }}/{{ datacenter }}-client-consul-1-key.pem"
+    verify_incoming = false
+    verify_outgoing = true
+    verify_server_hostname = true
+  }
+}
 
 log_level = "INFO"
 enable_syslog = true

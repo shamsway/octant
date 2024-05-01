@@ -16,13 +16,13 @@
 
 - name: Check that the CA for consul exists
   ansible.builtin.stat:
-    path: "{{ configdirs[role_name] }}/consul-agent-ca.pem"
+    path: "{{ configdirs[pki] }}/consul-agent-ca.pem"
   register: stat_result
 
 - name: Consul TLS client
   ansible.builtin.shell: consul tls ca create && consul tls cert create -server -dc {{ datacenter }} && consul tls cert create -client -dc {{ datacenter }}
   args:
-    chdir: "{{ configdirs[role_name] }}"
+    chdir: "{{ configdirs[pki] }}"
   when: not stat_result.stat.exists
 
 - name: Ensure {{ role_name }} config directory ownership

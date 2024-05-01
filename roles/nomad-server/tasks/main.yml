@@ -31,5 +31,5 @@
 
 - name: Restart {{ role_name }}
   ansible.builtin.systemd:
-    name: nomad
+    name: "{{ role_name }}"
     state: restarted
