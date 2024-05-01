@@ -27,13 +27,18 @@ job "litellm" {
       port = "http"
       tags = [
         "traefik.enable=true",
-				"traefik.consulcatalog.connect=false",
+				"traefik.consulcatalog.connect=true",
         "traefik.http.routers.litellm.rule=Host(`litellm.shamsway.net`)",
         "traefik.http.routers.litellm.entrypoints=web,websecure",
         "traefik.http.routers.litellm.tls.certresolver=cloudflare",
         "traefik.http.services.litellm.loadbalancer.server.port=${NOMAD_HOST_PORT_http}"
       ]
-      
+
+      connect {
+        #sidecar_service { }
+        native = true
+      }        
+
       check {
         name     = "alive"
         type     = "http"

@@ -50,7 +50,7 @@ job "traefik" {
       tags = [
         "traefik",
         "traefik.enable=true",
-        "traefik.http.routers.dashboard.rule=Host(`traefik.shamsway.net`)",
+        "traefik.http.routers.dashboard.rule=Host(`traefik-http.shamsway.net`)",
         "traefik.http.routers.dashboard.service=api@internal",
         "traefik.http.routers.dashboard.entrypoints=web,websecure",
       ]
@@ -69,8 +69,39 @@ job "traefik" {
       check {
         type     = "tcp"
         interval = "10s"
+        timeout  = "5s"
+      }
+    }
+
+    service {
+      name = "traefik-admin"
+      provider = "consul"
+      port = "admin"
+      check {
+        name     = "alive"
+        type     = "http"
+        port     = "admin"
+        path     = "/ping"
+        interval = "10s"
         timeout  = "2s"
       }
+      tags = [
+        "traefik","traefik.enable=true","lb", "admin",
+        "traefik.http.routers.dashboard.rule=Host(`traefik.shamsway.net`)"
+        #"metrics",
+        #"metrics_port=8082",
+        #"metrics_scheme=http",
+        #"metrics_path=/metrics",
+        #"traefik.tags=clusterservice",
+        #"traefik.consulcatalog.connect=false",
+        #"traefik.http.routers.metrics.rule=PathPrefix(`/metrics`)",
+        #"traefik.http.routers.metrics.entrypoints=api",
+        #"traefik.http.routers.metrics.service=prometheus@internal",
+        #"traefik.http.routers.api.rule=(PathPrefix(`/api`) || PathPrefix(`/dashboard`))",
+        #"traefik.http.routers.api.entrypoints=api",
+        #"traefik.http.routers.api.service=api@internal",
+        #"traefik.http.routers.api.middlewares=AdminAuth@file"
+      ]
       connect {
         native = true
       }
@@ -109,18 +140,6 @@ job "traefik" {
       }
 
       service {
-        name = "traefik-admin"
-        provider = "consul"
-        port = "admin"
-        tags = ["lb", "admin"]
-        check {
-          type     = "tcp"
-          interval = "10s"
-          timeout  = "2s"
-        }
-      }
-
-      service {
         name = "traefik-metrics"
         tags = ["lb", "exporter", "metrics", "prometheus.scrape"]
         provider = "consul"
@@ -145,7 +164,7 @@ data = <<EOH
   [entryPoints.web]
     address = ":80"
     [entryPoints.web.http.redirections.entryPoint]
-			to = "websecure"
+	  to = "websecure"
       scheme = "https"
   [entryPoints.traefik]
     address = ":9002"
@@ -155,6 +174,7 @@ data = <<EOH
     address = ":8082"    
 [accessLog]
   format = "json"
+  filePath = "/acme/traefik-access.log"
 [http.middlewares]
   [http.middlewares.https-redirect.redirectscheme]
     scheme = "https"
@@ -166,26 +186,51 @@ data = <<EOH
     delayBeforeCheck = 30
     resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
 [log]
-  level = "INFO"
-  #level = "DEBUG"
+  #level = "INFO"
+  level = "DEBUG"
+  filePath = "/acme/traefik.log"
 [api]
   dashboard = true
   insecure = true
 [ping]
+[providers]
+  [providers.file]
+    filename = "local/dynamic.toml"  
 [providers.consulcatalog]
   exposedByDefault = false
   prefix = "traefik"
   defaultRule = "Host(`{{ .Name }}.shamsway.net`)"
   connectAware = true
-  connectByDefault = false        
+  connectByDefault = true        
   [providers.consulcatalog.endpoint]
-    address = "consul.shamsway.net:8500"
-    scheme = "http"
+    address = "consul.shamsway.net:8501"
+    scheme = "https"
     datacenter = "shamsway"
     endpointWaitTime = "15s"
+    [tls]
+      insecureskipverify = true
+      ca = "/acme/consul-agent-ca.pem"
+      certFile = "/acme/shamsway-server-traefik-1.pem"
+      keyFile  = "/acme/shamsway-server-traefik-1-key.pem"      
 EOH
         destination = "local/traefik.toml"
       }
+
+      template {
+       data        = <<EOH
+[[tls.certificates]]
+    certFile = "/acme/shamsway-server-traefik-1.pem"
+    keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/acme/shamsway-server-traefik-1.pem"
+      keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
+EOH
+       destination = "local/dynamic.toml"
+       change_mode = "restart"
+       splay       = "1m"
+     }
 
       resources {
         memory = 128
