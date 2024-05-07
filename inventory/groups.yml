@@ -28,14 +28,23 @@ servers:
     reboot: false
     volumes:
       - name: traefik-data
-        path: /mnt/services/traefik
+        path: /mnt/services/traefik/data
         backup: true
+      - name: traefik-certs
+        path: /mnt/services/traefik/certs
+        backup: true        
+      - name: traefik-config
+        path: /mnt/services/traefik/config
+        backup: true        
       - name: tvheadend-recordings
         path: /mnt/recordings/tvheadend
         backup: false
       - name: tvheadend-config
-        path: /mnt/services/tvheadend
-        backup: true             
+        path: /mnt/services/tvheadend/config
+        backup: true
+      - name: tvheadend-data
+        path: /mnt/services/tvheadend/data
+        backup: true                     
       - name: postgres-data
         path: /mnt/services/postgres
         backup: true        
@@ -108,6 +117,9 @@ servers:
       - name: 1password-config
         path: /mnt/services/1password/config
         backup: true
+      - name: 1password-data
+        path: /mnt/services/1password/data
+        backup: true        
       - name: weaviate-config
         path: /mnt/services/weviate/config
         backup: true
@@ -149,4 +161,7 @@ servers:
         backup: true
       - name: nautobot-config
         path: /mnt/services/nautobot/config
+        backup: true
+      - name: media-library
+        path: /mnt/services/library
         backup: true
