@@ -5,49 +5,55 @@ job "nginx" {
 
   constraint {
     attribute = "${attr.kernel.name}"
-    value     = "(linux|darwin)"
-    operator  = "regexp"
+    value     = "linux"
   }
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "regexp"
-    value     = "^.*[^-][^r][^o][^o][^t]$"
-  } 
+    attribute = "${meta.rootless}"
+    value = "true"
+  }
 
   group "nginx" {
     count = 1 
 
     network {
       port "http" {
-        static = 8080
+        to = 8080
       }
 
+      port "httpalt" {
+        to = 8081
+      }      
+
       port "https" {
-        static = 9443
+        to = 9443
       }      
     }
 
     service {
-        name = "nginx"
-        port = "http"
-        provider = "consul"       
+      name = "web"
+      port = "http"
+      provider = "consul"       
 
-        tags = [
-            "traefik.enable=true",
-            "traefik.http.routers.nginx.rule=Host(`nginx.shamsway.net`)",
-            "traefik.http.routers.nginx.entrypoints=web,websecure",
-            "traefik.http.routers.nginx.tls.certresolver=cloudflare",
-            "traefik.http.routers.nginx.middlewares=redirect-web-to-websecure@internal",       
-        ]
+      tags = [
+          "traefik.enable=true",
+          "traefik.consulcatalog.connect=false",          
+          "traefik.http.routers.web.rule=Host(`web.shamsway.net`)",
+          "traefik.http.routers.web.entrypoints=web,websecure",
+          "traefik.http.routers.web.tls.certresolver=cloudflare", 
+      ]
 
-        check {
-            name     = "alive"
-            type     = "http"
-            path     = "/"
-            interval = "10s"
-            timeout  = "2s"
-        }
+      connect {
+        native = true
+      }
+
+      check {
+          name     = "alive"
+          type     = "http"
+          path     = "/"
+          interval = "10s"
+          timeout  = "2s"
+      }
     }
 
     volume "nginx-data" {
@@ -61,7 +67,7 @@ job "nginx" {
 
       config {
         image = "docker.io/nginxinc/nginx-unprivileged:1.25.4"
-        ports = ["http", "https"]        
+        ports = ["http", "httpalt", "https"]        
         userns = "keep-id:uid=101,gid=101"
         logging = {
           driver = "journald"

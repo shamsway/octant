@@ -10,6 +10,11 @@ job "grafana-agent" {
 
   group "monitoring" {
 
+    network {
+      dns {
+        servers = ["192.168.252.1","192.168.252.7"]
+      }
+    }
     task "grafana-agent" {
       driver = "podman"
       config {

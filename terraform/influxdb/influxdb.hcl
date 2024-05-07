@@ -20,6 +20,10 @@ job "influxdb" {
       port "http" {
         static = 8086
       }
+      
+      dns {
+        servers = ["192.168.252.1","192.168.252.7"]
+      }      
     }
 
     service {
