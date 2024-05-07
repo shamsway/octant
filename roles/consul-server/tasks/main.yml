@@ -67,11 +67,13 @@
 - name: Configure dnsmasq forwarding
   ansible.builtin.copy:
     content: |
+      # Disable returning entries from /etc/hosts
+      no-hosts    
       server={{ external_dns_resolver1 }}
       server={{ external_dns_resolver2 }}
       server=/consul/127.0.0.1#8600
-      server=/shamsway.net/127.0.0.1#8600
-    dest: /etc/dnsmasq.d/shamsway.conf
+      server=/{{ domain }}.{{ tld }}/127.0.0.1#8600
+    dest: /etc/dnsmasq.d/octant.conf
     owner: root
     group: root
     mode: "0644"

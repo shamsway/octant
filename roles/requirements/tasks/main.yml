@@ -156,17 +156,19 @@
 
     - name: Check if dnsmasq configuration file exists
       ansible.builtin.stat:
-        path: /etc/dnsmasq.d/shamsway-server.conf
+        path: /etc/dnsmasq.d/octant.conf
       register: dnsmasq_conf
 
     - name: Create dnsmasq server configuration file if it doesn't exist
       ansible.builtin.copy:
-        dest: /etc/dnsmasq.d/shamsway-server.conf
+        dest: /etc/dnsmasq.d/octant.conf
         content: |
+          # Disable returning entries from /etc/hosts
+          no-hosts         
           server=1.1.1.1
           server=8.8.8.8
           server=/.consul/127.0.0.1#8600
-          server=/shamsway.net/127.0.0.1#8600
+          server=/{{ domain }}.{{ tld }}/127.0.0.1#8600
         owner: root
         group: root
         mode: "0644"
@@ -199,12 +201,12 @@
 
     - name: Check if dnsmasq configuration file exists
       ansible.builtin.stat:
-        path: /etc/dnsmasq.d/shamsway-client.conf
+        path: /etc/dnsmasq.d/octant-client.conf
       register: dnsmasq_conf
 
     - name: Create dnsmasq client configuration file if it doesn't exist
       ansible.builtin.copy:
-        dest: /etc/dnsmasq.d/shamsway-client.conf
+        dest: /etc/dnsmasq.d/octant-client.conf
         content: |
           server=192.168.252.6
           server=192.168.252.7
@@ -259,6 +261,7 @@
       - podman-compose
       - git
       - crun
+      - ntpstat
       - cockpit
       - cockpit-podman
       - cockpit-pcp

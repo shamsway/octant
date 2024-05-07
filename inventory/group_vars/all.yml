@@ -26,7 +26,7 @@ uid: 2000
 gid: 2000
 #gid: 100
 
-tld: net.
+tld: net
 domain: shamsway
 datacenter: shamsway
 admin_user: matt
