@@ -1,5 +1,6 @@
 # Using Claude AI to convert Docker Compose files to Nomad
 
+The prompt and instructions below can be used to convert docker-compose to Nomad job files.
 
 ## Prompt
 

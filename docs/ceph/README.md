@@ -98,6 +98,48 @@ Redeploy haproxy ingress
 
 NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client if you having issues deploying haproxy
 
+## Changing ceph pool defaults
+
+Before the lab was completely built out, there were not 3 NVMe disks to use for ceph pools. Having one VM-based HDD caused some issues with ceph PG placement, so I used these commands to adjust the number of minimum disks from 3 to 2. The issue I needed to solve was several PG groups being undersized/not scrubbed. I didn't have to remove the HDD from the OSD pool to resolve the issue, changing `min_size` was all that was needed.
+
+```bash
+ceph config set osd osd_pool_default_size 2
+ceph config set osd osd_pool_default_min_size 2
+ceph osd pool set .mgr size 2
+ceph osd pool set .mgr min_size 2
+ceph osd pool set rbd size 2
+ceph osd pool set rbd min_size 2
+ceph osd pool set .nfs size 2
+ceph osd pool set .nfs min_size 2
+ceph osd pool set cephfs_data size 2
+ceph osd pool set cephfs_data min_size 2
+ceph osd pool set cephfs_metadata size 2
+ceph osd pool set cephfs_metadata min_size 2
+```
+
+Troubleshooting commands:
+
+```bash
+ceph osd df
+ceph osd pool ls detail
+ceph pg ls degraded
+ceph pg dump_stuck
+```
+
+Links:
+
+- https://docs.ceph.com/en/quincy/rados/operations/monitoring/
+- https://docs.ceph.com/en/quincy/rados/operations/monitoring-osd-pg/
+- https://docs.ceph.com/en/latest/rados/configuration/osd-config-ref/#confval-osd_scrub_during_recovery
+- https://docs.ceph.com/en/latest/rados/configuration/pool-pg-config-ref/#rados-config-pool-pg-crush-ref
+- https://docs.ceph.com/en/latest/rados/configuration/pool-pg-config-ref/
+- https://ceph.io/geen-categorie/ceph-manually-repair-object/
+- https://docs.ceph.com/en/latest/rados/troubleshooting/troubleshooting-pg/
+- https://forum.proxmox.com/threads/please-help-ceph-pool-stuck-at-undersized-degraded-remapped-backfill_toofull-peered.121690/
+- https://www.reddit.com/r/ceph/comments/18q5a5n/activeundersizeddegraded/
+- https://www.reddit.com/r/ceph/comments/11ehf6u/pgs_stuck_in_undersized_mode_for_a_long_time/
+- 
+
 # Maintenance
 
 ## Start a service
@@ -280,3 +322,39 @@ restrict ::1
 ceph health detail reports "host [hostname] has flags noout"
 
 Fix: `ceph osd unset-group noout jerry`
+
+# Cleaning up PGs
+
+To see which placement groups (PGs) need to be deep-scrubbed, you can use the following Ceph command:
+
+```
+ceph pg dump | grep "last_deep_scrub_stamp\\":0"
+```
+
+This command does the following:
+
+1. `ceph pg dump`: Dumps the information about all PGs in the cluster.
+
+2. `grep "last_deep_scrub_stamp\\":0"`: Filters the output to show only the PGs that have never been deep-scrubbed.
+
+The `last_deep_scrub_stamp` attribute indicates the timestamp of the last deep scrub operation on a PG. If the value is 0, it means the PG has never been deep-scrubbed.
+
+The output will display a list of PGs that require deep scrubbing. Each line will include the PG ID and other relevant information.
+
+Alternatively, you can use the following command to get a summarized view of the PGs that need deep scrubbing:
+
+```
+ceph pg dump_stuck unclean
+```
+
+This command will display the "stuck" PGs that are in an inconsistent state, including those that need deep scrubbing.
+
+Once you have identified the PGs that require deep scrubbing, you can initiate the deep scrub operation on those specific PGs using the command:
+
+```
+ceph pg deep-scrub <pg-id>
+```
+
+Replace `<pg-id>` with the ID of the PG you want to deep-scrub.
+
+Note that deep scrubbing is a resource-intensive operation and can impact the performance of your cluster. It's recommended to perform deep scrubs during periods of low cluster usage or to stagger the deep scrubs over time to minimize the impact on production workloads.

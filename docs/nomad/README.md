@@ -23,6 +23,9 @@ Get remote/root node status
 List CSI plugins
 `nomad operator api /v1/plugins?type=csi | jq`
 
+### Errors
+
+`Failed to parse job: input.hcl:146,5-6: Invalid character; This character is not used within the language.` - Check for template blocks and remove any whitespace trailing the `<<EOH` line
 
 ## Running multiple Nomad agents
 
