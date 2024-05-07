@@ -50,37 +50,37 @@ combine_xmltv_schedules(file1, file2, output_file)
 
 # M3U to STRM Converter
 
-This Python script converts an M3U playlist to a directory structure containing `.strm` files. It takes an M3U URL or file path as input and generates `.strm` files in the appropriate group directories under the `output` directory.
+This Python script converts an M3U playlist to a directory structure containing .strm files. It takes an M3U URL or file path as input and generates .strm files in the appropriate tvg-type and group-title directories under the specified output directory.
+Usage
+Copy codepython m3u2strm.py <m3u_url_or_file> [-v] [-o OUTPUT_DIR]
 
-## Usage
+<m3u_url_or_file>: The URL or local file path of the M3U playlist.
+-v, --verbose: Enable verbose output to display the files being created (optional).
+-o OUTPUT_DIR, --output-dir OUTPUT_DIR: Specify the output directory (default: output).
 
-```
-python m3u2strm.py <m3u_url_or_file>
-```
+Dependencies
 
-- `<m3u_url_or_file>`: The URL or local file path of the M3U playlist.
+Python 3.x
+requests library (can be installed via pip install requests)
 
-## Dependencies
+Functionality
 
-- Python 3.x
-- `requests` library (can be installed via `pip install requests`)
+The script takes an M3U URL or file path as a command-line argument.
+It reads the M3U content either from the provided URL or local file.
+The M3U content is parsed into a nested dictionary called index, where the keys are the tvg-type values and the values are dictionaries containing group-title as keys and lists of entries as values. Each entry is a dictionary containing metadata such as tvg-id, tvg-name, tvg-type, group-title, title, and path.
+The script creates folders for each unique tvg-type under the specified output directory.
+For each group-title, a subfolder is created within the corresponding tvg-type folder. The group-title is modified by removing the tvg-type and any whitespace from the beginning of the string (case-insensitive).
+For each entry in the index dictionary, a .strm file is created in the corresponding tvg-type and group-title directory. The filename is derived from the entry's title, and the file content is the entry's path.
+If the title of an entry ends with a year in parentheses that matches the subfolder name, the year and parentheses are removed from the filename.
+If an entry is missing a title, it is skipped.
+The script sanitizes both directory and file names by replacing characters that are not allowed with underscores.
+If the -v or --verbose option is provided, the script displays the files being created.
+After the script completes, it outputs the number of groups and files created.
+The script handles errors that may occur during execution, such as invalid URLs, file not found, or invalid M3U content.
 
-## Functionality
-
-1. The script takes an M3U URL or file path as a command-line argument.
-2. It reads the M3U content either from the provided URL or local file.
-3. The M3U content is parsed into a dictionary called `index`, where the keys are the group names and the values are lists of entries. Each entry is a dictionary containing metadata such as group, title, and path.
-4. The script creates group directories under the `output` directory based on the group names.
-5. For each entry in the `index` dictionary, a `.strm` file is created in the corresponding group directory. The filename is derived from the entry's title, and the file content is the entry's path.
-6. The script handles errors that may occur during execution, such as invalid URLs, file not found, or invalid M3U content.
-
-## Example
-
-```
-python m3u2strm.py https://example.com/playlist.m3u
-```
-
-This command will convert the M3U playlist located at `https://example.com/playlist.m3u` to `.strm` files in the `output` directory.
+Example
+Copy codepython m3u2strm.py https://example.com/playlist.m3u -v -o /path/to/output
+This command will convert the M3U playlist located at https://example.com/playlist.m3u to .strm files in the /path/to/output directory, organized by tvg-type and group-title. Verbose output will be enabled, displaying the files being created. After completion, the script will output the number of groups and files created.
 
 # xteve notes
 

@@ -34,9 +34,9 @@ wget -q https://tvnow.best/api/list/alphaambush/nC-hQj@j93dZJiv8 -O /tmp/Apollo.
 python3 /mnt/services/iptvtools/m3u-filter.py --m3u /tmp/Apollo.m3u8 --output-dir /mnt/services/tvheadend/config/data/m3u --output-file Apollo
 wget -q https://i.mjh.nz/PlutoTV/us.xml.gz -O /tmp/us.xml.gz
 gunzip -f /tmp/us.xml.gz
-wget -q https://epg.tvnow.best/utc.lite.xml.gz -O /tmp/utc.lite.xml.gz
-gunzip -f /tmp/utc.lite.xml.gz
-python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/us.xml /tmp/utc.lite.xml /mnt/services/tvheadend/config/data/guide.xml
+wget -q https://epg.tvnow.best/utc.xml.gz -O /tmp/utc.xml.gz
+gunzip -f /tmp/utc.xml.gz
+python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/us.xml /tmp/utc.xml /mnt/services/tvheadend/config/data/guide.xml
 EOH
         destination = "local/download_guides.sh"
         perms = "775"
