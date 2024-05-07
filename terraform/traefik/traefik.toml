@@ -8,13 +8,33 @@
   [entryPoints.web]
     address = ":80"
     [entryPoints.web.http.redirections.entryPoint]
-			to = "websecure"
+	  to = "websecure"
       scheme = "https"
+  [entryPoints.http]
+    address = ":8080"      
   [entryPoints.traefik]
     address = ":9002"
   [entryPoints.websecure]
     address = ":443"
   [entryPoints.metrics]
+    address = ":8082"
+[http]
+  [http.routers]
+    [http.routers.shamsway]
+      entryPoints = ["websecure"]
+      rule = "Host(`*.shamsway.net`)"
+      service = "shamsway.net"
+      [http.routers.shamsway.tls]
+        certResolver = "cloudflare"
+
+    [http.routers.consul]
+      entryPoints = ["http", "websecure"]
+      rule = "Host(`*.consul`)"
+      service = "consul-service"
+      
+[accessLog]
+  format = "json"
+  filePath = "/traefik-data/traefik-access.log"
 [http.middlewares]
   [http.middlewares.https-redirect.redirectscheme]
     scheme = "https"
@@ -27,36 +47,28 @@
     resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
 [log]
   level = "INFO"
-[accessLog]
-  format = "json"
-  filePath = "/logs/traefik.log"
-  [accessLog.fields]
-    defaultMode = "keep"
-    [accessLog.fields.names]
-      "ClientUsername" = "drop"
-    [accessLog.fields.headers]
-      defaultMode = "keep"
-      [accessLog.fields.headers.names]
-        "User-Agent" = "redact"
-        "Authorization" = "drop"
-        "Content-Type" = "keep"
-  bufferingSize = 100
-  [accessLog.filters]
-    statusCodes = ["200-599"]
-    retryAttempts = true
-    minDuration = "10ms"
+  #level = "DEBUG"
+  filePath = "/traefik-data/traefik.log"
 [api]
   dashboard = true
   insecure = true
 [ping]
+[providers]
+  [providers.file]
+    filename = "/traefik-config/dynamic.toml"  
 [providers.consulcatalog]
   exposedByDefault = false
   prefix = "traefik"
-  defaultRule = "Host(`{{ .Name }}.shamsway.net`)"
+  defaultRule = "Host(`{{ .Name }}.shamsway.net`) || Host(`{{ .Name }}.service.consul`)"
   connectAware = true
   connectByDefault = true        
   [providers.consulcatalog.endpoint]
-    address = "consul.shamsway.net:8500"
-    scheme = "http"
+    address = "consul.shamsway.net:8501"
+    scheme = "https"
     datacenter = "shamsway"
     endpointWaitTime = "15s"
+    [tls]
+      insecureskipverify = true
+      ca = "/acme/consul-agent-ca.pem"
+      certFile = "/acme/shamsway-server-traefik-1.pem"
+      keyFile  = "/acme/shamsway-server-traefik-1-key.pem"

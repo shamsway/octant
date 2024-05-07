@@ -38,6 +38,18 @@ job "traefik" {
       auto_revert      = true
     }
 
+    volume "traefik-certs" {
+      type      = "host"
+      read_only = false
+      source		= "traefik-certs"
+    }  
+
+    volume "traefik-config" {
+      type      = "host"
+      read_only = false
+      source		= "traefik-config"
+    }  
+
     volume "traefik-data" {
       type      = "host"
       read_only = false
@@ -83,7 +95,7 @@ job "traefik" {
         port     = "admin"
         path     = "/ping"
         interval = "10s"
-        timeout  = "2s"
+        timeout  = "5s"
       }
       tags = [
         "traefik","traefik.enable=true","lb", "admin",
@@ -111,14 +123,26 @@ job "traefik" {
       driver = "podman"
 
       volume_mount {
-        volume      = "traefik-data"
+        volume      = "traefik-certs"
         destination = "/acme"
+        read_only   = false
+      }
+
+      volume_mount {
+        volume      = "traefik-config"
+        destination = "/traefik-config"
+        read_only   = false
+      }
+
+      volume_mount {
+        volume      = "traefik-data"
+        destination = "/traefik-data"
         read_only   = false
       }
 
       config {
         image = "docker.io/traefik:v3.0"
-        args  = ["--configFile", "/etc/traefik/traefik.toml"]
+        args  = ["--configFile", "/traefik-config/traefik.toml"]
         ports = ["http", "https", "api", "metrics", "admin"]
         logging = {
           driver = "journald"
@@ -128,10 +152,6 @@ job "traefik" {
             }
           ]
         }
-        volumes = [
-          "local/traefik.toml:/etc/traefik/traefik.toml",
-          #"/acme/acme.json:/acme.json"
-        ]
       }
 
       env {
@@ -151,87 +171,6 @@ job "traefik" {
           path     = "/ping"
         }
       }
-
-      template {
-data = <<EOH
-[global]
-  checkNewVersion = false
-  sendAnonymousUsage = false
-[metrics]
-  [metrics.prometheus]
-    entrypoint = "metrics"
-[entryPoints]
-  [entryPoints.web]
-    address = ":80"
-    [entryPoints.web.http.redirections.entryPoint]
-	  to = "websecure"
-      scheme = "https"
-  [entryPoints.traefik]
-    address = ":9002"
-  [entryPoints.websecure]
-    address = ":443"
-  [entryPoints.metrics]
-    address = ":8082"    
-[accessLog]
-  format = "json"
-  filePath = "/acme/traefik-access.log"
-[http.middlewares]
-  [http.middlewares.https-redirect.redirectscheme]
-    scheme = "https"
-[certificatesResolvers.cloudflare.acme]
-  email = "mattadamelliott@gmail.com"
-  storage = "/acme/acme.json"
-  [certificatesResolvers.cloudflare.acme.dnsChallenge]
-    provider = "cloudflare"
-    delayBeforeCheck = 30
-    resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
-[log]
-  #level = "INFO"
-  level = "DEBUG"
-  filePath = "/acme/traefik.log"
-[api]
-  dashboard = true
-  insecure = true
-[ping]
-[providers]
-  [providers.file]
-    filename = "local/dynamic.toml"  
-[providers.consulcatalog]
-  exposedByDefault = false
-  prefix = "traefik"
-  defaultRule = "Host(`{{ .Name }}.shamsway.net`)"
-  connectAware = true
-  connectByDefault = true        
-  [providers.consulcatalog.endpoint]
-    address = "consul.shamsway.net:8501"
-    scheme = "https"
-    datacenter = "shamsway"
-    endpointWaitTime = "15s"
-    [tls]
-      insecureskipverify = true
-      ca = "/acme/consul-agent-ca.pem"
-      certFile = "/acme/shamsway-server-traefik-1.pem"
-      keyFile  = "/acme/shamsway-server-traefik-1-key.pem"      
-EOH
-        destination = "local/traefik.toml"
-      }
-
-      template {
-       data        = <<EOH
-[[tls.certificates]]
-    certFile = "/acme/shamsway-server-traefik-1.pem"
-    keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
-[tls.stores]
-  [tls.stores.default]
-    [tls.stores.default.defaultCertificate]
-      certFile = "/acme/shamsway-server-traefik-1.pem"
-      keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
-EOH
-       destination = "local/dynamic.toml"
-       change_mode = "restart"
-       splay       = "1m"
-     }
-
       resources {
         memory = 128
       }

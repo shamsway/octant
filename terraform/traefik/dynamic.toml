@@ -1,0 +1,8 @@
+[[tls.certificates]]
+    certFile = "/acme/shamsway-server-traefik-1.pem"
+    keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/acme/shamsway-server-traefik-1.pem"
+      keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
