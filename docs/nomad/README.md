@@ -1,5 +1,9 @@
 # Nomad Operations
 
+## Links
+- https://storiesfromtheherd.com/nomad-tips-and-tricks-766878dfebf4
+- Running Linux Containers on WSL using Nomad: https://dev.to/ggmueller/running-linux-containers-on-wsl-using-nomad-80o
+
 ## Update shares available to Nomad
 - Edit inventory/groups.yml
 - Add the new volume(s) to volumes: group

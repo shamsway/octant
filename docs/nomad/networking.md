@@ -255,7 +255,10 @@ I want to run a container named "gluetun" that provides wireguard VPN connectivi
   - https://developer.hashicorp.com/nomad/docs/job-specification/sidecar_service
   - https://developer.hashicorp.com/nomad/docs/job-specification/sidecar_task
 
+### Using Cillium with Nomad (?!)
 
+- https://cosmonic.com/blog/engineering/netreap-a-practical-guide-to-running-cilium-in-nomad
+- https://github.com/cosmonic-labs/netreap
 
 ### Consul Docs & Background info
 

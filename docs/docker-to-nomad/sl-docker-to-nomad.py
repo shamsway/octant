@@ -1,13 +1,22 @@
-import streamlit as st
+# export ANTHROPIC_API_KEY=your_api_key_here
+
+import logging
 import yaml
 from jinja2 import Environment, FileSystemLoader
-import requests
+import streamlit as st
+from anthropic import Anthropic
 
-def convert_docker_compose_to_nomad(docker_compose_content, api_key):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
+logging.basicConfig(level=logging.INFO)
+
+def convert_docker_compose_to_nomad(docker_compose_content):
+    client = Anthropic()
+    
+    #print("Anthropic object attributes:")
+    #print(dir(client))
+    
+    with open("nomad-job-template.hcl.j2", "r") as f:
+        job_template = f.read()
+    f.close()
 
     prompt = f"""
     Please convert the following docker-compose YAML to a Nomad job configuration:
@@ -28,24 +37,29 @@ def convert_docker_compose_to_nomad(docker_compose_content, api_key):
 
     Please provide the converted Nomad job configuration in HCL format.
     Provide podman commands to run the container from the command line to verify it works when running rootless.
+
+    Use this jinja template as an example for default values and general structure
+
+    ```jinja
+    {job_template}
+    ```
     """
 
-    data = {
-        "prompt": prompt,
-        "max_tokens_to_sample": 2048,
-        "stop_sequences": ["\n\n"]
-    }
+    response = client.messages.create(
+        model="claude-3-opus-20240229",
+        max_tokens=2048,
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+    )
 
-    response = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=data)
-    response.raise_for_status()
-
-    return response.json()["completion"]
+    return response.content[0].text
 
 def convert_locally(docker_compose_content):
     docker_compose = yaml.safe_load(docker_compose_content)
 
     env = Environment(loader=FileSystemLoader('.'))
-    template = env.get_template('nomad_job_template.hcl')
+    template = env.get_template('nomad-job-template.hcl.j2')
 
     services = []
     for service_name, service_config in docker_compose['services'].items():
@@ -64,15 +78,15 @@ def convert_locally(docker_compose_content):
 def main():
     st.title("Docker Compose to Nomad Converter")
 
-    api_key = st.text_input("Enter your Claude API key:")
+    #api_key = st.text_input("Enter your Anthropic API key:")
     docker_compose_content = st.text_area("Enter your Docker Compose YAML:", height=300)
 
     if st.button("Convert using Claude API"):
-        if api_key and docker_compose_content:
-            nomad_job = convert_docker_compose_to_nomad(docker_compose_content, api_key)
-            st.code(nomad_job, language='hcl')
+        if docker_compose_content:
+            nomad_job = convert_docker_compose_to_nomad(docker_compose_content)
+            st.markdown(nomad_job)
         else:
-            st.warning("Please provide both API key and Docker Compose YAML.")
+            st.warning("Please provide Docker Compose YAML.")
 
     if st.button("Convert Locally"):
         if docker_compose_content:
