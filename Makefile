@@ -62,17 +62,29 @@ reset-nomad: check-env
 run-flush-cache: check-env
 	ansible-playbook homelab.yml -i inventory/groups.yml --flush-cache
 
+start-consul: check-env
+	ansible-playbook start-consul.yml -i inventory/groups.yml
+
+start-consul-host: check-env
+	ansible-playbook start-consul.yml -i inventory/groups.yml -l $(HOST)
+
 start-nomad: check-env
 	ansible-playbook start-nomad.yml -i inventory/groups.yml
 
-start-consul: check-env
-	ansible-playbook start-consul.yml -i inventory/groups.yml
+start-nomad-host: check-env
+	ansible-playbook start-nomad.yml -i inventory/groups.yml -l $(HOST)
 
 stop-consul: check-env
 	ansible-playbook stop-consul.yml -i inventory/groups.yml
 
+stop-consul-host: check-env
+	ansible-playbook stop-consul.yml -i inventory/groups.yml -l $(HOST)
+
 stop-nomad: check-env
 	ansible-playbook stop-nomad.yml -i inventory/groups.yml
+
+stop-nomad-host: check-env
+	ansible-playbook stop-nomad.yml -i inventory/groups.yml -l $(HOST)
 
 tf-apply-gcp: 
 	cd terraform/gcp ; terraform apply -auto-approve

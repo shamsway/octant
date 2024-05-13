@@ -34,7 +34,7 @@
           changed_when: false
           register: drain_output
 
-        - name: Verify {{ inventory_hostname }} nomad-agent is drained
+        - name: Verify {{ inventory_hostname }} nomad-root-agent agent is drained
           ansible.builtin.command: "nomad node status --address=http://127.0.0.1:{{ nomad.ports.root_agent_http }} -self"
           changed_when: false
           register: node_status

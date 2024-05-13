@@ -42,23 +42,23 @@
           retries: 6
           delay: 5
 
-        - name: Restart Podman service
-          become: true
-          become_user: "{{ user }}"
-          ansible.builtin.systemd_service:
-            name: podman.service
-            state: restarted
-            scope: user
-          changed_when: false
+        # - name: Restart Podman service
+        #   become: true
+        #   become_user: "{{ user }}"
+        #   ansible.builtin.systemd_service:
+        #     name: podman.service
+        #     state: restarted
+        #     scope: user
+        #   changed_when: false
 
-        - name: Restart Podman socket
-          become: true
-          become_user: "{{ user }}"
-          ansible.builtin.systemd_service:
-            name: podman.socket
-            state: restarted
-            scope: user
-          changed_when: false
+        # - name: Restart Podman socket
+        #   become: true
+        #   become_user: "{{ user }}"
+        #   ansible.builtin.systemd_service:
+        #     name: podman.socket
+        #     state: restarted
+        #     scope: user
+        #   changed_when: false
 
         - name: Restart nomad-agent service
           ansible.builtin.service:

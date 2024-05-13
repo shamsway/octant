@@ -1,7 +1,7 @@
 import yaml
 import csv
 import ansible_runner
-import sys
+import argparse
 import logging
 
 def update_groups_yml(csv_file, groups_yml):
@@ -50,12 +50,37 @@ def run_ansible_playbook(playbook, inventory):
         cmdline_args=[playbook, '-i', inventory],
     )
 
-# Update groups.yml with volumes from the CSV file
-update_groups_yml('volumes.csv', 'inventory/groups.yml')
+def main(args):
+    # Update groups.yml with volumes from the CSV file
+    update_groups_yml('volumes.csv', 'inventory/groups.yml')
 
-# Run the configure-mounts.yml playbook
-run_ansible_playbook('configure-mounts.yml', 'inventory/groups.yml')
+    # Run the configure-mounts.yml playbook
+    run_ansible_playbook('update-nfs-mounts.yml', 'inventory/groups.yml')
 
-# Run the update-nomad playbooks
-run_ansible_playbook('update-nomad-agents.yml',  'inventory/groups.yml')
-run_ansible_playbook('update-nomad-root-agents.yml',  'inventory/groups.yml')
+    # Run the update-nomad playbooks based on the provided arguments
+    if args.rootless_agents or args.all:
+        logging.info('Updating rootless Nomad agents...')
+        run_ansible_playbook('update-nomad-agents.yml', 'inventory/groups.yml')
+        logging.info('Rootless Nomad agents updated successfully.')
+
+    if args.root_agents or args.all:
+        logging.info('Updating root Nomad agents...')
+        run_ansible_playbook('update-nomad-root-agents.yml', 'inventory/groups.yml')
+        logging.info('Root Nomad agents updated successfully.')
+
+    if not any([args.rootless_agents, args.root_agents, args.all]):
+        logging.info('No specific agents selected. Please use --rootless-agents, --root-agents, or --all to specify the agents to update.')
+
+if __name__ == '__main__':
+    # Configure logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description='Update Nomad agents using Ansible playbooks.')
+    parser.add_argument('--rootless-agents', action='store_true', help='Update rootless Nomad agents')
+    parser.add_argument('--root-agents', action='store_true', help='Update root Nomad agents')
+    parser.add_argument('--all', action='store_true', help='Update both rootless and root Nomad agents')
+
+    args = parser.parse_args()
+
+    main(args)

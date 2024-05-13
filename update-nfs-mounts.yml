@@ -1,0 +1,16 @@
+---
+- name: Update NFS mounts across home lab
+  hosts: servers
+  user: root
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ensure existence and set ownership of mounted directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        recurse: false
+        mode: "0755"
+      loop: "{{ volumes }}"
