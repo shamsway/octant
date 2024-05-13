@@ -1,0 +1,45 @@
+{
+  "samba-container-config": "v0",
+  "configs": {
+    "config1": {
+      "instance_name": "SAMBA",
+      "instance_features": [],
+      "shares": [
+        "library"
+      ],
+      "globals": [
+        "default"
+      ]
+    }
+  },
+  "shares": {
+    "library": {
+      "options": {
+        "path": "/share",
+        "valid users": "smbuser"
+      }
+    }
+  },
+  "globals": {
+    "default": {
+      "options": {
+        "security": "user",
+        "server min protocol": "SMB2",
+        "load printers": "no",
+        "printing": "bsd",
+        "printcap name": "/dev/null",
+        "disable spoolss": "yes",
+        "guest ok": "no"
+      }
+    }
+  },
+  "users": {
+    "all_entries": [
+      {
+        "name": "smbuser",
+        "password": "{{ with nomadVar "nomad/jobs/samba" }}{{ .smbuser_password }}{{ end }}"
+      }
+    ]
+  },
+  "_footer": 1
+}
