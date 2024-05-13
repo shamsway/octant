@@ -37,7 +37,38 @@ curl \
 -H "Authorization: Bearer $OP_API_TOKEN" \
 https://opapi.shamsway.net/v1/vaults
 ```
-## Scratch
+# Finding UUIDs
+
+- In 1password GUI, right click -> copy link/copy private link
+- Result `https://start.1password.com/open/i?a=[ACCOUNT]&v=[VAULT]&i=[ITEM]&h=my.1password.com`
+
+Import an password into Terraform:
+`terraform import onepassword_item.postgres_pass vaults/[VAULT]/items/[ITEM]`
+
+## Scratch pad
+
+`terraform import onepassword_item.postgres_pass vaults/naswcsgqw4zzkluj6zbd3r2qfq/items/2hgfrtvnyev6q7fojuj5gwiwx4`
+
+      template {
+        destination = "$${NOMAD_SECRETS_DIR}/env.txt"
+        env         = true
+        data        = <<EOT
+{{ with nomadVar "nomad/jobs/postgres" }}PGWEB_DATABASE_URL=postgres://postgres:{{ .postgres_password }}@postgres.sevice.consul:5432/pgweb?sslmode=disable{{ end }}
+EOT
+      }    
+
+```hcl
+resource "onepassword_item" "postgres_pass" {
+  vault = data.onepassword_vault.dev.uuid
+
+  title    = "Postgres"
+  category = "password"
+  password_recipe {
+    length  = 12
+    symbols = true
+  }  
+}
+```
 
 OP_BUS_PEERS="{{ range nomadService "opsyncbus" }}{{ .Address }}:{{ .Port }}{{ end }}"
 
@@ -71,6 +102,7 @@ However, it is important to note that this behavior deviates from the documented
 - https://github.com/1Password/connect/issues/62
 - https://1password.community/discussion/124432/unable-to-get-credentials-and-initialize-api-read-home-opuser-op-1password-credentials-json
 - https://1password.community/discussion/142716/connect-server-failed-to-retrieve-credentials
+
 
 ## Podman Commands
 
