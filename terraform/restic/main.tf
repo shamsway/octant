@@ -1,14 +1,20 @@
-# Initialize before running
-
-# podman run --rm --hostname restic-host -ti \
-#     -e RESTIC_REPOSITORY=your_repository_url \
-#     -e RESTIC_PASSWORD=your_restic_password \
-#     restic/restic init
-#
-# Add AWS stuff
+terraform {
+  required_providers {
+    onepassword = {
+      source = "1Password/onepassword"
+      version = "~> 1.3.0"
+    }
+  }
+}
 
 provider "nomad" {
   address = "http://${var.nomad}:4646"
+}
+
+provider "onepassword" {
+  url                   = "https://opapi.shamsway.net"
+  token                 = "${var.OP_API_TOKEN}"
+  op_cli_path           = "/usr/local/bin/op"
 }
 
 data "local_file" "inventory_vars" {
@@ -19,16 +25,30 @@ data "local_file" "inventory" {
   filename = "../../inventory/groups.yml"
 }
 
+data "onepassword_vault" "dev" {
+  name = "Dev"
+}
+
+data "onepassword_item" "restic_pass" {
+  vault = data.onepassword_vault.dev.uuid
+  title = "Restic"
+}
+
+data "onepassword_item" "backblaze" {
+  vault = data.onepassword_vault.dev.uuid
+  title = "Backblaze"
+}
+
 locals {
   inventory         = yamldecode(data.local_file.inventory.content)
   inventory_vars    = yamldecode(data.local_file.inventory_vars.content)
   backup_volumes    = local.inventory.servers.vars.volumes
-  restic_password   = var.restic_password
+  #restic_password   = var.restic_password
   restic_repository = local.inventory_vars.restic_repository
 }
 
 data "template_file" "restic_job" {
-  template = file("${path.module}/restic.hcl")
+  template = file("${path.module}/restic.nomad.hcl")
 
   vars = {
     region            = var.region
@@ -49,9 +69,9 @@ data "template_file" "restic_job" {
 resource "nomad_variable" "restic_password" {
   path = "nomad/jobs/restic-backup"
   items = {
-    restic_password = local.restic_password
-    AWS_ACCESS_KEY_ID = var.AWS_ACCESS_KEY_ID
-    AWS_SECRET_ACCESS_KEY = var.AWS_SECRET_ACCESS_KEY
+    restic_password = data.onepassword_item.restic_pass.password
+    AWS_ACCESS_KEY_ID = data.onepassword_item.backblaze.username
+    AWS_SECRET_ACCESS_KEY = data.onepassword_item.backblaze.username
   }
 }
 

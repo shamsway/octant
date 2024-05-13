@@ -2,9 +2,19 @@
 
 source /etc/restic-env
 
+# Install updates
+restic self-update
+
+# Prune backups older than 180 days
+restic forget --prune --keep-daily 180
+
 # Run the Restic backup command
 restic_output=$(restic backup \
   --json --exclude="*/cache/*" \
+  --exclude="*/alloc/*" \
+  --exclude="*/vfs/*" \
+  --exclude="*/vfs-images/*" \
+  --exclude="*/vfs-layers/*" \
   /etc \
   /opt/homelab \
   /home 2>&1)

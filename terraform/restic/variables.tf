@@ -1,3 +1,8 @@
+variable "OP_API_TOKEN" {
+  description = "Auth token for 1password connect vault"
+  type = string
+}
+
 variable "nomad" {
   description = "Nomad server address"
   type = string

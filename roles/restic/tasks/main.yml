@@ -31,6 +31,8 @@
 - name: Schedule Restic backup cron job
   cron:
     name: "Restic backup"
+    user: root
+    cron_file: restic_backup
     minute: "0"
     hour: "3"
     job: "/usr/local/bin/restic-backup.sh"        

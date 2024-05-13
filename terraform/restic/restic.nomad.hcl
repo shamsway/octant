@@ -111,7 +111,6 @@ fi
 echo "$json_data"
 echo "$restic_output"
 EOH
-
         destination = "local/backup.sh"
         perms = "755"
       }
