@@ -98,9 +98,9 @@ servers:
         backup: true
       - name: emby-config
         path: /mnt/services/emby/config
-        backup: true
+        backup: false
       - name: emby-data
-        path: /mnt/services/emby/config
+        path: /mnt/services/emby/data
         backup: false
       - name: unifi-config
         path: /mnt/services/unifi/config
@@ -164,4 +164,10 @@ servers:
         backup: true
       - name: media-library
         path: /mnt/services/library
+        backup: true
+      - name: n8n-config
+        path: /mnt/services/n8n/config
+        backup: true
+      - name: pgweb-config
+        path: /mnt/services/pgweb/config
         backup: true
