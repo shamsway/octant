@@ -1,14 +1,7 @@
-variable "inventory_vars" {
-  description = "Path to Ansible inventory varibles"
-  type        = string
-  default     = "../../inventory/group_vars/all.yml"
+variable "OP_API_TOKEN" {
+  description = "Auth token for 1password connect vault"
+  type = string
 }
-
-/* variable "inventory" {
-  description = "Path to Ansible inventory"
-  type        = string
-  default     = "~/Documents/git/homelab/inventory/groups.yml"
-} */
 
 variable "nomad" {
   description = "Nomad server address"
@@ -16,27 +9,33 @@ variable "nomad" {
   default = "nomad.shamsway.net"
 }
 
+variable "consul" {
+  description = "Consul server address"
+  type = string
+  default = "consul.shamsway.net"
+}
+
 variable "region" {
-    type = string
-    default = "home"
+  type = string
+  default = "home"
 }
 
 variable "shared_dir" {
-    type = string
-    default = "/opt/storage/"
+  type = string
+  default = "/opt/storage/"
 }
 
 variable "datacenter" {
-    type = string
-    default = "home"
+  type = string
+  default = "shamsway"
 }
 
 variable "image" {
-    type = string
-    default = "docker.io/postgres:16.2"
+  type = string
+  default = "docker.io/postgres:16.2"
 }
 
-variable "postgres_password" {
-    type = string
-    default = "P0$tgr3$4Lyf3"
+variable "pgadmin_email" {
+  type = string
+  default = "pgadmin@shamsway.net"
 }
