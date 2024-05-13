@@ -41,7 +41,7 @@ This command will filter the `playlist.m3u` file, keeping only the groups matchi
 
 # XMLTV Merge tool
 
-# Example usage
+## Example usage
 file1 = 'schedule1.xml'
 file2 = 'schedule2.xml'
 output_file = 'combined_schedule.xml'
@@ -58,12 +58,12 @@ Copy codepython m3u2strm.py <m3u_url_or_file> [-v] [-o OUTPUT_DIR]
 -v, --verbose: Enable verbose output to display the files being created (optional).
 -o OUTPUT_DIR, --output-dir OUTPUT_DIR: Specify the output directory (default: output).
 
-Dependencies
+## Dependencies
 
 Python 3.x
 requests library (can be installed via pip install requests)
 
-Functionality
+## Functionality
 
 The script takes an M3U URL or file path as a command-line argument.
 It reads the M3U content either from the provided URL or local file.
@@ -78,10 +78,59 @@ If the -v or --verbose option is provided, the script displays the files being c
 After the script completes, it outputs the number of groups and files created.
 The script handles errors that may occur during execution, such as invalid URLs, file not found, or invalid M3U content.
 
-Example
+## Example
 Copy codepython m3u2strm.py https://example.com/playlist.m3u -v -o /path/to/output
 This command will convert the M3U playlist located at https://example.com/playlist.m3u to .strm files in the /path/to/output directory, organized by tvg-type and group-title. Verbose output will be enabled, displaying the files being created. After completion, the script will output the number of groups and files created.
 
-# xteve notes
+# XMLTV Info
+This Python script reads an XMLTV file and outputs the following information:
 
-podman run -d --name=xteve -p 34400:34400 -e TZ=America/New_York -v /mnt/services/iptvtools/xteve-config:/root/.xteve:rw -v /mnt/services/iptvtools/xteve-config:/config:rw alturismo/xteve
+- Number of channels in the XMLTV file
+- Number of programs in the XMLTV file
+- The start time & date of the earliest program
+- The end time & date of the latest program
+
+The script also includes an option to output the data in JSON format.
+
+## Usage
+
+Make sure you have Python installed on your system.
+Save the script to a file named xmltv_info.py.
+Open a terminal or command prompt and navigate to the directory where the script is located.
+Run the script using the following command:
+`python xmltv_info.py <file_path> [--format FORMAT]`
+
+<file_path>: The path to the XMLTV file.
+--format FORMAT (optional): The output format. Valid options are text (default) and json.
+
+The script will analyze the XMLTV file and output the requested information based on the specified format.
+
+## Command-Line Arguments
+The script accepts the following command-line arguments:
+
+file_path (required): The path to the XMLTV file.
+--format FORMAT (optional): The output format. Valid options are text (default) and json.
+
+Output
+The script outputs the following information:
+
+Number of channels in the XMLTV file
+Number of programs in the XMLTV file
+The start time & date of the earliest program
+The end time & date of the latest program
+
+By default, the output is displayed in a human-readable text format. If the --format json option is specified, the output will be in JSON format.
+
+The script includes basic logging to provide information about the analysis process and any errors that may occur. The logging messages will be displayed in the console when running the script.
+
+INFO level messages indicate the progress of the analysis process.
+ERROR level messages indicate any errors that occur during the process, such as file not found or XML parsing errors.
+
+## Dependencies
+The script relies on the following Python modules:
+
+xml.etree.ElementTree (built-in): Used for parsing and manipulating XML files.
+logging (built-in): Used for logging messages.
+argparse (built-in): Used for parsing command-line arguments.
+json (built-in): Used for JSON serialization.
+datetime (built-in): Used for date and time parsing and formatting.

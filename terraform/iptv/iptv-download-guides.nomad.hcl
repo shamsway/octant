@@ -36,6 +36,8 @@ wget -q https://i.mjh.nz/PlutoTV/us.xml.gz -O /tmp/us.xml.gz
 gunzip -f /tmp/us.xml.gz
 wget -q https://epg.tvnow.best/utc.xml.gz -O /tmp/utc.xml.gz
 gunzip -f /tmp/utc.xml.gz
+python3 /mnt/services/iptvtools/xmltv-info.py /tmp/us.xml
+python3 /mnt/services/iptvtools/xmltv-info.py /tmp/utc.xml
 python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/us.xml /tmp/utc.xml /mnt/services/tvheadend/config/data/guide.xml
 EOH
         destination = "local/download_guides.sh"
