@@ -388,3 +388,7 @@ logging (built-in): Used for logging messages.
 argparse (built-in): Used for parsing command-line arguments.
 json (built-in): Used for JSON serialization.
 datetime (built-in): Used for date and time parsing and formatting.
+
+# Zap2it Guide Downloader
+
+Link: https://github.com/daniel-widrick/zap2it-GuideScraping

@@ -1,51 +1,44 @@
 job "iptv" {
-  datacenters = ["shamsway"]
+  region = "${region}"
+  datacenters = ["${datacenter}"]
   type        = "service"
 
   constraint {
-      attribute = "${attr.kernel.name}"
-      value     = "linux"
+    attribute = "$${attr.kernel.name}"
+    value     = "linux"
   }
 
   constraint {
-      attribute = "${meta.rootless}"
-      value = "false"
+    attribute = "$${meta.rootless}"
+    value = "false"
+  }
+
+  constraint {
+    attribute = "$${node.unique.name}"
+    value = "bobby-agent-root"
   }
 
   group "iptv" {
     volume "tvheadend-config" {
-    type      = "host"
-    read_only = false
-    source    = "tvheadend-config"
+      type      = "host"
+      read_only = false
+      source    = "tvheadend-config"
     }
 
     volume "tvheadend-data" {
-    type      = "host"
-    read_only = false
-    source    = "tvheadend-data"
+      type      = "host"
+      read_only = false
+      source    = "tvheadend-data"
     }
 
     volume "tvheadend-recordings" {
-    type      = "host"
-    read_only = false
-    source    = "tvheadend-recordings"
+      type      = "host"
+      read_only = false
+      source    = "tvheadend-recordings"
     }    
-    
-    volume "xteve" {
-    type      = "host"
-    read_only = false
-    source    = "xteve"
-    }
-
-    affinity {
-    attribute = "${node.unique.name}"
-    value     = "bobby-root"
-    weight    = 100
-    }
 
     network {
       mode = "bridge"        
-      #port "envoy" { to = 19001 }
       port "http" { 
         static = 9981 
         to = 9981 
@@ -77,92 +70,107 @@ job "iptv" {
       port "htsp-8" { 
         static = 9988 
         to = 9988
-      }
-      port "xteve" { 
-        static = 34400 
-        to = 34400 
-      }      
-      port "metrics" { to = 9102 }
+      }  
       port "gluetun" { to = 8000 }
       port "vpnhealth" { to = 9999 }                  
+      port "socks" { 
+        static = 8888
+        to = 8888
+      }
 
       dns {
         servers = ["192.168.252.1","192.168.252.7"]
       }      
+    }     
+
+    service {
+    name = "gluetun"
+    port = "gluetun"
+    provider = "consul"
+    task = "gluetun"   
+    tags = [
+      "admin",
+      "traefik.enable=true",
+      "traefik.consulcatalog.connect=false",
+      "traefik.http.routers.gluetun.rule=Host(`gluetun.shamsway.net`)",
+      "traefik.http.routers.gluetun.entrypoints=web,websecure",   
+      "traefik.http.routers.gluetun.tls.certresolver=cloudflare",
+      "traefik.http.services.gluetun.loadbalancer.server.scheme=http",
+    ]
+    connect {
+        native = true
+      }
     }
 
     service {
-      name = "envoy-metrics"
-      port = "metrics"
+      name = "tvheadend"
+      port = 9981
+      task = "tvheadend"      
       provider = "consul"
-      tags = ["metrics"]
+
+      connect {
+          native = true
+      }   
+
+      check {
+        type     = "http"
+        path     = "/"
+        interval = "30s"
+        timeout  = "5s"
+      }
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=false",
+        "traefik.http.routers.tvheadend.rule=Host(`tvheadend.shamsway.net`)",
+        "traefik.http.routers.tvheadend.entrypoints=web,http,websecure",   
+        "traefik.http.routers.tvheadend.tls.certresolver=cloudflare",
+        "traefik.http.services.tvheadend.loadbalancer.server.scheme=http",
+      ]      
     }
-    
-    # service {
-    #  name = "envoy"
-    #  port = "envoy"
-    #  provider = "consul"
-    #  tags = ["admin"]
-    # }         
-    
-    task "xteve" {
-      driver = "podman"
 
-      resources {
-        memory = 768
-      }
-    
-      volume_mount {
-        volume      = "xteve"
-        destination = "/root/.xteve"
-        read_only   = false
-      }
+    service {
+      name = "tvh-htsp-1"
+      port = 9982
+      task = "tvheadend"      
+      provider = "consul"
 
-      volume_mount {
-        volume      = "xteve"
-        destination = "/config"
-        read_only   = false
-      }
+      connect {
+        native = true
+      }     
+    }
 
-      volume_mount {
-          volume      = "tvheadend-config"
-          destination = "/TVH"
-          read_only   = true
-      }
+    service {
+      name = "tvh-htsp-2"
+      port = 9983
+      task = "tvheadend"      
+      provider = "consul"
 
-      config {
-        image  = "alturismo/xteve"
-        volumes = ["local/:/tmp/xteve:rw"]
-        network_mode = "task:gluetun"
-        ports = ["xteve"]
-        logging = {
-          driver = "journald"
-          options = [
-            {
-              "tag" = "xteve"
-            }
-          ]
-        }        
-      }
+      connect {
+          native = true
+      }   
+    }
 
-      service {
-        name = "xteve"
-        port = "xteve"
-        provider = "consul"
- 
-        tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",
-          "traefik.http.routers.xteve.rule=Host(`xteve.shamsway.net`) || Host(`xteve.service.consul`)",
-          "traefik.http.routers.xteve.entrypoints=web,http,websecure",   
-          "traefik.http.routers.xteve.tls.certresolver=cloudflare",
-          "traefik.http.services.xteve.loadbalancer.server.scheme=http",
-        ]
-      }  
+    service {
+      name = "tvh-htsp-3"
+      port = 9984
+      task = "tvheadend"      
+      provider = "consul"
 
-      env {
-        TZ   = "America/New_York"
+      connect {
+          native = true
       }
+    }
+
+    service {
+      name = "tvh-htsp-3"
+      port = 9985
+      task = "tvheadend"      
+      provider = "consul"
+
+      connect {
+          native = true
+      }   
     }
 
     task "tvheadend" {
@@ -174,9 +182,8 @@ job "iptv" {
       }
 
       config {
-        image = "docker.io/linuxserver/tvheadend"
+        image = "${tvh_image}"
         ports = ["http","htsp-2","htsp-3","htsp-4","htsp-5","htsp-6","htsp-7","htsp-8"]      
-        network_mode = "task:gluetun"
         privileged = true
         logging = {
           driver = "journald"
@@ -188,92 +195,11 @@ job "iptv" {
         }          
       }
 
-      service {
-        name = "tvheadend"
-        port = "http"  
-        provider = "consul"
-
-        check {
-          type     = "http"
-          path     = "/"
-          interval = "30s"
-          timeout  = "5s"
-        }
-
-        tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",
-          "traefik.http.routers.tvheadend.rule=Host(`tvheadend.shamsway.net`) || Host(`tvheadend.service.consul`)",
-          "traefik.http.routers.tvheadend.entrypoints=web,http,websecure",   
-          "traefik.http.routers.tvheadend.tls.certresolver=cloudflare",
-          "traefik.http.services.tvheadend.loadbalancer.server.scheme=http",
-        ]      
-      }
-
-      service {
-        name = "tvh-htsp-2"
-        port = "htsp-2"
-        provider = "consul"
-
-      tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",          
-          "traefik.tcp.routers.htsp1.rule=HostSNI(`*`)",
-          "traefik.tcp.routers.htsp1.service=htsp1",
-          "traefik.http.routers.htsp1.entrypoints=htsp1",
-          "traefik.http.routers.htsp1.loadbalancer.server.port=9982"        
-        ]      
-      }
-
-      service {
-        name = "tvh-htsp-3"
-        port = "htsp-3"
-        provider = "consul"
-
-        tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",          
-          "traefik.tcp.routers.htsp2.rule=HostSNI(`*`)",
-          "traefik.tcp.routers.htsp2.service=htsp2",
-          "traefik.http.routers.htsp2.entrypoints=htsp2",
-          "traefik.http.routers.htsp2.loadbalancer.server.port=9983"        
-        ]        
-      }
-
-      service {
-        name = "tvh-htsp-4"
-        port = "htsp-4"    
-        provider = "consul"
-
-        tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",          
-          "traefik.tcp.routers.htsp3.rule=HostSNI(`*`)",
-          "traefik.tcp.routers.htsp3.service=htsp3",
-          "traefik.http.routers.htsp3.entrypoints=htsp3",
-          "traefik.http.routers.htsp3.loadbalancer.server.port=9984"        
-        ] 
-      }
-
-      service {
-        name = "tvh-htsp-5"
-        port = "htsp-5"      
-        provider = "consul"
-
-        tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",          
-          "traefik.tcp.routers.htsp3.rule=HostSNI(`*`)",
-          "traefik.tcp.routers.htsp3.service=htsp4",
-          "traefik.http.routers.htsp3.entrypoints=hts4",
-          "traefik.http.routers.htsp3.loadbalancer.server.port=9985"        
-        ]       
-      }
-
       env {
         PUID  = 2000
         PGID  = 2000
         TZ    = "America/New_York"
+        #RUN_OPTS = "--debug -d -s"
       }
 
       volume_mount {
@@ -292,12 +218,11 @@ job "iptv" {
           volume      = "tvheadend-recordings"
           destination = "/recordings"
           read_only   = false
-      }
-                
+      }      
     }
 
     task "gluetun" {
-      driver = "podman"
+    driver = "podman"
     
       lifecycle {
         hook    = "prestart"
@@ -309,11 +234,12 @@ job "iptv" {
       }
 
       config {
-        image      = "qmcgaw/gluetun"
+        image      = "${gluetun_image}"
+        force_pull = true
         cap_add    = ["NET_ADMIN","SYS_ADMIN"]
         devices    = ["/dev/net/tun"]
         volumes    = ["local/wg0.conf:/gluetun/wireguard/wg0.conf"]
-        ports      = ["gluetun","vpnhealth"]
+        ports      = ["vpnhealth","socks"]
         privileged = true
         logging = {
         driver = "journald"
@@ -339,18 +265,10 @@ job "iptv" {
       }
 
       service {
-        name = "gluetun"
-        port = "gluetun"
-        provider = "consul"   
-        tags = [
-          "admin",
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",
-          "traefik.http.routers.gluetun.rule=Host(`gluetun.shamsway.net`)",
-          "traefik.http.routers.gluetun.entrypoints=web,websecure",   
-          "traefik.http.routers.gluetun.tls.certresolver=cloudflare",
-          "traefik.http.services.gluetun.loadbalancer.server.scheme=http",
-        ]
+        name = "gluetun-socks"
+        port = "socks"
+        provider = "consul"
+        tags = ["proxy"]     
       }
 
       env {
@@ -360,25 +278,12 @@ job "iptv" {
         FIREWALL_OUTBOUND_SUBNETS = "192.168.252.0/24"
         HTTP_CONTROL_SERVER       = ":8000"
         HEALTH_SERVER_ADDRESS     = ":9999"
+        HTTPPROXY                 = "on"
+        HTTPPROXY_LOG             = "on"
       }
       template {
           data = <<EOH
-[Interface]
-# Key for gluetun
-# Bouncing = 1
-# NetShield = 1
-# Moderate NAT = off
-# NAT-PMP (Port Forwarding) = off
-# VPN Accelerator = on
-PrivateKey = IFlrcEPSAhcWrkSm0bKHQYz8eTRTtJw557T7lO/25GU=
-Address = 10.2.0.2/32
-DNS = 10.2.0.1
-
-[Peer]
-# US-NY#25
-PublicKey = R8Of+lrl8DgOQmO6kcjlX7SchP4ncvbY90MB7ZUNmD8=
-AllowedIPs = 0.0.0.0/0
-Endpoint = 193.148.18.82:51820
+{{ with nomadVar "nomad/jobs/iptv" }}{{ .wireguard_config }}{{ end }}
 EOH
         destination = "local/wg0.conf"
       }
