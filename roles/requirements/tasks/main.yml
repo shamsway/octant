@@ -32,6 +32,31 @@
     create: true
     line: "{{ user }} ALL=(ALL) NOPASSWD: ALL"
 
+# Create console-only user (defined in .secrets.yml)
+- name: Create consule-only user {{ console_user }}
+  user:
+    name: "{{ console_user }}"
+    create_home: yes
+    shell: /bin/bash
+
+- name: Set a password for {{ console_user }}
+  user:
+    name: "{{ console_user }}"
+    password: "{{ console_password | password_hash('sha512') }}"
+
+- name: Deny SSH access for the {{ console_user }}
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "DenyUsers {{ console_user }}"
+    state: present
+
+- name: Allow {{ console_user }} to have passwordless sudo
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers.d/{{ console_user }}
+    state: present
+    create: true
+    line: "{{ console_user }} ALL=(ALL) NOPASSWD: ALL"
+
 - name: Create netns group
   group:
     name: netns
@@ -144,10 +169,21 @@
 - name: Configure dnsmasq for DNS servers
   when: dnsserver is defined and dnsserver
   block:
+    - name: Check if resolv.conf is immutable
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
+      register: resolv_conf_stat
+
     - name: Ensure resolv.conf contains only the specified line
       ansible.builtin.copy:
         content: nameserver 127.0.0.1
         dest: /etc/resolv.conf
+      when: "'immutable' not in resolv_conf_stat.stat.attributes"
+
+    - name: Set resolv.conf attribute to immutable (read only)
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        attributes: +i
 
     - name: Install dnsmasq
       ansible.builtin.package:
@@ -164,11 +200,11 @@
         dest: /etc/dnsmasq.d/octant.conf
         content: |
           # Disable returning entries from /etc/hosts
-          no-hosts         
+          no-hosts
+          cache-size=0
           server=1.1.1.1
           server=8.8.8.8
           server=/.consul/127.0.0.1#8600
-          server=/{{ domain }}.{{ tld }}/127.0.0.1#8600
         owner: root
         group: root
         mode: "0644"
@@ -189,10 +225,21 @@
 - name: Configure dnsmasq for DNS clients
   when: dnsserver is not defined or not dnsserver
   block:
+    - name: Check if resolv.conf is immutable
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
+      register: resolv_conf_stat
+
     - name: Ensure resolv.conf contains only the specified line
       ansible.builtin.copy:
         content: nameserver 127.0.0.1
         dest: /etc/resolv.conf
+      when: "'immutable' not in resolv_conf_stat.stat.attributes"
+
+    - name: Set resolv.conf attribute to immutable (read only)
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        attributes: +i
 
     - name: Install dnsmasq
       ansible.builtin.package:
@@ -208,6 +255,7 @@
       ansible.builtin.copy:
         dest: /etc/dnsmasq.d/octant-client.conf
         content: |
+          server=192.168.252.1
           server=192.168.252.6
           server=192.168.252.7
           server=1.1.1.1
@@ -330,6 +378,7 @@
 # Configure tailscale clients. Tailscale clients that aren't acting as routes should not accept routes
 - name: Bring up tailscale client
   become: true
+  when: tailscale_advertisements is not defined | default(true, false)
   ansible.builtin.shell: |
     {% if tailscale_advertisements is not defined or not tailscale_advertisements %}
       {% if region == 'home' %}
@@ -347,7 +396,7 @@
     - name: Configure MSS clamping for Tailscale
       ansible.builtin.command:
         cmd: iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-      when: tailscale_advertisements is defined | default(false, true)
+      #when: tailscale_advertisements is defined | default(false, true)
 
     - name: Save iptables rules
       ansible.builtin.shell: /usr/sbin/iptables-save > /etc/iptables/rules.v4
@@ -430,6 +479,11 @@
     name: cockpit
     enabled: true
 
+- name: Disable smbd service
+  ansible.builtin.systemd_service:
+    name: smbd
+    enabled: false
+
 - name: Check if cloud-init is already disabled
   ansible.builtin.stat:
     path: /etc/cloud/cloud-init.disabled
@@ -459,21 +513,30 @@
     line: 'PermitRootLogin no'
     state: present
 
-- name: Disable debian user
-  user:
-    name: debian
-    shell: /usr/sbin/nologin
-    password: '*'
-    state: present
+- name: Disable staging users
+  vars:
+    staging_users:
+      - debian
+      - packer
+  block:
+  - name: Disable staging users
+    user:
+      name: "{{ item }}"
+      shell: /usr/sbin/nologin
+      password: '*'
+      state: present
+    loop: "{{ staging_users }}"
 
-- name: Remove debian user from sudoers
-  lineinfile:
-    path: /etc/sudoers
-    regexp: '^debian'
-    state: absent
+  - name: Remove staging users user from sudoers
+    lineinfile:
+      path: /etc/sudoers
+      regexp: '^{{ item }}'
+      state: absent
+    loop: "{{ staging_users }}"
 
-- name: Lock debian user
-  command: usermod -L debian
+  - name: Lock staging user accounts
+    command: usermod -L {{ item }}
+    loop: "{{ staging_users }}" 
 
 - name: Restart SSH service
   service:
