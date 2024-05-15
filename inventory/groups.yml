@@ -15,6 +15,7 @@ servers:
     billy.shamsway.net:
       server: true
       cephcluster: true
+      dnsserver: true
       region: home
     # phil.shamsway.net:
     #   server: true
@@ -83,12 +84,6 @@ servers:
         backup: true
       - name: litellm
         path: /mnt/services/litellm
-        backup: true
-      - name: threadfin
-        path: /mnt/services/threadfin
-        backup: true
-      - name: xteve
-        path: /mnt/services/xteve
         backup: true
       - name: registry-config/
         path: /mnt/services/registry/config
