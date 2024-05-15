@@ -37,13 +37,81 @@ curl \
 -H "Authorization: Bearer $OP_API_TOKEN" \
 https://opapi.shamsway.net/v1/vaults
 ```
-# Finding UUIDs
+## Finding UUIDs
 
 - In 1password GUI, right click -> copy link/copy private link
 - Result `https://start.1password.com/open/i?a=[ACCOUNT]&v=[VAULT]&i=[ITEM]&h=my.1password.com`
 
 Import an password into Terraform:
 `terraform import onepassword_item.postgres_pass vaults/[VAULT]/items/[ITEM]`
+
+## Terraform Integration
+
+Links:
+- https://developer.1password.com/docs/terraform/
+- https://github.com/1Password/terraform-provider-onepassword
+- https://registry.terraform.io/providers/1Password/onepassword/latest
+
+## Ansible Integration
+
+Link: https://developer.1password.com/docs/connect/ansible-collection/
+
+### Steps
+
+Install the onepassword.connect collection from Ansible Galaxy. 
+
+`ansible-galaxy collection install onepassword.connect`
+
+Add onepassword.connect to the task collections.
+
+```yaml
+collections:
+    - onepassword.connect  # Specify the 1Password collection
+```
+Provide the Connect server token through the `token` variable in the Ansible task or the `OP_CONNECT_TOKEN` environment variable. You must set this value in each Ansible task.
+
+It's best practice to use a local variable to set the Connect server token because it's more secure.  The following example sets the `connect_token` variable to the Connect server token value, then references it for the `token` field.
+
+```yaml
+vars:
+    connect_token: "<connect-server-token>"  # Set the Connect server token
+collections:
+    - onepassword.connect  # Specify the 1Password collection
+tasks:
+    - onepassword.connect.generic_item:
+        token: "{{ connect_token }}"
+```
+
+Provide the Connect server hostname, IP address, or URL through the `hostname` variable in the Ansible task or the `OP_CONNECT_HOST` environment variable. You must set this value in each Ansible task.
+
+```yaml
+environment:
+    OP_CONNECT_HOST: <connect-host>  # Set the Connect server hostname
+collections:
+    - onepassword.connect  # Specify the 1Password collection
+```
+
+The following example uses the `item_info` module to find a 1Password item by name.
+
+```yaml
+  hosts: localhost
+  vars:
+    connect_token: "<connect-server-token>"  # Set the Connect server token
+  environment:
+    OP_CONNECT_HOST: <connect-host>  # Set the Connect server hostname
+  collections:
+    - onepassword.connect  # Specify the 1Password collection
+  tasks:
+    - name: Find the item with the label "Staging Database" in the vault "Staging Env"
+      item_info:
+        token: "{{ connect_token }}"
+        item: Staging Database
+        vault: Staging Env
+      no_log: true  # Turn off logs to avoid logging sensitive data
+      register: op_item
+```
+
+More examples at: https://developer.1password.com/docs/connect/ansible-collection/
 
 ## Scratch pad
 
