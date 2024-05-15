@@ -7,12 +7,22 @@ job "litellm" {
     value = "true"
   }
   
+  affinity {
+    attribute = "${meta.class}"
+    value     = "physical"
+    weight    = 100
+  }
+
   group "litellm" {
 
     network {
-        port "http" {
-            to = 4000
-        }
+      port "http" {
+        to = 4000
+      }
+
+      dns {
+        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+      }         
     }
 
     volume "litellm" {
@@ -27,15 +37,13 @@ job "litellm" {
       port = "http"
       tags = [
         "traefik.enable=true",
-				"traefik.consulcatalog.connect=true",
+				"traefik.consulcatalog.connect=false",
         "traefik.http.routers.litellm.rule=Host(`litellm.shamsway.net`)",
         "traefik.http.routers.litellm.entrypoints=web,websecure",
         "traefik.http.routers.litellm.tls.certresolver=cloudflare",
-        "traefik.http.services.litellm.loadbalancer.server.port=${NOMAD_HOST_PORT_http}"
       ]
 
       connect {
-        #sidecar_service { }
         native = true
       }        
 

@@ -7,7 +7,7 @@ job "postgres" {
   type        = "service"
 
   meta {
-    version = "1"
+    version = "2"
   }
 
   constraint {
@@ -18,6 +18,12 @@ job "postgres" {
   constraint {
     attribute = "$${meta.rootless}"
     value = "true"
+  }
+
+  affinity {
+    attribute = "$${meta.class}"
+    value     = "physical"
+    weight    = 100
   }
 
   group "db" {
@@ -33,7 +39,7 @@ job "postgres" {
       }
 
       dns {
-        servers = ["192.168.252.1","192.168.252.7"]
+        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
       }            
     }
 

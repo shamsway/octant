@@ -9,7 +9,13 @@ job "traefik" {
   }
 
   meta {
-    version = "1"
+    version = "2"
+  }
+
+  affinity {
+    attribute = "${meta.class}"
+    value     = "physical"
+    weight    = 100
   }
 
   group "lbs" {
@@ -22,7 +28,7 @@ job "traefik" {
         static = "443"
       }
       port "api" {
-        static = "8080"
+        static = "8081"
       }
       port "metrics" {
         static = "8082"
@@ -30,6 +36,9 @@ job "traefik" {
       port "admin" {
         static = "9002"
       }
+      dns {
+        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+      }       
     }
 
     update {

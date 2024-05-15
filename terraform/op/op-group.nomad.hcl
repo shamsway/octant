@@ -7,6 +7,12 @@ job "op-connect" {
       value     = "true"
   }
 
+  affinity {
+    attribute = "${meta.class}"
+    value     = "physical"
+    weight    = 100
+  }
+
   group "op-connect" {
     network {
       port "opapi" {
@@ -28,7 +34,7 @@ job "op-connect" {
       }
 
       dns {
-        servers = ["192.168.252.1","192.168.252.7"]
+        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
       }
     }
 

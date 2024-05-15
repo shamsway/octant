@@ -8,6 +8,12 @@ job "prometheus" {
     value = "true"
   }
 
+  affinity {
+    attribute = "${meta.class}"
+    value     = "physical"
+    weight    = 100
+  }
+
   group "monitoring" {
     count = 1
 
@@ -15,6 +21,10 @@ job "prometheus" {
       port "http" {
         static = "9091"
       }
+
+      dns {
+        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+      }      
     }
 
     volume "prometheus-data" {

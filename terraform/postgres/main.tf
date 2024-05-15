@@ -80,7 +80,7 @@ data "template_file" "postgres_backup" {
   template = "${file("./postgres-backup.nomad.hcl")}"
   vars = {
     region = var.region
-    datacenter = local.config.datacenter
+    datacenter = var.datacenter
   }
 }
 

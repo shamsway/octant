@@ -187,7 +187,7 @@ job "iptv" {
       }
 
       config {
-        image = "docker.io/linuxserver/tvheadend"
+        image = "docker.io/linuxserver/tvheadend:b1005850-ls211"
         ports = ["http","htsp-2","htsp-3","htsp-4","htsp-5","htsp-6","htsp-7","htsp-8"]      
         privileged = true
         logging = {
@@ -204,6 +204,7 @@ job "iptv" {
         PUID  = 2000
         PGID  = 2000
         TZ    = "America/New_York"
+        RUN_OPTS = "--debug -d -s"
       }
 
       volume_mount {
@@ -238,7 +239,7 @@ job "iptv" {
       }
 
       config {
-        image      = "qmcgaw/gluetun"
+        image      = "docker.io/qmcgaw/gluetun:latest"
         cap_add    = ["NET_ADMIN","SYS_ADMIN"]
         devices    = ["/dev/net/tun"]
         volumes    = ["local/wg0.conf:/gluetun/wireguard/wg0.conf"]

@@ -1,94 +1,98 @@
-job "nginx" {
-  region      = "home"
-  datacenters = ["shamsway"]
-  type        = "service"
+  job "nginx" {
+    region      = "home"
+    datacenters = ["shamsway"]
+    type        = "service"
 
-  constraint {
-    attribute = "${attr.kernel.name}"
-    value     = "linux"
-  }
-
-  constraint {
-    attribute = "${meta.rootless}"
-    value = "true"
-  }
-
-  group "nginx" {
-    count = 1 
-
-    network {
-      port "http" {
-        to = 8080
-      }
-
-      port "httpalt" {
-        to = 8081
-      }      
-
-      port "https" {
-        to = 9443
-      }      
+    constraint {
+      attribute = "${attr.kernel.name}"
+      value     = "linux"
     }
 
-    service {
-      name = "web"
-      port = "http"
-      provider = "consul"       
-
-      tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",          
-          "traefik.http.routers.web.rule=Host(`web.shamsway.net`)",
-          "traefik.http.routers.web.entrypoints=web,websecure",
-          "traefik.http.routers.web.tls.certresolver=cloudflare", 
-      ]
-
-      connect {
-        native = true
-      }
-
-      check {
-          name     = "alive"
-          type     = "http"
-          path     = "/"
-          interval = "10s"
-          timeout  = "2s"
-      }
+    constraint {
+      attribute = "${meta.rootless}"
+      value = "true"
     }
 
-    volume "nginx-data" {
-      type      = "host"
-      read_only = true
-      source    = "nginx-data"
-    }   
+    group "nginx" {
+      count = 1 
 
-    task "nginx" {
-      driver = "podman"
+      network {
+        port "http" {
+          to = 8080
+        }
 
-      config {
-        image = "docker.io/nginxinc/nginx-unprivileged:1.25.4"
-        ports = ["http", "httpalt", "https"]        
-        userns = "keep-id:uid=101,gid=101"
-        logging = {
-          driver = "journald"
-          options = [
-            {
-              "tag" = "nginx"
-            }
-          ]
+        port "httpalt" {
+          to = 8081
+        }      
+
+        port "https" {
+          to = 9443
+        }
+
+        dns {
+          servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
         }        
       }
 
-      volume_mount {
-        volume      = "nginx-data"
-        destination = "/usr/share/nginx/html"
-        read_only   = true
+      service {
+        name = "web"
+        port = "http"
+        provider = "consul"       
+
+        tags = [
+            "traefik.enable=true",
+            "traefik.consulcatalog.connect=false",          
+            "traefik.http.routers.web.rule=Host(`web.shamsway.net`)",
+            "traefik.http.routers.web.entrypoints=web,websecure",
+            "traefik.http.routers.web.tls.certresolver=cloudflare", 
+        ]
+
+        connect {
+          native = true
+        }
+
+        check {
+            name     = "alive"
+            type     = "http"
+            path     = "/"
+            interval = "10s"
+            timeout  = "2s"
+        }
       }
 
-      resources {
-        cpu    = 100
-        memory = 128
+      volume "nginx-data" {
+        type      = "host"
+        read_only = true
+        source    = "nginx-data"
+      }   
+
+      task "nginx" {
+        driver = "podman"
+
+        config {
+          image = "docker.io/nginxinc/nginx-unprivileged:1.25.4"
+          ports = ["http", "httpalt", "https"]        
+          userns = "keep-id:uid=101,gid=101"
+          logging = {
+            driver = "journald"
+            options = [
+              {
+                "tag" = "nginx"
+              }
+            ]
+          }        
+        }
+
+        volume_mount {
+          volume      = "nginx-data"
+          destination = "/usr/share/nginx/html"
+          read_only   = true
+        }
+
+        resources {
+          cpu    = 100
+          memory = 128
+        }
       }
     }
   }
-}
