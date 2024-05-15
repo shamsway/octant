@@ -81,7 +81,8 @@ job "embyserver" {
       driver = "podman"
 
       config {
-        image = "emby/embyserver"
+        image = "docker.io/emby/embyserver:latest"
+        force_pull = true
         ports = ["http", "https"]
         devices = ["/dev/dri"]
         logging {
