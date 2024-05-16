@@ -1,1 +1,1 @@
-Template files to use for Terraform jobs
+Template files to use for Terraform jobs. Nomad job Jinja template is stored in `docs/docker-to-nomad/nomad-job-template.hcl.j2`
