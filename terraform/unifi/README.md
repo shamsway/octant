@@ -21,6 +21,12 @@ http:
     - traefik.http.services.unifi.loadbalancer.serverstransport=ignorecert
     - traefik.http.services.unifi.loadbalancer.server.scheme=https
 
+## Troubleshooting
+
+Use these ssh options to connect to devices running insecure versions of sshd:
+
+`ssh -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa admin@[IP]`
+
 # Podman commands
 
 ## Unifi

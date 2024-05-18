@@ -4,12 +4,12 @@ job "unifi" {
 
   constraint {
     attribute = "${meta.rootless}"
-    value = "true"
+    value = "false"
   }
 
   constraint {
     attribute = "${node.unique.name}"
-    value = "bobby-agent"
+    value = "bobby-agent-root"
   }
 
   group "unifi" {
@@ -89,11 +89,13 @@ job "unifi" {
 
     task "unifi" {
       driver = "podman"
-      user = "unifi"
+      #user = "unifi"
 
       config {
         image = "docker.io/jacobalberty/unifi:v8.1.113"
-        userns = "keep-id:uid=999,gid=999"
+        network_mode = "host"
+        privileged = "true"
+        #userns = "keep-id:uid=999,gid=999"
         ports = ["http", "https", "stun", "discovery", "unifi-discovery", "remote-syslog"]
         logging = {
           driver = "journald"
