@@ -114,9 +114,9 @@ job "iptv" {
 
       check {
         type     = "http"
-        path     = "/"
-        interval = "30s"
-        timeout  = "5s"
+        path     = "/api/serverinfo"
+        interval = "60s"
+        timeout  = "15s"
       }
 
       tags = [

@@ -9,7 +9,7 @@ job "iptv-download-guides" {
   }
 
   periodic {
-    crons = ["30 */4 * * *"]
+    crons = ["50 */2 * * *"]
     prohibit_overlap = true
   }
 
@@ -59,11 +59,14 @@ wget -q https://i.mjh.nz/PlutoTV/us.xml.gz -O /tmp/us.xml.gz
 gunzip -f /tmp/us.xml.gz
 wget -q https://epg.tvnow.best/utc.xml.gz -O /tmp/utc.xml.gz
 gunzip -f /tmp/utc.xml.gz
+wget -q https://guidexml.tvnow.best/ -O /tmp/utclite.xml
 python3 /mnt/services/iptvtools/zap2it-scrape.py -c $SECRETS/zap2it.ini -o /tmp/zap2it.xml
 python3 /mnt/services/iptvtools/xmltv-info.py /tmp/us.xml
 python3 /mnt/services/iptvtools/xmltv-info.py /tmp/utc.xml
+python3 /mnt/services/iptvtools/xmltv-info.py /tmp/utclite.xml
 python3 /mnt/services/iptvtools/xmltv-info.py /tmp/zap2it.xml
-python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/us.xml /tmp/utc.xml /tmp/guide.xml
+python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/us.xml /tmp/utc.xml /tmp/temp.xml
+python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/temp.xml /tmp/utclite.xml /tmp/guide.xml
 python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/zap2it.xml /tmp/guide.xml /mnt/services/tvheadend/config/data/guide.xml
 EOH
       }    
