@@ -1,0 +1,28 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+homeassistant:
+  name: Home
+  latitude: 38.047989
+  longitude: -84.501640
+  elevation: 978
+  unit_system: us_customary
+  currency: USD
+  country: US
+  time_zone: "America/New_York"
+  external_url: "https://ha.shamsway.net"
+  internal_url: "http://homeassistant.service.consul:8123"
+  debug: false
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies: 
+    - 10.88.0.0/16
