@@ -47,6 +47,25 @@ locals {
   restic_repository = local.inventory_vars.restic_repository
 }
 
+data "template_file" "restic_backup_script" {
+  template = file("${path.module}/backup.sh.tmpl")
+  vars = {
+    # Filter the volumes to include only those with backup = true or backup attribute missing
+    backup_volumes = jsonencode([
+      for volume in local.backup_volumes :
+      volume.path
+      if lookup(volume, "backup", true)
+    ])
+  }
+}
+
+resource "nomad_variable" "restic_backup_script" {
+  path = "nomad/jobs/restic-backup"
+  items = {
+    backup_script = data.template_file.restic_backup_script.rendered
+  }
+}
+
 data "template_file" "restic_job" {
   template = file("${path.module}/restic.nomad.hcl")
 

@@ -29,3 +29,16 @@ restic rewrite \
   --exclude="*/vfs-layers/*" \
   --dry-run
 ```
+
+## Troubleshooting
+
+Set local variables used in `backup.sh` script. Keys can be read from `/etc/restic-env`, `RESTIC_PASSWORD` from `/etc/restic-password`, `RESTIC_REPOSITORY` and `HOSTNAME` are set in `variables.tf`
+
+```bash
+export AWS_ACCESS_KEY_ID=[key]
+export AWS_SECRET_ACCESS_KEY=[secretkey]
+export RESTIC_REPOSITORY="s3:[repo]"
+export RESTIC_PASSWORD="password"
+export HOSTNAME="octant-backup"
+```
+Run `terraform show terraform.tfstate` and copy the script contents to a file in the Occtant cluter (e.g. `/tmp/backup.sh`). Execute to debug.
