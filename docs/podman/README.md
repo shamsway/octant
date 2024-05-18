@@ -1,6 +1,100 @@
 # Podman
 
+## Nomad Plugin
+
+GitHub repo: https://github.com/hashicorp/nomad-driver-podman
 Example jobs: https://github.com/hashicorp/nomad-driver-podman/tree/main/examples/jobs
+
+entrypoint - (Optional) A string list overriding the image's entrypoint. Defaults to the entrypoint set in the image. Ex:
+```hcl
+config {
+  entrypoint = [
+    "/bin/bash",
+    "-c"
+  ]
+}
+```
+
+command - (Optional) The command to run when starting the container. Ex:
+```hcl
+config {
+  command = "some-command"
+}
+```
+
+args - (Optional) A list of arguments to the optional command. If no command is specified, the arguments are passed directly to the container. Ex:
+```hcl
+config {
+  args = [
+    "arg1",
+    "arg2",
+  ]
+}
+```
+
+userns - (Optional) Set the user namespace mode for the container. Ex:
+```hcl
+config {
+  userns = "keep-id:uid=200,gid=210"
+}
+```
+Set the user namespace mode for the container. It defaults to the PODMAN_USERNS environment variable. An empty value (“”) means user namespaces are disabled unless an explicit mapping is set with the --uidmap and --gidmap options.
+
+This option is incompatible with --gidmap, --uidmap, --subuidname and --subgidname.
+
+Rootless user --userns=Key mappings:
+
+|Key|Host User|Container User|
+|--- |--- |--- |
+|“”|$UID|0 (Default User account mapped to root user in container.)|
+|keep-id|$UID|$UID (Map user account to same UID within container.)|
+|keep-id:uid=200,gid=210|$UID|200:210 (Map user account to specified uid, gid value within container.)|
+|auto|$UID|nil (Host User UID is not mapped into container.)|
+|nomap|$UID|nil (Host User UID is not mapped into container.)|
+
+The `--userns=auto` flag requires that the user name containers be specified in the /etc/subuid and /etc/subgid files, with an unused range of subordinate user IDs that Podman containers are allowed to allocate. See subuid(5).
+
+Example: `containers:2147483647:2147483648`.
+
+Podman allocates unique ranges of UIDs and GIDs from the containers subordinate user ids. The size of the ranges is based on the number of UIDs required in the image. The number of UIDs and GIDs can be overridden with the size option.
+
+The rootless option `--userns=keep-id` uses all the subuids and subgids of the user. Using `--userns=auto` when starting new containers will not work as long as any containers exist that were started with `--userns=keep-id`.
+
+**Valid auto options:**
+
+* *gidmapping*=CONTAINER_GID:HOST_GID:SIZE: to force a GID mapping to be present in the user namespace.
+* *size*=SIZE: to specify an explicit size for the automatic user namespace. e.g. --userns=auto:size=8192. If size is not specified, auto will estimate a size for the user namespace.
+* *uidmapping*=CONTAINER_UID:HOST_UID:SIZE: to force a UID mapping to be present in the user namespace.
+
+- `container:id`: join the user namespace of the specified container.
+- `host`: run in the user namespace of the caller. The processes running in the container will have the same privileges on the host as any other process launched by the calling user (default).
+- `keep-id`: creates a user namespace where the current rootless user’s UID:GID are mapped to the same values in the container. This option is not allowed for containers created by the root user.
+
+**Valid keep-id options:**
+
+* *uid*=UID: override the UID inside the container that will be used to map the current rootless user to.
+* *gid*=GID: override the GID inside the container that will be used to map the current rootless user to.
+
+`nomap`: creates a user namespace where the current rootless user’s UID:GID are not mapped into the container. This option is not allowed for containers created by the root user.
+`ns:namespace`: run the <<container|pod>> in the given existing user namespace.
+
+
+network_mode - Set the network mode for the container.
+By default the task uses the network stack defined in the task group, see network Stanza. If the groups network behavior is also undefined, it will fallback to bridge in rootful mode or slirp4netns for rootless containers.
+
+bridge: create a network stack on the default podman bridge.
+none: no networking
+host: use the Podman host network stack. Note: the host mode gives the container full access to local system services such as D-bus and is therefore considered insecure
+slirp4netns: use slirp4netns to create a user network stack. This is the default for rootless containers. Podman currently does not support it for root containers issue.
+container:id: reuse another podman containers network stack
+task:name-of-other-task: join the network of another task in the same allocation.
+
+Ex:
+```hcl
+config {
+  network_mode = "bridge"
+}
+```
 
 ## Maintenance
 
