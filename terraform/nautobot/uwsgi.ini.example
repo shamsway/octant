@@ -1,4 +1,6 @@
 [uwsgi]
+buffer-size =   32768
+
 ; The IP address (typically localhost) and port that the WSGI process should listen on
 http = 0.0.0.0:8000
 
