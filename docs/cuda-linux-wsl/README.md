@@ -1,5 +1,33 @@
-# CUDA Linux/WSL Installation Instructions
+# CUDA Linux/WSL/Hyper-V Installation Instructions
 
+## Enable GPU partitioning in Hyper-V
+
+https://learn.microsoft.com/en-us/azure-stack/hci/manage/attach-gpu-to-linux-vm
+https://gist.github.com/krzys-h/e2def49966aa42bbd3316dfb794f4d6a
+https://forum.level1techs.com/t/gpu-paravirtualization-hyper-v-with-linux-guest/198336
+https://github.com/seflerZ/oneclick-gpu-pv/blob/main/ubuntu-gpu-pv.ps1
+https://learn.microsoft.com/en-us/powershell/module/hyper-v/set-vmgpupartitionadapter?view=windowsserver2022-ps
+https://www.youtube.com/watch?v=aZtuiLYnb_g&t=38s
+https://www.tenforums.com/virtualization/195745-tutorial-passing-through-gpu-hyper-v-guest-vm.html
+https://learn.microsoft.com/en-us/powershell/module/hyper-v/get-vmhostpartitionablegpu?view=windowsserver2022-ps
+https://jmmv.dev/2022/02/wsl-ssh-access.html
+
+Convert VMDK to VHDX: https://gist.github.com/rahilwazir/69a750b70348459875cbf40935af02cb
+Docs: https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/partition-assign-vm-gpu?tabs=powershell&pivots=windows-server
+
+Example below. Replace gnarly GPU name with output from `Get-VMPartitionableGpu`. Note: On Windows 11, the cmdlet is named `Get-VMHostPartitionableGpu`
+```
+Import-Module -Force Hyper-V
+Get-VMPartitionableGpu | FL Name,ValidPartitionCounts
+Set-VMPartitionableGpu -Name "\\?\PCI#VEN_10DE&DEV_2484&SUBSYS_404C1458&REV_A1#4&3834d97&0&0008#{064092b3-625e-43bf-9eb5-dc845897dd59}\GPUPARAV" -PartitionCount 32
+```
+
+Assign GPU to VM
+```
+Get-VMGpuPartitionAdapter -VMName $VMName
+Add-VMGpuPartitionAdapter -VMName $VMName
+Get-VMGpuPartitionAdapter -VMName $VMName | FL InstancePath,PartitionId,PartitionVfLuid
+```
 
 ## WSL
 
@@ -11,7 +39,7 @@ Links:
 ### Debian WSL
 
 apt update
-apt install wget curl
+apt install wget curl git net-tools debian-goodies
 apt upgrade
 wget https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/cuda-repo-debian12-12-4-local_12.4.1-550.54.15-1_amd64.deb
 sudo dpkg -i cuda-repo-debian12-12-4-local_12.4.1-550.54.15-1_amd64.deb
@@ -36,3 +64,7 @@ Links:
 
 ## Test
 - https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/sample-workload.html
+
+## Ollama
+
+`docker run -d --gpus=all -v /mnt/g/llm-models:/root/.ollama -p 11434:11434 --name ollama ollama/ollama`

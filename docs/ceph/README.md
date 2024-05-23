@@ -174,6 +174,51 @@ Links:
 - https://www.reddit.com/r/ceph/comments/11ehf6u/pgs_stuck_in_undersized_mode_for_a_long_time/
 - 
 
+# Creating local RBDs
+
+Create separate RBD pools for each server in the cluster.
+```bash
+ceph config set global mon_allow_pool_size_one true
+ceph osd pool create rbd_jerry 32
+ceph osd pool create rbd_bobby 32
+ceph osd pool create rbd_billy 32
+ceph osd pool application enable rbd_jerry rbd
+ceph osd pool application enable rbd_bobby rbd
+ceph osd pool application enable rbd_billy rbd
+ceph osd pool set rbd_jerry size 1
+ceph osd pool set rbd_bobby size 1
+ceph osd pool set rbd_billy size 1
+ceph osd pool set rbd_jerry min_size 1 --yes-i-really-mean-it
+ceph osd pool set rbd_bobby min_size 1 --yes-i-really-mean-it
+ceph osd pool set rbd_billy min_size 1 --yes-i-really-mean-it
+
+```
+
+On each server, create an RBD image within its respective pool. For example:
+```bash
+jerry$ rbd create --size 150G rbd_jerry/image_jerry
+billy$ rbd create --size 150G rbd_bobby/image_bobby
+bobby$ rbd create --size 150G rbd_billy/image_billy
+```
+
+On each server, map its respective RBD image to a local block device:
+```bash
+jerry$ sudo rbd map rbd_jerry/image_jerry
+billy$ sudo rbd map rbd_bobby/image_bobby
+bobby$ sudo rbd map rbd_billy/image_billy
+```
+
+On each server, format the mapped RBD image with a filesystem and mount it to a local directory:
+```bash
+sudo mkfs.xfs /dev/rbd0
+sudo mkdir /mnt/rbd
+sudo mount /dev/rbd0 /mnt/rbd
+```
+
+Edit /etc/fstab:
+```bash
+/dev/rbd0 /mnt/rbd xfs defaults 0 0
+```
 # Sharing Ceph via NFS
 
 Set customized NFS Ganesha Configuration

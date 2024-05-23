@@ -209,3 +209,60 @@ ${attr.os.name}	                                    Operating system of the clie
 ${attr.os.version}	                                Version of the client OS
 ${attr.os.build}	                                Build number (e.g 14393.5501) of the client OS (if on Windows)
 ```
+# Relocating container images
+
+Moving the container images and file system to a Ceph cluster is a good idea to free up space on your root directory. Here's a step-by-step guide along with bash commands to help you with the process:
+
+1. Stop the running containers and the Podman service:
+```bash
+podman stop $(podman ps -q)
+systemctl stop podman
+```
+
+2. Create a new directory in your Ceph file system to store the container data. For example:
+```bash
+mkdir /mnt/cephfs/podman-data
+```
+
+3. Mount the Ceph file system directory to a local directory on your server. Update the `<mon-ip>` and `<secret-key>` placeholders with your Ceph cluster's monitor IP and secret key, respectively:
+```bash
+sudo mount -t ceph <mon-ip>:6789:/ /mnt/cephfs -o name=admin,secret=<secret-key>
+```
+
+4. Copy the existing container data to the Ceph file system directory:
+```bash
+sudo rsync -avP ~/.local/share/containers/storage /mnt/services/podman/[node]/storage
+```
+
+5. Remove the old container data directory:
+```bash
+rm -rf ~/.local/share/containers/storage
+```
+
+6. Create a symbolic link from the Ceph file system directory to the original location:
+```bash
+ln -s /mnt/services/podman/[node]/storage ~/.local/share/containers/
+```
+
+7. Start the Podman service:
+```bash
+systemctl start podman
+```
+
+8. Verify that the containers are running correctly:
+```bash
+podman ps
+```
+
+Concerns and issues to consider:
+
+1. Performance: Accessing container data over the network from the Ceph cluster might have a slight performance impact compared to local storage. However, this should be minimal for most use cases.
+2. Network dependency: Ensure that your network connection between the server and the Ceph cluster is stable and has sufficient bandwidth to handle the container data access.
+3. Data consistency: Make sure that the Ceph cluster is properly configured for data replication and fault tolerance to protect against data loss.
+4. Mounting on boot: To ensure that the Ceph file system is mounted on boot, you need to add an entry to the `/etc/fstab` file. Add the following line to `/etc/fstab`:
+```
+<mon-ip>:6789:/     /mnt/cephfs    ceph    name=admin,secret=<secret-key>,noauto,x-systemd.automount 0 0
+```
+Replace `<mon-ip>` and `<secret-key>` with your Ceph cluster's monitor IP and secret key, respectively.
+
+By following these steps and considering the mentioned concerns, you should be able to successfully move your container images and file system to the Ceph cluster and ensure that everything works smoothly when the server boots.

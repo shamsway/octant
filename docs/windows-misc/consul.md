@@ -12,3 +12,6 @@ foreach ($port in $consulPorts) {
     Write-Host "Firewall rule created for port $port"
 }
 ```
+
+- Run consul from WSL:
+`consul agent -config-file=consul-agent.hcl -enable-script-checks`
