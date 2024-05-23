@@ -62,30 +62,3 @@ data "template_file" "postgres" {
 resource "nomad_job" "postgres" {
   jobspec = "${data.template_file.postgres.rendered}"
 }
-
-data "nomad_allocations" "postgres" {
-  depends_on = [nomad_job.postgres]
-  filter = "JobID == \"${nomad_job.postgres.id}\" and ClientStatus == \"running\""
-}
-
-# Save job ID to Consul KV store
-resource "consul_keys" "postgres_alloc" {
-  key {
-    path  = "service/postgres/alloc"
-    value = "${data.nomad_allocations.postgres.allocations[0].id}"
-  }
-}
-
-data "template_file" "postgres_backup" {
-  template = "${file("./postgres-backup.nomad.hcl")}"
-  vars = {
-    region = var.region
-    datacenter = var.datacenter
-  }
-}
-
-# Register postgres backup job
-resource "nomad_job" "postgres_backup" {
-  depends_on = [consul_keys.postgres_alloc]
-  jobspec = "${data.template_file.postgres_backup.rendered}"
-}

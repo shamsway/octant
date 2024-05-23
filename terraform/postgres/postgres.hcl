@@ -165,6 +165,7 @@ EOT
 
       env {
         PGADMIN_DEFAULT_EMAIL     = "pgadmin@shamsway.net"
+        PGADMIN_LISTEN_ADDRESS    = "0.0.0.0"
         PGDATA                    = "/appdata/postgres"
       }
 
