@@ -1,7 +1,7 @@
 ---
 - name: Resetting servers
   hosts: servers
-  user: matt
+  user: "{{ admin_user }}"
   become: true
   tasks:
     - name: Remove Consul and Nomad

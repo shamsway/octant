@@ -5,7 +5,7 @@
 
 - name: Clear Consul Data Directories
   hosts: servers
-  user: root
+  user: "{{ admin_user }}"
   become: true
   gather_facts: true
   serial: 1
