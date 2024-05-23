@@ -4,7 +4,7 @@
 job "samba" {
   region = "${region}"
   datacenters = ["${datacenter}"]
-  type        = "service"
+  type        = "system"
 
   meta {
     version = "1"
@@ -40,6 +40,18 @@ job "samba" {
       source    = "media-library"
     }
 
+    volume "backups" {
+      type      = "host"
+      read_only = false
+      source    = "backups"
+    }    
+
+    volume "nginx-data" {
+      type        = "host"
+      read_only   = false
+      source      = "nginx-data"
+    }      
+
     service {
       name = "samba"
       provider = "consul"
@@ -64,8 +76,6 @@ job "samba" {
       config {
         image = "${image}"
         ports = ["smb"]
-        #userns = "keep-id:uid=70,gid=70"
-        #volumes = ["$${NOMAD_SECRETS_DIR}/config.json:/etc/samba-container/config.json"]
         volumes = ["secrets/config.json:/etc/samba-container/config.json"]
         logging = {
           driver = "journald"
@@ -83,6 +93,18 @@ job "samba" {
         read_only   = false
       }
 
+      volume_mount {
+        volume      = "backups"
+        destination = "/share/backups"
+        read_only   = false
+      }
+
+      volume_mount {
+        volume      = "nginx-data"
+        destination = "/share/html"
+        read_only   = false
+      }      
+
       env {
         #SAMBACC_CONFIG = "$${NOMAD_TASK_DIR}/sambacc_config.json"
         SAMBACC_CONFIG = "/etc/samba-container/config.json"
@@ -99,7 +121,9 @@ job "samba" {
       "instance_name": "OCTANTSMB",
       "instance_features": [],
       "shares": [
-        "library"
+        "library",
+        "backups",
+        "html"
       ],
       "globals": [
         "default"
@@ -113,7 +137,21 @@ job "samba" {
         "valid users": "smbuser",
         "read only": "no"
       }
-    }
+    },
+    "backups": {
+      "options": {
+        "path": "/share/backups",
+        "valid users": "smbuser",
+        "read only": "no"
+      }
+    },
+    "html": {
+      "options": {
+        "path": "/share/html",
+        "valid users": "smbuser",
+        "read only": "no"
+      }
+    }        
   },
   "globals": {
     "default": {
