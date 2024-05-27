@@ -1,14 +1,15 @@
 job "unifi" {
-  datacenters = ["shamsway"]
+  region = "${region}"
+  datacenters = ["${datacenter}"]
   type        = "service"
 
   constraint {
-    attribute = "${meta.rootless}"
+    attribute = "$${meta.rootless}"
     value = "false"
   }
 
   constraint {
-    attribute = "${node.unique.name}"
+    attribute = "$${node.unique.name}"
     value = "bobby-agent-root"
   }
 
@@ -70,8 +71,11 @@ job "unifi" {
         "traefik.consulcatalog.connect=false",
         "traefik.http.routers.unifi-network-application.rule=Host(`unifi.shamsway.net`)",
         "traefik.http.routers.unifi-network-application.entrypoints=web,websecure",
-        "traefik.http.routers.unifi-network-application.tls.certresolver=cloudflare",
+        "traefik.http.routers.unifi-network-application.tls.certresolver=cloudflare",        
         "traefik.http.routers.unifi-network-application.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.services.unifi-network-application.loadbalancer.serverstransport=skipcertcheck@file",
+        "traefik.http.services.unifi-network-application.loadbalancer.server.scheme=https",
+        "traefik.http.services.unifi-network-application.loadbalancer.server.port=$${NOMAD_PORT_https}"
       ]
 
       connect {
@@ -92,7 +96,7 @@ job "unifi" {
       #user = "unifi"
 
       config {
-        image = "docker.io/jacobalberty/unifi:v8.1.113"
+        image = "${image}"
         network_mode = "host"
         privileged = "true"
         #userns = "keep-id:uid=999,gid=999"
@@ -116,7 +120,7 @@ job "unifi" {
       volume_mount {
         volume           = "backups"
         propagation_mode = "host-to-task"
-        destination      = "${NOMAD_TASK_DIR}/backup"
+        destination      = "$${NOMAD_TASK_DIR}/backup"
         read_only        = false
       }      
 
