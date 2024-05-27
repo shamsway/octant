@@ -69,7 +69,7 @@ job "nautobot" {
       user = "nautobot"
 
       config {
-        image = "docker.io/networktocode/nautobot"
+        image = "${image}"
         ports = ["http","https"]
         volumes = ["local/uwsgi.ini:/opt/nautobot/uwsgi.ini","secrets/nautobot_config.py:/opt/nautobot/nautobot_config.py"]
         userns = "keep-id:uid=999,gid=999"
