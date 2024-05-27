@@ -34,13 +34,13 @@
 
 # Create console-only user (defined in .secrets.yml)
 - name: Create consule-only user {{ console_user }}
-  user:
+  ansible.builtin.user:
     name: "{{ console_user }}"
     create_home: yes
     shell: /bin/bash
 
 - name: Set a password for {{ console_user }}
-  user:
+  ansible.builtin.user:
     name: "{{ console_user }}"
     password: "{{ console_password | password_hash('sha512') }}"
 
@@ -58,18 +58,18 @@
     line: "{{ console_user }} ALL=(ALL) NOPASSWD: ALL"
 
 - name: Create netns group
-  group:
+  ansible.builtin.group:
     name: netns
     state: present
 
 - name: Add hashi user to netns group
-  user:
+  ansible.builtin.user:
     name: "{{ user }}"
     groups: netns
     append: yes
 
 - name: Ensure /var/run/netns directory exists
-  file:
+  ansible.builtin.file:
     path: /var/run/netns
     state: directory
     owner: root
@@ -77,14 +77,14 @@
     mode: '0770'
 
 - name: Set ownership and permissions for /var/run/netns
-  file:
+  ansible.builtin.file:
     path: /var/run/netns
     owner: root
     group: netns
     mode: '0770'
 
 - name: Create sudoers file for nomad-netns
-  copy:
+  ansible.builtin.copy:
     content: |
       {{ user }} ALL=(root) NOPASSWD: /bin/mount --make-rshared /var/run/netns
     dest: /etc/sudoers.d/nomad-netns
@@ -113,61 +113,28 @@
     user: "{{ admin_user }}"
     key: "{{ lookup('file', user_public_key) }}"
 
-# Complete requirements
-- name: Check if {{ user }} home folder exists
-  ansible.builtin.file:
-    path: "{{ datadir }}/home"
-    state: directory
-    owner: "{{ user }}"
-    group: "{{ group }}"
-
-- name: Ensure {{ user }} is a member of systemd-journal group
-  ansible.builtin.user:
-    name: "{{ user }}"
-    groups: systemd-journal
-    append: true
-
-- name: Create user systemd configuration directory
-  ansible.builtin.file:
-    path: "{{ datadir }}/home/.config/systemd/user/"
-    state: directory
-    mode: "0700"
-    owner: "{{ user }}"
-    group: "{{ group }}"
-
-- name: Verify folder presence and ownership
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: directory
-    owner: "{{ user }}"
-    group: "{{ group }}"
-    mode: "0755"
-  loop: "{{ volumes }}"
-
-- name: Add polkit policy for machinectl
-  become: true
-  ansible.builtin.copy:
-    dest: /etc/polkit-1/rules.d/60-machinectl-fast-user-auth.rules
-    content: |
-      polkit.addRule(function(action, subject) {
-          if(action.id == "org.freedesktop.machine1.host-shell" && subject.isInGroup("{{ group }}")) {
-              return polkit.Result.YES;
-          }
-      });
+# Configure DNS
+- name: Add hostname to /etc/hosts
+  vars:
+    comment: "# added by ansible"
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: 127[.]0[.]0[.]1.*
+    line: 127.0.0.1 localhost.localdomain localhost {{ ansible_hostname }} {{ comment }}
+    state: present
     owner: root
     group: root
-    mode: "0644"
-  register: polkit_rule
+    mode: "0755"
 
-- name: Restart polkit service
-  ansible.builtin.service:
-    name: polkit
-    state: restarted
-  when: polkit_rule.changed
+- name: Remove 127.0.1.1 line from /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    state: absent
 
-# Configure DNS
+
 - name: Configure dnsmasq for DNS servers
-  when: dnsserver is defined and dnsserver
+  when: dnsserver is defined and dnsserver == true
   block:
     - name: Check if resolv.conf is immutable
       ansible.builtin.stat:
@@ -210,6 +177,13 @@
         mode: "0644"
       when: not dnsmasq_conf.stat.exists
 
+    - name: Stop and disable systemd-resolved
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: false
+      when: ansible_facts.services['systemd-resolved.service'] is defined
+
     - name: Restart dnsmasq if configuration file is newly created
       ansible.builtin.service:
         name: dnsmasq
@@ -223,7 +197,7 @@
         enabled: true
 
 - name: Configure dnsmasq for DNS clients
-  when: dnsserver is not defined or not dnsserver
+  when: dnsserver is not defined or dnsserver == false
   block:
     - name: Check if resolv.conf is immutable
       ansible.builtin.stat:
@@ -255,14 +229,29 @@
       ansible.builtin.copy:
         dest: /etc/dnsmasq.d/octant-client.conf
         content: |
+          {% if region == 'home' %}
           server=192.168.252.1
           server=192.168.252.6
           server=192.168.252.7
           server=1.1.1.1
+          {% elif region == 'gcp' %}
+          server=169.254.169.254
+          server=/.consul/192.168.252.1
+          {% else %}
+          server=1.1.1.1
+          server=8.8.8.8
+          server=/.consul/192.168.252.1
+          {% endif %}
         owner: root
         group: root
         mode: "0644"
       when: not dnsmasq_conf.stat.exists
+
+    - name: Stop and disable systemd-resolved
+      systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: false
 
     - name: Restart dnsmasq if configuration file is newly created
       ansible.builtin.service:
@@ -314,165 +303,15 @@
       - cockpit-podman
       - cockpit-pcp
       - cockpit-doc
+      - snmp
+      - snmpd
     state: present
-
-# Section below removed in favor of setting --accept-routes=false for local servers
-# Override tailscale advertised local
-# - name: Override tailscale advertised local routes
-#   when: region == "home"
-#   block:
-#   - name: Create systemd service file for internal network routes
-#     ansible.builtin.copy:
-#       dest: /etc/systemd/system/internal-network-routes.service
-#       content: |
-#         [Unit]
-#         Description=Set routing rules for internal networks
-#         After=network.target
-
-#         [Service]
-#         Type=oneshot
-#         ExecStart=/bin/bash -c '{% for subnet in internal_subnets %}if ! ip rule show to {{ subnet }} >/dev/null 2>&1; then /sbin/ip rule add to {{ subnet }} priority 2500 lookup main; fi;{% endfor %}'
-#         RemainAfterExit=yes
-
-#         [Install]
-#         WantedBy=multi-user.target
-#       owner: root
-#       group: root
-#       mode: "0644"
-
-#   - name: Reload systemd routes
-#     ansible.builtin.systemd:
-#       daemon_reload: true
-#       name: internal-network-routes
-#       state: started
-#       enabled: true
-
-- name: Attempt to check Tailscale IP address
-  ansible.builtin.command:
-    cmd: tailscale ip -4
-  register: tailscale_ip_output
-  changed_when: false
-  ignore_errors: true
-
-- name: Set Tailscale status as a variable
-  ansible.builtin.set_fact:
-    tailscale_installed: "{{ tailscale_ip_output.rc == 0 and tailscale_ip_output.stdout != '' }}"
-
-# - name: Set Tailscale IP address as a variable
-#   ansible.builtin.set_fact:
-#     tailscale_ip: "{{ tailscale_ip_output.stdout }}"
-#   when: tailscale_installed and tailscale_ip_output.stdout != ''
-
-- name: Tailscale status
-  ansible.builtin.debug:
-    msg: "Tailscale instaled: {{ tailscale_installed }}"
-#msg: "Tailscale IP: {{ tailscale_installed | ternary(tailscale_ip, 'No IP assigned') }}"
-
-# Install tailscale
-- name: Install tailscale
-  become: true
-  ansible.builtin.shell: |
-    curl -fsSL https://tailscale.com/install.sh | sh
-  when: tailscale_installed == false
-
-# Configure tailscale clients. Tailscale clients that aren't acting as routes should not accept routes
-- name: Bring up tailscale client
-  become: true
-  when: tailscale_advertisements is not defined | default(true, false)
-  ansible.builtin.shell: |
-    {% if tailscale_advertisements is not defined or not tailscale_advertisements %}
-      {% if region == 'home' %}
-        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes=false
-      {% else %}
-        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes
-      {% endif %}
-    {% endif %}
-
-# Configure Tailscale Routers
-- name: Configure Tailscale Routers
-  when: tailscale_advertisements is defined | default(false, true)
-  block:
-    # Configure tailscale routers
-    - name: Configure MSS clamping for Tailscale
-      ansible.builtin.command:
-        cmd: iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-      #when: tailscale_advertisements is defined | default(false, true)
-
-    - name: Save iptables rules
-      ansible.builtin.shell: /usr/sbin/iptables-save > /etc/iptables/rules.v4
-
-    - name: Bring up tailscale router
-      become: true
-      ansible.builtin.shell: |
-        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --advertise-routes={{ tailscale_advertisements }} --snat-subnet-routes=false --accept-routes
-        iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-
-# - name: Configure routing advertisement
-#   become: true
-#   ansible.builtin.command:
-#     cmd: tailscale set --advertise-routes={{ tailscale_advertisements }}
-#   when: tailscale_advertisements is defined | default(false, true)
-
-- name: Disable Tailscale DNS
-  become: true
-  ansible.builtin.command:
-    cmd: tailscale set --accept-dns=false
-
-- name: Disable Tailscale SSH
-  become: true
-  ansible.builtin.command:
-    cmd: tailscale set --ssh=false
-
-- name: Get Tailscale IP address
-  ansible.builtin.command:
-    cmd: tailscale ip -4
-  register: tailscale_ip_output
-  changed_when: false
-
-- name: Set Tailscale IP address as a variable
-  ansible.builtin.set_fact:
-    tailscale_ip: "{{ tailscale_ip_output.stdout }}"
-
-# Use the tailscale_ip variable in other tasks
-- name: Print Tailscale IP address
-  ansible.builtin.debug:
-    msg: "Tailscale IP address: {{ tailscale_ip }}"
-
-- name: Add hostname to /etc/hosts
-  vars:
-    comment: "# added by ansible"
-  ansible.builtin.lineinfile:
-    dest: /etc/hosts
-    regexp: 127[.]0[.]0[.]1.*
-    line: 127.0.0.1 localhost.localdomain localhost {{ domain }}.{{ datacenter }}.consul {{ domain }}.{{ tld }} {{ ansible_hostname }} {{ comment }}
-    state: present
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Disable ICMP Redirect Acceptance
-  ansible.posix.sysctl:
-    name: net.ipv4.conf.all.accept_redirects
-    value: "0"
-    sysctl_set: true
-    reload: true
-
-- name: Disable ICMP Redirect Sending
-  ansible.posix.sysctl:
-    name: net.ipv4.conf.all.send_redirects
-    value: "0"
-    sysctl_set: true
-    reload: true
 
 - name: Fix number of file opened
   ansible.builtin.copy:
     src: nofile.conf
     dest: /etc/security/limits.d/90-nofile.conf
     mode: "0644"
-
-- name: Daemon Reload
-  ansible.builtin.systemd:
-    daemon_reload: true
 
 - name: Enable cockpit service
   ansible.builtin.systemd_service:
@@ -483,6 +322,69 @@
   ansible.builtin.systemd_service:
     name: smbd
     enabled: false
+  when: ansible_facts.services['smbd.service'] is defined
+
+- name: Configure snmpd
+  template:
+    src: snmpd.conf.j2
+    dest: /etc/snmp/snmpd.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure snmpd is running and enabled
+  service:
+    name: snmpd
+    state: started
+    enabled: true
+
+- name: Daemon Reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Install LibreNMS check_mk agent
+  block:
+    - name: Clone LibreNMS agent repository
+      ansible.builtin.git:
+        repo: https://github.com/librenms/librenms-agent.git
+        dest: /opt/librenms-agent
+
+    - name: Copy check_mk_agent to /usr/bin
+      ansible.builtin.copy:
+        src: /opt/librenms-agent/check_mk_agent
+        dest: /usr/bin/check_mk_agent
+        remote_src: true
+        mode: '0755'
+
+    - name: Copy check_mk service and socket files
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /etc/systemd/system/
+        remote_src: true
+      loop:
+        - /opt/librenms-agent/check_mk@.service
+        - /opt/librenms-agent/check_mk.socket
+
+    - name: Create directories for check_mk plugins and local scripts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - /usr/lib/check_mk_agent/plugins
+        - /usr/lib/check_mk_agent/local
+
+    - name: Copy agent-local scripts
+      ansible.builtin.copy:
+        src: /opt/librenms-agent/agent-local/
+        dest: /usr/lib/check_mk_agent/local/
+        remote_src: true
+        mode: '0755'
+
+    - name: Enable and start check_mk socket
+      ansible.builtin.systemd:
+        name: check_mk.socket
+        state: started
+        enabled: yes
 
 - name: Check if cloud-init is already disabled
   ansible.builtin.stat:

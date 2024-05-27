@@ -3,24 +3,22 @@ servers:
   hosts:
     jerry.shamsway.net:
       server: true
-      cephcluster: true
       dnsserver: true
       region: home
       tailscale_advertisements: 192.168.252.0/24,192.168.240.0/24
     bobby.shamsway.net:
       server: true
-      cephcluster: true
       dnsserver: true
       region: home
     billy.shamsway.net:
       server: true
-      cephcluster: true
       dnsserver: true
       region: home
-    # phil.shamsway.net:
-    #   server: true
-    #   region: gcp
-    #   tailscale_advertisements: 192.168.250.0/24
+    phil.shamsway.net:
+      server: true
+      dnsserver: false
+      region: gcp
+      tailscale_advertisements: 192.168.250.0/24,35.199.192.0/19
     # pigpen.shamsway.net:
     #   region: oci
     # tom.shamsway.net:
@@ -166,3 +164,12 @@ servers:
       - name: pgweb-config
         path: /mnt/services/pgweb/config
         backup: true
+      - name: threadfin
+        path: /mnt/services/threadfin
+        backup: true
+      - name: xteve
+        path: /mnt/services/xteve
+        backup: true
+      - name: librenms-data
+        path: /mnt/services/librenms/data
+        backup: false

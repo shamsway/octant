@@ -61,6 +61,8 @@
   roles:
     - role: requirements
       tags: requirements
+    - role: tailscale
+      tags: tailscale      
     - role: docker
       tags: docker
       when: docker == true

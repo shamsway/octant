@@ -1,0 +1,105 @@
+---
+- name: Attempt to check Tailscale IP address
+  ansible.builtin.command:
+    cmd: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+  ignore_errors: true
+
+- name: Set Tailscale status as a variable
+  ansible.builtin.set_fact:
+    tailscale_installed: "{{ tailscale_ip_output.rc == 0 and tailscale_ip_output.stdout != '' }}"
+
+# - name: Set Tailscale IP address as a variable
+#   ansible.builtin.set_fact:
+#     tailscale_ip: "{{ tailscale_ip_output.stdout }}"
+#   when: tailscale_installed and tailscale_ip_output.stdout != ''
+
+- name: Tailscale status
+  ansible.builtin.debug:
+    msg: "Tailscale instaled: {{ tailscale_installed }}"
+#msg: "Tailscale IP: {{ tailscale_installed | ternary(tailscale_ip, 'No IP assigned') }}"
+
+# Install tailscale
+- name: Install tailscale
+  become: true
+  ansible.builtin.shell: |
+    curl -fsSL https://tailscale.com/install.sh | sh
+  when: tailscale_installed == false
+
+# Configure tailscale clients. Tailscale clients that aren't acting as routes should not accept routes
+- name: Bring up tailscale client
+  become: true
+  when: tailscale_advertisements is not defined | default(true, false)
+  ansible.builtin.shell: |
+    {% if tailscale_advertisements is not defined or not tailscale_advertisements %}
+      {% if region == 'home' %}
+        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes=false
+      {% else %}
+        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --accept-routes
+      {% endif %}
+    {% endif %}
+
+# Configure Tailscale Routers
+- name: Configure Tailscale Routers
+  when: tailscale_advertisements is defined | default(false, true)
+  block:
+    # Configure tailscale routers
+    - name: Configure MSS clamping for Tailscale
+      ansible.builtin.command:
+        cmd: iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+      #when: tailscale_advertisements is defined | default(false, true)
+
+    - name: Save iptables rules
+      ansible.builtin.shell: /usr/sbin/iptables-save > /etc/iptables/rules.v4
+
+    - name: Bring up tailscale router
+      become: true
+      ansible.builtin.shell: |
+        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --advertise-routes={{ tailscale_advertisements }} --snat-subnet-routes=false --accept-routes
+        iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+
+# - name: Configure routing advertisement
+#   become: true
+#   ansible.builtin.command:
+#     cmd: tailscale set --advertise-routes={{ tailscale_advertisements }}
+#   when: tailscale_advertisements is defined | default(false, true)
+
+- name: Disable Tailscale DNS
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale set --accept-dns=false
+
+- name: Disable Tailscale SSH
+  become: true
+  ansible.builtin.command:
+    cmd: tailscale set --ssh=false
+
+- name: Get Tailscale IP address
+  ansible.builtin.command:
+    cmd: tailscale ip -4
+  register: tailscale_ip_output
+  changed_when: false
+
+- name: Set Tailscale IP address as a variable
+  ansible.builtin.set_fact:
+    tailscale_ip: "{{ tailscale_ip_output.stdout }}"
+
+# Use the tailscale_ip variable in other tasks
+- name: Print Tailscale IP address
+  ansible.builtin.debug:
+    msg: "Tailscale IP address: {{ tailscale_ip }}"
+
+- name: Disable ICMP Redirect Acceptance
+  ansible.posix.sysctl:
+    name: net.ipv4.conf.all.accept_redirects
+    value: "0"
+    sysctl_set: true
+    reload: true
+
+- name: Disable ICMP Redirect Sending
+  ansible.posix.sysctl:
+    name: net.ipv4.conf.all.send_redirects
+    value: "0"
+    sysctl_set: true
+    reload: true

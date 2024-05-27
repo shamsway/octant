@@ -1,4 +1,34 @@
 ---
+- name: Check if {{ user }} home folder exists
+  ansible.builtin.file:
+    path: "{{ datadir }}/home"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Ensure {{ user }} is a member of systemd-journal group
+  ansible.builtin.user:
+    name: "{{ user }}"
+    groups: systemd-journal
+    append: true
+
+- name: Create user systemd configuration directory
+  ansible.builtin.file:
+    path: "{{ datadir }}/home/.config/systemd/user/"
+    state: directory
+    mode: "0700"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Verify folder presence and ownership
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0755"
+  loop: "{{ volumes }}"
+  
 - name: Install Consul Agent (root)
   ansible.builtin.include_role:
     name: install-hashi

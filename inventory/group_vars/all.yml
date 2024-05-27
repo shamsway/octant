@@ -29,7 +29,10 @@ gid: 2000
 tld: net
 domain: shamsway
 datacenter: shamsway
+snmp_community: shamsway
 admin_user: matt
+admin_email: admin@shamsway.net
+location: "Lexington, KY"
 
 external_dns_resolver1: 1.1.1.1
 external_dns_resolver2: 8.8.8.8
