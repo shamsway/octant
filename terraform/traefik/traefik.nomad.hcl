@@ -1,19 +1,19 @@
 job "traefik" {
-  region = "home"
-  datacenters = ["shamsway"]
+  region = "${region}"
+  datacenters = ["${datacenter}"]
   type = "service"
 
   constraint {
-    attribute = "${meta.rootless}"
+    attribute = "$${meta.rootless}"
     value = "true"
   }
 
   meta {
-    version = "2"
+    version = "3"
   }
 
   affinity {
-    attribute = "${meta.class}"
+    attribute = "$${meta.class}"
     value     = "physical"
     weight    = 100
   }
@@ -150,8 +150,8 @@ job "traefik" {
       }
 
       config {
-        image = "docker.io/traefik:v3.0"
-        args  = ["--configFile", "/traefik-config/traefik.toml"]
+        image = "${image}"
+        args  = ["--configFile", "$${NOMAD_TASK_DIR}/traefik.toml", "--providers.file.filename", "$${NOMAD_TASK_DIR}/dynamic.toml"]
         ports = ["http", "https", "api", "metrics", "admin"]
         logging = {
           driver = "journald"
@@ -161,11 +161,6 @@ job "traefik" {
             }
           ]
         }
-      }
-
-      env {
-        CLOUDFLARE_EMAIL = "mattadamelliott@gmail.com"
-        CLOUDFLARE_API_KEY = "b0f9feb2cfce1ba2618dc83e17285682fd44e"
       }
 
       service {
@@ -188,6 +183,31 @@ job "traefik" {
         max_files     = 10
         max_file_size = 20
       }
+
+      template {
+        destination = "$${NOMAD_SECRETS_DIR}/env.txt"
+        env         = true
+        data        = <<EOT
+{{- with nomadVar "nomad/jobs/traefik" -}}
+CLOUDFLARE_EMAIL={{ .cloudflare_username }}
+CLOUDFLARE_API_KEY={{ .cloudflare_api_key }}
+{{- end -}}
+EOT
+      }
+
+      template {
+          data = <<EOH
+{{ with nomadVar "nomad/jobs/traefik" }}{{ .traefik_toml }}{{ end }}
+EOH
+        destination = "local/traefik.toml"
+      }
+
+      template {
+          data = <<EOH
+{{ with nomadVar "nomad/jobs/traefik" }}{{ .dynamic_toml }}{{ end }}
+EOH
+        destination = "local/dynamic.toml"
+      }      
     }
   }
 }

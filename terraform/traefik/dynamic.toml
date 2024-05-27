@@ -6,3 +6,6 @@
     [tls.stores.default.defaultCertificate]
       certFile = "/acme/shamsway-server-traefik-1.pem"
       keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
+
+  [http.serversTransports.skipcertcheck@consulcatalog]
+    insecureSkipVerify = true      

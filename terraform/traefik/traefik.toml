@@ -26,12 +26,11 @@
       service = "shamsway.net"
       [http.routers.shamsway.tls]
         certResolver = "cloudflare"
-
     [http.routers.consul]
       entryPoints = ["http", "websecure"]
       rule = "Host(`*.consul`)"
       service = "consul-service"
-      
+
 [accessLog]
   format = "json"
   filePath = "/traefik-data/traefik-access.log"
