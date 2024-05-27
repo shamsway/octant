@@ -21,24 +21,6 @@ provider "google" {
 
 }
 
-# variable "TAILSCALE_KEY" {
-#   description = "Tailscale authentication key"
-#   type        = string
-# }
-
-variable "cloudflare_token" {
-  description = "Cloudflare authentication token"
-  type        = string
-}
-
-provider "cloudflare" {
-  api_token = "${var.cloudflare_token}"
-}
-
-variable "domain_name" {
-  default = "shamsway.net"
-}
-
 data "cloudflare_zones" "domain" {
   filter {
     name = var.domain_name
@@ -70,6 +52,34 @@ resource "google_compute_subnetwork" "vpc_subnetwork" {
 
   stack_type       = "IPV4_IPV6"
   ipv6_access_type = "EXTERNAL"
+}
+
+resource "google_compute_route" "home_lab_route" {
+  name         = "home-lab-route"
+  dest_range   = "192.168.252.0/24"
+  network      = google_compute_network.vpc_network.self_link
+  next_hop_instance = google_compute_instance.phil.self_link
+  priority     = 1000
+}
+
+resource "google_dns_managed_zone" "consul" {
+  name        = "private-zone"
+  dns_name    = "service.consul."
+  description = "Private DNS zone for service.consul"
+
+  visibility = "private"
+
+  private_visibility_config {
+    networks {
+      network_url = google_compute_network.vpc_network.self_link
+    }
+  }
+
+  forwarding_config {
+    target_name_servers {
+      ipv4_address = "192.168.252.1"
+    }
+  }
 }
 
 # Disable default SSH rule - Terraform can't do this, so use gcloud cli or API
@@ -130,9 +140,10 @@ resource "google_compute_firewall" "allow_tailscale_udp_ipv6" {
 
 
 resource "google_compute_instance" "phil" {
-  name         = "phil"
-  machine_type = "f1-micro"
-  zone         = data.google_compute_zones.available.names[0]
+  name           = "phil"
+  machine_type   = "f1-micro"
+  zone           = data.google_compute_zones.available.names[0]
+  can_ip_forward = true
 
   boot_disk {
     initialize_params {
@@ -151,12 +162,37 @@ resource "google_compute_instance" "phil" {
   }
 
   metadata = {
-    ssh-keys = "matt:${file("~/.ssh/id_rsa.pub")}\nmatt:${file("~/.ssh/id_rsa.pub")}"
-    shutdown-script = "#! /bin/bash sudo tailscale logout"
+    ssh-keys = <<EOT
+      root:${file("~/.ssh/id_rsa.pub")}
+      matt:${file("~/.ssh/id_rsa.pub")}
+    EOT
+    shutdown-script = file("${path.module}/shutdown-script.sh")
   }
+
+  metadata_startup_script = <<-EOT
+    #!/bin/bash
+    useradd -G sudoers -md /user/matt matt
+    mkdir -p /etc/systemd/resolved.conf.d/
+    cat > /etc/systemd/resolved.conf.d/conditional_forwarding.conf <<-EOL
+    [Resolve]
+    DNS=192.168.252.1
+    Domains=~service.consul
+    EOL
+    systemctl restart systemd-resolved
+  EOT
 
   provisioner "remote-exec" {
     inline = [
+      "sudo curl -fsSL https://tailscale.com/install.sh | sh",
+      "sudo tailscale up --accept-routes --accept-dns=false --authkey=${tailscale_tailnet_key.key.key} --advertise-routes=${google_compute_subnetwork.vpc_subnetwork.ip_cidr_range},35.199.192.0/19 --snat-subnet-routes=false",
+      "sudo tailscale status",
+      "sudo sysctl -w net.ipv4.ip_forward=1",
+      "sudo sysctl -p",
+      "sudo echo \"net.ipv4.ip_forward=1\" >> /etc/sysctl.conf",
+      "sudo iptables -t mangle -A FORWARD -i tailscale0 -o ens4 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu",
+      "sudo /usr/sbin/iptables-save > /etc/iptables/rules.v4",   
+      "sudo apt install -y python3 python3-paho-mqtt",
+      "sudo chmod 777 /usr/local/bin",
       "sudo mkdir -p /root/.ssh",
       "sudo cp /home/matt/.ssh/authorized_keys /root/.ssh/",
       "sudo sed -i -e 's/#PermitRootLogin no/PermitRootLogin without-password/' -e 's/PermitRootLogin no/PermitRootLogin without-password/' /etc/ssh/sshd_config",
@@ -164,8 +200,25 @@ resource "google_compute_instance" "phil" {
     ]
   }
 
+  # Copy the preempt Python script to the VM
+  provisioner "file" {
+    source      = "${path.module}/preempt-notify.py"
+    destination = "/usr/local/bin/preempt-notify.py"
+  }
+
+  # Copy the shutdown  script to the VM
+  provisioner "file" {
+    source      = "${path.module}/shutdown-script.sh"
+    destination = "/usr/local/bin/shutdown-script.sh"
+  }  
+
+  provisioner "remote-exec" {
+    inline = [ "sudo chmod +x /usr/local/bin/shutdown-script.sh" ]
+  }
+
   provisioner "remote-exec" {
     when = destroy
+    on_failure = continue
     inline = [ "sudo tailscale logout" ]
   }
 
@@ -178,18 +231,15 @@ resource "google_compute_instance" "phil" {
   }
 
   connection {
-    type        = "ssh"
-    user        = "matt"
+    type         = "ssh"
+    user          = "matt"
     private_key = file("~/.ssh/id_rsa")
     host        = self.network_interface[0].access_config[0].nat_ip
   }
 
-  metadata_startup_script = <<-EOT
-    #!/bin/bash
-    useradd -md /user/matt matt
-    curl -fsSL https://tailscale.com/install.sh | sh
-    tailscale up --accept-routes --authkey=${tailscale_tailnet_key.key.key}
-  EOT
+  lifecycle {
+    ignore_changes = [ network_interface ]
+  }
 }
 
 data "tailscale_device" "phil" {
