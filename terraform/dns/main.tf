@@ -1,3 +1,4 @@
+# unset CLOUDFLARE_API_KEY
 # terraform apply -var="cloudflare_token=${CLOUDFLARE_TOKEN}"
 # terraform destroy -var="cloudflare_token=${CLOUDFLARE_TOKEN}"
 
@@ -17,7 +18,7 @@ terraform {
 data "tailscale_device" "phil" {
   hostname = "phil"
   wait_for = "30s"
-  }
+}
 
 variable "cloudflare_token" {
   description = "Cloudflare authentication TOKEN"
@@ -36,6 +37,24 @@ data "cloudflare_zones" "domain" {
   filter {
     name = var.domain_name
   }
+}
+
+resource "cloudflare_record" "edgerouter" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "edgerouter"
+  value   = "192.168.252.1"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "joan" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "joan"
+  value   = "192.168.252.5"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
 }
 
 resource "cloudflare_record" "jerry" {
@@ -65,6 +84,114 @@ resource "cloudflare_record" "billy" {
   allow_overwrite = true
 }
 
+resource "cloudflare_record" "nfs" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "nfs"
+  value   = "192.168.252.9"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "robert" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "robert"
+  value   = "192.168.252.10"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "basementswitch" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "basementswitch"
+  value   = "192.168.252.11"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "officeswitch" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "officeswitch"
+  value   = "192.168.252.12"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "basementap" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "basementap"
+  value   = "192.168.252.13"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "officeap" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "officeap"
+  value   = "192.168.252.14"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "lrtv" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "lrtv"
+  value   = "192.168.252.15"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "basementtv" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "basementtv"
+  value   = "192.168.252.16"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "bedroomtv" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "bedroomtv"
+  value   = "192.168.252.17"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "audreytv" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "audreytv"
+  value   = "192.168.252.18"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "lextv" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "lextv"
+  value   = "192.168.252.19"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "printer" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "printer"
+  value   = "192.168.252.20"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
 resource "cloudflare_record" "phil" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "phil"
@@ -80,7 +207,7 @@ resource "cloudflare_record" "consul-a01" {
   value   = cloudflare_record.jerry.value
   type    = "A"
   proxied = false
-  allow_overwrite = true
+  allow_overwrite = false
 }
 
 resource "cloudflare_record" "consul-a02" {
@@ -89,7 +216,16 @@ resource "cloudflare_record" "consul-a02" {
   value   = cloudflare_record.bobby.value
   type    = "A"
   proxied = false
-  allow_overwrite = true
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "consul-a03" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "consul"
+  value   = cloudflare_record.billy.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
 }
 
 resource "cloudflare_record" "nomad-a01" {
