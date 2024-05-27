@@ -1,19 +1,33 @@
 job "n8n" {
-  datacenters = ["shamsway"]
+  region = "${region}"
+  datacenters = ["${datacenter}"]
   type        = "service"
 
   constraint {
-    attribute = "${meta.rootless}"
+    attribute = "$${meta.rootless}"
     value = "true"
+  }
+
+  constraint {
+    attribute = "$${node.unique.name}"
+    value = "bobby-agent"
+  }
+
+  # Temporary until lab is fully on physical hardware
+  affinity {
+    attribute = "$${meta.class}"
+    value     = "physical"
+    weight    = 100
   }
 
   group "n8n" {
     network {
       port "http" {
         static = 5678
+        to = 5678
       }
       dns {
-        servers = ["192.168.252.1", "192.168.252.7"]
+        servers = ["192.168.252.1", "192.168.252.7", "192.168.252.8"]
       }      
     }
 
@@ -27,6 +41,7 @@ job "n8n" {
       name = "n8n"
       provider = "consul"
       port = "http"
+      task = "n8n"
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",          
@@ -54,7 +69,7 @@ job "n8n" {
       user = "1000"
 
       config {
-        image = "docker.io/n8nio/n8n:1.40.0"
+        image = "${image}"
         ports = ["http"]
         userns = "keep-id:uid=1000,gid=1000"
         logging = {
@@ -74,20 +89,66 @@ job "n8n" {
       }
 
       env {
-        N8N_BASIC_AUTH_ACTIVE = "false"
+        AUTH_TYPE = "basic"
+        N8N_HOST = "${n8n_host}"
+        N8N_EDITOR_BASE_URL = "${n8n_public_url}"
+        N8N_BASIC_AUTH_ACTIVE = "true"
         N8N_PORT = "5678"
         DB_TYPE = "postgresdb"
-        DB_POSTGRESDB_HOST = "192.168.252.6"
+        DB_POSTGRESDB_HOST = "${postgres_host}"
+        DB_POSTGRESDB_DATABASE = "${postgres_db}"
         DB_POSTGRESDB_PORT = "5432"
-        DB_POSTGRESDB_DATABASE = "n8n"
-        DB_POSTGRESDB_USER = "postgres_n8n"
-        DB_POSTGRESDB_PASSWORD = "6M!uf4EDFWu7UuMY"
       }
 
       resources {
         cpu    = 500
         memory = 256
       }
+
+      template {
+        destination = "$${NOMAD_SECRETS_DIR}/env.txt"
+        env         = true
+        data        = <<EOT
+{{- with nomadVar "nomad/jobs/n8n" -}}
+AUTH_USERNAME={{ .n8n_admin_user }}
+AUTH_PASSWORD={{ .n8n_admin_password }}
+DB_POSTGRESDB_USER={{ .n8n_postgres_user }}
+DB_POSTGRESDB_PASSWORD={{ .n8n_postgres_password }}
+{{- end -}}
+EOT
+      }      
+    }
+
+    task "ha_n8n" {
+      driver = "podman"
+      user = "nonroot"
+
+      config {
+        image = "docker.io/cloudflare/cloudflared:latest"
+        args = ["tunnel", "--loglevel", "debug", "run"]
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "n8n_cloudflared"
+            }
+          ]
+        }         
+      }
+
+      template {
+        destination = "$${NOMAD_SECRETS_DIR}/env.txt"
+        env         = true
+        data        = <<EOT
+{{- with nomadVar "nomad/jobs/n8n" -}}
+TUNNEL_TOKEN={{ .n8n_cloudflared }}
+{{- end -}}
+EOT
+      }
+
+      resources {
+        memory = 128
+      }      
     }
   }
 }
