@@ -1,5 +1,6 @@
 # LibreNMS
 
+
 ## Volumes
 
 * `/data`: Contains configuration, plugins, rrd database, logs, additional Monitoring plugins, additional syslog-ng config files
@@ -62,3 +63,11 @@
 * `MEMCACHED_HOST`: Hostname / IP address of a Memcached server
 * `MEMCACHED_PORT`: Port of the Memcached server (default `11211`)
 * `RRDCACHED_SERVER`: RRDcached server (eg. `rrdcached:42217`)
+
+## Container Info
+
+```bash
+7fb2b6082303:/opt/librenms# cat /etc/passwd
+root:x:0:0:root:/root:/bin/ash
+librenms:x:2000:2000:Linux User,,,:/home/librenms:/bin/sh
+```
