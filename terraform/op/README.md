@@ -37,6 +37,14 @@ curl \
 -H "Authorization: Bearer $OP_API_TOKEN" \
 https://opapi.shamsway.net/v1/vaults
 ```
+
+```bash
+curl \
+-H "Accept: application/json" \
+-H "Authorization: Bearer $OP_API_TOKEN" \
+https://opapi.shamsway.net/v1/vaults/[vaultid]/items
+```
+
 ## Finding UUIDs
 
 - In 1password GUI, right click -> copy link/copy private link
