@@ -14,6 +14,11 @@ servers:
       server: true
       dnsserver: true
       region: home
+    robert.shamsway.net:
+      server: true
+      dnsserver: false
+      docker: true
+      region: home      
     phil.shamsway.net:
       server: true
       dnsserver: false
