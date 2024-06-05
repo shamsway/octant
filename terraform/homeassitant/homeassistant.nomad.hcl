@@ -130,7 +130,7 @@ job "homeassistant" {
       }
 
       resources {
-        memory = 640
+        memory = 864
       }
     }
 
@@ -164,6 +164,34 @@ job "homeassistant" {
 
       resources {
         memory = 512
+      }
+    }
+
+    task "whisper" {
+      driver = "podman"
+
+      config {
+        image = "docker.io/rhasspy/wyoming-whisper"
+        args = ["--model", "tiny-int8", "--language", "en"]
+        network_mode = "host"
+      }
+
+      resources {
+        memory = 128
+      }
+    }
+
+    task "piper" {
+      driver = "podman"
+
+      config {
+        image = "docker.io/rhasspy/wyoming-piper"
+        args = ["--voice", "en_US-lessac-medium"]
+        network_mode = "host"
+      }
+
+      resources {
+        memory = 128
       }
     }    
   }
