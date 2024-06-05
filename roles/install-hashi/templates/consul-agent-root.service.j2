@@ -1,7 +1,7 @@
 [Unit]
 Description=Consul Agent (Root)
-Requires=network-online.target tailscaled.service consul-server.service
-After=network-online.target tailscaled.service consul-server.service
+Requires=network-online.target tailscaled.service
+After=network-online.target tailscaled.service
 Documentation="https://www.consul.io/docs/agent/options"
 
 [Service]

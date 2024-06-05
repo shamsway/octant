@@ -16,6 +16,7 @@
   ansible.builtin.user:
     name: "{{ user }}"
     uid: "{{ uid }}"
+    group: "{{ group }}"
     state: present
     system: true
     # shell: /usr/bin/false
@@ -23,7 +24,6 @@
     home: "{{ datadir }}/home"
     groups:
       - sudo
-      - "{{ group }}"
 
 - name: Allow {{ user }} to have passwordless sudo
   ansible.builtin.lineinfile:
@@ -182,13 +182,20 @@
         name: systemd-resolved
         state: stopped
         enabled: false
-      when: ansible_facts.services['systemd-resolved.service'] is defined
+      register: systemd_resolved_result
+      failed_when: false
+      changed_when: false
+      ignore_errors: true      
 
-    - name: Restart dnsmasq if configuration file is newly created
+    - name: Print message if systemd-resolved service is not found
+      ansible.builtin.debug:
+        msg: "systemd-resolved service not found on the target host"
+      when: systemd_resolved_result.failed and "Could not find the requested service" in systemd_resolved_result.msg
+
+    - name: Restart dnsmasq
       ansible.builtin.service:
         name: dnsmasq
         state: restarted
-      when: not dnsmasq_conf.stat.exists
 
     - name: Ensure dnsmasq is running
       ansible.builtin.service:
@@ -248,16 +255,24 @@
       when: not dnsmasq_conf.stat.exists
 
     - name: Stop and disable systemd-resolved
-      systemd:
+      ansible.builtin.systemd:
         name: systemd-resolved
         state: stopped
         enabled: false
+      register: systemd_resolved_result
+      failed_when: false
+      changed_when: false
+      ignore_errors: true      
 
-    - name: Restart dnsmasq if configuration file is newly created
+    - name: Print message if systemd-resolved service is not found
+      ansible.builtin.debug:
+        msg: "systemd-resolved service not found on the target host"
+      when: systemd_resolved_result.failed and "Could not find the requested service" in systemd_resolved_result.msg
+
+    - name: Restart dnsmasq
       ansible.builtin.service:
         name: dnsmasq
         state: restarted
-      when: not dnsmasq_conf.stat.exists
 
     - name: Ensure dnsmasq is running
       ansible.builtin.service:

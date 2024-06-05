@@ -71,8 +71,11 @@
   become: true
   become_user: "{{ user }}"
   ansible.builtin.copy:
-    src: containers.conf
+    src: "{{ item }}"
     dest: ~/.config/containers
+  with_items:
+    - containers.conf
+    - storage.conf
 
 - name: Configure root podman docker.io unqualified search registries
   become: true

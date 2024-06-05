@@ -1,0 +1,9 @@
+---
+nomad_root_user: root
+nomad_root_group: root
+nomad_root_datadir: "{{ datadirs['nomad-agent-root'] }}"
+nomad_root_configdir: "{{ configdirs['nomad-agent-root'] }}"
+nomad_root_ports:
+  http: 5646
+  rpc: 5647
+  serf: 5648

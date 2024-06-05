@@ -34,7 +34,7 @@
     name: install-hashi
   vars:
     name: nomad-server
-    package: consul
+    package: nomad
     user: root
     group: root
 

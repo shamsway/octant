@@ -79,22 +79,17 @@
           }
         }
       }
-    dest: /opt/homelab/config/nomad.d/docker.hcl
-    owner: hashi
-    group: hashi
+    dest: "{{ nomad_root_configdir }}/docker.hcl"
+    owner: root
+    group: root
     mode: "0644"
 
 - name: Restart Nomad service
   ansible.builtin.service:
-    name: nomad
+    name: nomad-agent-root  
     state: restarted
 
 - name: Wait for Nomad to start
   ansible.builtin.wait_for:
-    port: 4646
+    port: "{{ nomad_root_ports.http }}"
     timeout: 60
-
-- name: Verify Nomad is running
-  ansible.builtin.command: nomad status
-  register: nomad_status
-  changed_when: false

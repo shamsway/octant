@@ -58,7 +58,13 @@
     group: "{{ group }}"
     mode: "0644"
 
-- name: Restart {{ role_name }}
+- name: Start {{ role_name }}
   ansible.builtin.systemd:
     name:  "{{ role_name }}"
-    state: restarted
+    state: started
+
+- name: Wait for {{ role_name }} to start
+  ansible.builtin.wait_for:
+    port: "{{ nomad.ports.agent_http }}"
+    timeout: 60
+  changed_when: false

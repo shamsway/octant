@@ -1,7 +1,7 @@
 [Unit]
 Description=Nomad agent
-Requires=network-online.target nomad-server.service
-After=network-online.target nomad-server.service
+Requires=network-online.target
+After=network-online.target
 Wants=nomad-server.service
 Documentation=https://www.nomadproject.io/docs/agent/options
 

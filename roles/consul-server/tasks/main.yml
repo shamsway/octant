@@ -46,13 +46,13 @@
 
 - name: Check that the CA for consul exists
   ansible.builtin.stat:
-    path: "{{ configdirs[pki] }}/consul-agent-ca.pem"
+    path: "{{ configdirs['tls'] }}/consul-agent-ca.pem"
   register: stat_result
 
 - name: Consul TLS client
   ansible.builtin.shell: consul tls ca create && consul tls cert create -server -dc {{ datacenter }} && consul tls cert create -client -dc {{ datacenter }}
   args:
-    chdir: "{{ configdirs[pki] }}"
+    chdir: "{{ configdirs['tls'] }}"
   when: not stat_result.stat.exists
 
 - name: Ensure {{ role_name }} config directory ownership
@@ -108,19 +108,19 @@
     group: root
     mode: "0644"
 
-- name: Configure /etc/resolv.conf with a single resolver
-  lineinfile:
-    path: /etc/resolv.conf
-    line: nameserver 127.0.0.1
-    regexp: '^nameserver'
-    state: present
-    create: yes
+# - name: Configure /etc/resolv.conf with a single resolver
+#   lineinfile:
+#     path: /etc/resolv.conf
+#     line: nameserver 127.0.0.1
+#     regexp: '^nameserver'
+#     state: present
+#     create: yes
 
-- name: Remove any other configuration from /etc/resolv.conf
-  lineinfile:
-    path: /etc/resolv.conf
-    regexp: '^(?!nameserver 127\.0\.0\.1$).*'
-    state: absent
+# - name: Remove any other configuration from /etc/resolv.conf
+#   lineinfile:
+#     path: /etc/resolv.conf
+#     regexp: '^(?!nameserver 127\.0\.0\.1$).*'
+#     state: absent
 
 - name: Restart {{ role_name }}
   ansible.builtin.systemd:

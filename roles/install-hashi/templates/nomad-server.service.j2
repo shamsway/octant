@@ -1,7 +1,7 @@
 [Unit]
 Description=Nomad server
-Requires=network-online.target tailscaled.service consul-server.service ceph.target mnt-services.mount mnt-recordings.mount
-After=network-online.target tailscaled.service consul-server.service ceph.target mnt-services.mount mnt-recordings.mount
+Requires=network-online.target tailscaled.service consul-server.service 
+After=network-online.target tailscaled.service consul-server.service
 Wants=consul.service
 After=consul.service
 Documentation=https://www.nomadproject.io/docs/agent/options
