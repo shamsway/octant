@@ -1,0 +1,41 @@
+variable "OP_API_TOKEN" {
+  description = "Auth token for 1password connect vault"
+  type = string
+}
+
+variable "nomad" {
+  description = "Nomad server address"
+  type = string
+  default = "nomad.shamsway.net"
+}
+
+variable "consul" {
+  description = "Consul server address"
+  type = string
+  default = "consul.shamsway.net"
+}
+
+variable "region" {
+  type = string
+  default = "home"
+}
+
+variable "datacenter" {
+  type = string
+  default = "shamsway"
+}
+
+variable "image" {
+  type = string
+  default = "ghcr.io/langfuse/langfuse:latest"
+}
+
+variable "db_server" {
+  type = string
+  default = "postgres.service.consul"
+}
+
+variable "db_name" {
+  type = string
+  default = "langfuse"
+}
