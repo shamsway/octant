@@ -1,10 +1,22 @@
 job "open-webui" {
-  datacenters = ["shamsway"]
+  region = "${region}"
+  datacenters = ["${datacenter}"]
   type = "service"
 
   constraint {
-    attribute = "${meta.rootless}"
+    attribute = "$${attr.kernel.name}"
+    value     = "linux"
+  }
+
+  constraint {
+    attribute = "$${meta.rootless}"
     value = "true"
+  }
+
+  affinity {
+    attribute = "$${meta.class}"
+    value     = "physical"
+    weight    = 100
   }
 
   group "open-webui" {
@@ -47,11 +59,12 @@ job "open-webui" {
       driver = "podman"
  
       config {
-        image = "docker.io/dyrnq/open-webui:main"
+        image = "${image}"
         #force_pull = true
         image_pull_timeout = "15m"
+        userns = "keep-id"
         ports = ["http"]
-        #volumes = ["${NOMAD_TASK_DIR}/:/app/backend/data"]
+        volumes = ["/mnt/services/open-webui/data:/app/backend/data","/mnt/services/litellm/config.yaml:/app/backend/data/litellm/config.yaml"]
         logging = {
           driver = "journald"
           options = [
@@ -63,10 +76,19 @@ job "open-webui" {
       }
  
       env {
-        OLLAMA_BASE_URL="http://192.168.252.5:11434"
-        WEBUI_AUTH="false"
-        WEBUI_NAME="Octant LLM Chat"
-        WEBUI_URL="https://chatllm.shamsway.net"
+        OLLAMA_BASE_URL="${ollama_url}"
+        WEBUI_AUTH="${webui_auth}"
+        WEBUI_NAME="${webui_name}"
+        WEBUI_URL="${webui_url}"
+      }
+
+      template {
+        destination = "secrets/env.txt"
+        env = true
+        data = <<EOH
+{{- range service "litellm" }}OPENAI_API_BASE_URL="http://{{ .Address }}:{{ .Port }}"{{ end }}
+{{ with nomadVar "nomad/jobs/open-webui" }}OPENAI_API_KEY="{{ .litellm_key }}"{{ end -}}
+EOH
       }
 
       resources {
