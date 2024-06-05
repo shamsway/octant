@@ -1,24 +1,28 @@
 # Add a Ceph node
 
 Disable local NFS server
+
+```bash
 sudo systemctl disable nfs-server.service
 sudo systemctl mask nfs-server.service
+```
 
+```bash
 sudo apt install ceph-common ceph-mon ceph-osd ceph-mds ceph-mgr ceph-fuse ceph-base python3-ceph ceph-mgr-dashboard cephadm
 
 cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.252.6 --cluster-network 192.168.252.0/24 --ssh-user hashi --ssh-private-key /opt/homelab/data/home/.ssh/id_rsa --ssh-public-key /opt/homelab/data/home/.ssh/id_rsa.pub --apply-spec ceph-bootstrap.yml --allow-overwrite
 
 sudo ceph cephadm set-user hashi
-
+```
+NOTE: `sudo apt install ceph-common cephadm` may be all that is needed for everything but the first ceph node?
 NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client before bootstrapping the new node. This is to avoid the NFS client from interfering with the Ceph bootstrap process.
 
 ceph orch host add jerry 192.168.252.6 --labels _admin
 ceph orch host add bobby 192.168.252.7 --labels _admin
 ceph orch host add billy 192.168.252.8 --labels _admin
+ceph orch host add robert 192.168.252.10 --labels _admin
 
 ## Prepare disk(s)
-
-Based on your current configuration, you want to use `/dev/nvme0n1p5` for Ceph. Here are the updated instructions:
 
 1. Create a new LVM physical volume (PV) on the partition:
    - Run the command `sudo pvcreate /dev/nvme0n1p5`.
@@ -191,7 +195,6 @@ ceph osd pool set rbd_billy size 1
 ceph osd pool set rbd_jerry min_size 1 --yes-i-really-mean-it
 ceph osd pool set rbd_bobby min_size 1 --yes-i-really-mean-it
 ceph osd pool set rbd_billy min_size 1 --yes-i-really-mean-it
-
 ```
 
 On each server, create an RBD image within its respective pool. For example:
@@ -210,15 +213,27 @@ bobby$ sudo rbd map rbd_billy/image_billy
 
 On each server, format the mapped RBD image with a filesystem and mount it to a local directory:
 ```bash
-sudo mkfs.xfs /dev/rbd0
+sudo mkfs.xfs /dev/rbd0 
 sudo mkdir /mnt/rbd
 sudo mount /dev/rbd0 /mnt/rbd
 ```
 
 Edit /etc/fstab:
 ```bash
-/dev/rbd0 /mnt/rbd xfs defaults 0 0
+/dev/rbd0 /mnt/rbd xfs defaults noauto 0 0
 ```
+
+Create /etc/ceph/rbdmap:
+```
+# RbdDevice		Parameters
+rbd_[hostname]/image_[hostname]   id=admin,keyring=/etc/ceph/ceph.client.admin.keyring
+```
+
+Enable rbdmap:
+```bash
+systemctl enable rbdmap.service
+```
+
 # Sharing Ceph via NFS
 
 Set customized NFS Ganesha Configuration
@@ -310,38 +325,38 @@ If you need to speed up the recovery and rebalancing process in your Ceph cluste
 
 - Increase the `osd_recovery_max_active` setting to allow more concurrent recovery operations. For example:
 
-  ```
-  ceph tell osd.* injectargs '--osd-recovery-max-active 10'
-  ```
+```
+ceph tell osd.* injectargs '--osd-recovery-max-active 10'
+```
 
 - Increase the `osd_recovery_op_priority` setting to give higher priority to recovery operations compared to client operations. For example:
 
-  ```
-  ceph tell osd.* injectargs '--osd-recovery-op-priority 10'
-  ```
+```
+ceph tell osd.* injectargs '--osd-recovery-op-priority 10'
+```
 
 ## 2. Adjust the backfill settings
 
 - Increase the `osd_max_backfills` setting to allow more concurrent backfill operations. For example:
 
-  ```
-  ceph tell osd.* injectargs '--osd-max-backfills 10'
-  ```
+```
+ceph tell osd.* injectargs '--osd-max-backfills 10'
+```
 
 - Increase the `osd_backfill_scan_min` and `osd_backfill_scan_max` settings to increase the number of objects scanned during backfill. For example:
 
-  ```
-  ceph tell osd.* injectargs '--osd-backfill-scan-min 256 --osd-backfill-scan-max 512'
-  ```
+```
+ceph tell osd.* injectargs '--osd-backfill-scan-min 256 --osd-backfill-scan-max 512'
+```
 
 ## 3. Adjust the scrub settings
 
 - Temporarily disable scrubbing to free up resources for recovery. For example:
 
-  ```
-  ceph osd set noscrub
-  ceph osd set nodeep-scrub
-  ```
+```
+ceph osd set noscrub
+ceph osd set nodeep-scrub
+```
 
 - Remember to re-enable scrubbing after the recovery is complete:
 
@@ -457,12 +472,21 @@ Check if all the daemons are removed from the storage cluster:
 ceph orch ps [host]
 ```
 
+Remove host from CRUSH map:
+```
+ceph osd crush remove [host]
+```
+
 Remove the host:
 
 ```
 ceph orch host rm [host]
 ceph orch host rm [host] --offline --force  # If needed
 ```
+
+`ceph orch` placement will likely need to be cleaned up. Check `ceph orch ls`/`ceph orch ps` and update as needed. Some examples:
+
+Remove `bobby` and add `robert`: `ceph orch apply nfs octantnfs --placement "jerry;bobby;robert;count:3"`
 
 ## Clean up
 

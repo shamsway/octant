@@ -2,29 +2,33 @@ job "gpu-test" {
   datacenters = ["shamsway"]
   type = "batch"
 
-  constraint {
-    attribute = "${meta.gpu}"
-    value = "true"
-  }
+  // constraint {
+  //   attribute = "${meta.gpu}"
+  //   value = "true"
+  // }
 
   group "smi" {
     task "smi" {
-      driver = "docker"
+      driver = "podman"
  
       config {
         image = "docker.io/nvidia/cuda:12.4.1-base-ubuntu22.04"
         #entrypoint = ["sleep"]
         command = "/usr/bin/sleep"
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "gpu-test"
+            }
+          ]
+        }  
       }
  
-      logs {
-        disabled = true
+
+      resources {
+        device "nvidia/gpu" { }
       }
-    //   resources {
-    //     device "nvidia/gpu" {
-    //       count = 1
-    //     }
-    //   }
     }
   }
 }

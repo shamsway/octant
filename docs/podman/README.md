@@ -209,9 +209,9 @@ ${attr.os.name}	                                    Operating system of the clie
 ${attr.os.version}	                                Version of the client OS
 ${attr.os.build}	                                Build number (e.g 14393.5501) of the client OS (if on Windows)
 ```
-# Relocating container images
+## Relocating container images
 
-Moving the container images and file system to a Ceph cluster is a good idea to free up space on your root directory. Here's a step-by-step guide along with bash commands to help you with the process:
+Moving the container images and file system to a Ceph cluster is a good idea to free up space on your root directory. Here's a step-by-step guide along with bash commands to help you with the process. Note that this example uses cephfs, which is not a good choice to store container images/filesystems. See ceph README.md for an example of setting up an rbd volume instead.
 
 1. Stop the running containers and the Podman service:
 ```bash
@@ -219,37 +219,37 @@ podman stop $(podman ps -q)
 systemctl stop podman
 ```
 
-2. Create a new directory in your Ceph file system to store the container data. For example:
+1. Create a new directory in your Ceph file system to store the container data. For example:
 ```bash
 mkdir /mnt/cephfs/podman-data
 ```
 
-3. Mount the Ceph file system directory to a local directory on your server. Update the `<mon-ip>` and `<secret-key>` placeholders with your Ceph cluster's monitor IP and secret key, respectively:
+1. Mount the Ceph file system directory to a local directory on your server. Update the `<mon-ip>` and `<secret-key>` placeholders with your Ceph cluster's monitor IP and secret key, respectively:
 ```bash
 sudo mount -t ceph <mon-ip>:6789:/ /mnt/cephfs -o name=admin,secret=<secret-key>
 ```
 
-4. Copy the existing container data to the Ceph file system directory:
+1. Copy the existing container data to the Ceph file system directory:
 ```bash
 sudo rsync -avP ~/.local/share/containers/storage /mnt/services/podman/[node]/storage
 ```
 
-5. Remove the old container data directory:
+1. Remove the old container data directory:
 ```bash
 rm -rf ~/.local/share/containers/storage
 ```
 
-6. Create a symbolic link from the Ceph file system directory to the original location:
+1. Create a symbolic link from the Ceph file system directory to the original location:
 ```bash
 ln -s /mnt/services/podman/[node]/storage ~/.local/share/containers/
 ```
 
-7. Start the Podman service:
+1. Start the Podman service:
 ```bash
 systemctl start podman
 ```
 
-8. Verify that the containers are running correctly:
+1. Verify that the containers are running correctly:
 ```bash
 podman ps
 ```
@@ -266,3 +266,35 @@ Concerns and issues to consider:
 Replace `<mon-ip>` and `<secret-key>` with your Ceph cluster's monitor IP and secret key, respectively.
 
 By following these steps and considering the mentioned concerns, you should be able to successfully move your container images and file system to the Ceph cluster and ensure that everything works smoothly when the server boots.
+
+## Overlayfs for rootless containers
+
+Debian uses `vfs` by default for rootless podman, but `overlayfs` is supported and more performant. Use these steps to migrate from `vfs` to `overlayfs`:
+
+- Drain Nomad agent
+- As the `hashi` user:
+
+```bash
+systemctl stop --user podman.service podman.socket
+rm -rf /run/user/2000/containers/*
+rm ~/.local/share/containers/cache/*
+sudo rm -rf /opt/homelab/data/home/.local/share/containers/storage/*
+/usr/bin/podman container prune -f; /usr/bin/podman image prune -a -f; /usr/bin/podman volume prune -f; /usr/bin/podman system prune -a -f
+podman system reset
+```
+
+- Create `/opt/homelab/data/home/.config/containers/storage.conf`:
+
+```ini
+[storage]
+driver = "overlay"
+```
+
+- Restart podman and run some smoke tests 
+```bash
+systemctl start --user podman.service podman.socket
+podman run --rm hello-world
+podman info
+```
+
+- Mark the node as elligible

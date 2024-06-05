@@ -2,6 +2,13 @@
 
 ## Enable GPU partitioning in Hyper-V
 
+Follow this guide, but with some changes: https://gist.github.com/krzys-h/e2def49966aa42bbd3316dfb794f4d6a
+Update the kernel compilation script with the matching WSL branch: https://github.com/microsoft/WSL2-Linux-Kernel/branches/all (e.g. `linux-msft-wsl-6.1.y` for Debian Bookworm)
+
+
+`ln -s /usr/lib/wsl/lib/nvidia-smi /usr/local/bin/`
+
+
 https://learn.microsoft.com/en-us/azure-stack/hci/manage/attach-gpu-to-linux-vm
 https://gist.github.com/krzys-h/e2def49966aa42bbd3316dfb794f4d6a
 https://forum.level1techs.com/t/gpu-paravirtualization-hyper-v-with-linux-guest/198336

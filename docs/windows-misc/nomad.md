@@ -33,7 +33,7 @@ echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
 
 Download plugin
 ```bash
-git clone git clone https://github.com/hashicorp/nomad-device-nvidia
+git clone https://github.com/hashicorp/nomad-device-nvidia
 ```
 
 Edit `go.mod` and update version of go-nvml used to the latest version. Check https://github.com/NVIDIA/go-nvml/tags for the latest release.
