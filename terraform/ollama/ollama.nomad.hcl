@@ -1,11 +1,13 @@
 job "ollama" {
-  datacenters = ["shamsway"]
+  region = "${region}"
+  datacenters = ["${datacenter}"]
   type = "service"
 
   constraint {
-    attribute = "${meta.gpu}"
-    value = "true"
+    attribute = "$${meta.rootless}"
+    value = "false"
   }
+
 
   group "ollama" {
     network {
@@ -16,12 +18,6 @@ job "ollama" {
       dns {
         servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
       }      
-    }
-
-    volume "llm-models" {
-      type      = "host"
-      read_only = false
-      source    = "llm-models"
     }
 
     service {
@@ -54,25 +50,25 @@ job "ollama" {
       driver = "docker"
  
       config {
-        image = "docker.io/ollama/ollama"
-        force_pull = true
+        image = "${image}"
         ports = ["api"]
         privileged = true
-      }
- 
-      logs {
-        disabled = true
-      }
-
-      volume_mount {
-        volume      = "llm-models"
-        destination = "/root/.ollama"
-        read_only   = false
+        volumes = ["/mnt/llm-models:/root/.ollama"]
+        // logging = {
+        //   driver = "journald"
+        //   options = [
+        //     {
+        //       "tag" = "ollama"
+        //     }
+        //   ]
+        // }          
       }
 
       resources {
-        memory = 128
-        device "nvidia/gpu" { }        
+        memory = 256
+        device "nvidia/gpu" {
+          count = 1    
+        }        
       }      
     }
   }
