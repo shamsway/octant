@@ -1,0 +1,165 @@
+model_list:
+  - model_name: ollama_chat/llama3
+    litellm_params:
+      model: ollama_chat/llama3
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama/llama3
+    litellm_params:
+      model: ollama/llama3
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama_chat/llama2
+    litellm_params:
+      model: ollama_chat/llama2
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama/llama2
+    litellm_params:
+      model: ollama/llama2
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama_chat/mistral
+    litellm_params:
+      model: ollama_chat/mistral
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama/mistral
+    litellm_params:
+      model: ollama/mistral
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama/fixt/home-3b-v3
+    litellm_params:
+      model: ollama/fixt/home-3b-v3:latest
+      api_base: http://ollama.service.consul:11434      
+  - model_name: groq-llama3-8b
+    litellm_params:
+      model: groq/llama3-8b-8192
+      api_key: os.environ/GROQ_API_KEY
+  - model_name: groq-llama3-70b
+    litellm_params:
+      model: groq/llama3-70b-8192
+      api_key: os.environ/GROQ_API_KEY      
+  - model_name: groq-mixtral
+    litellm_params:
+      model: groq/mixtral-8x7b-32768
+      api_key: os.environ/GROQ_API_KEY
+  - model_name: anthropic/claude-3-opus
+    litellm_params:
+      model: claude-3-opus-20240229
+      max_tokens: 4096
+  - model_name: anthropic/claude-3-sonnet
+    litellm_params:
+      model: claude-3-sonnet-20240229
+      max_tokens: 4096
+  - model_name: anthropic/claude-3-haiku
+    litellm_params:
+      model: claude-3-haiku-20240307
+      max_tokens: 4096      
+  - model_name: anthropic/claude-2.1
+    litellm_params:
+      model: claude-2.1
+  - model_name: anthropic/claude-2
+    litellm_params:
+      model: claude-2
+  - model_name: openai/gpt-4o
+    litellm_params:
+      model: gpt-4o
+  - model_name: openai/gpt-4o-2024-05-13
+    litellm_params:
+      model: gpt-4o-2024-05-13      
+  - model_name: openai/gpt-4-turbo
+    litellm_params:
+      model: gpt-4-turbo
+  - model_name: openai/gpt-4-turbo-preview
+    litellm_params:
+      model: gpt-4-turbo-preview
+  - model_name: openai/gpt-4
+    litellm_params:
+      model: gpt-4
+  - model_name: openai/gpt-4-32k
+    litellm_params:
+      model: gpt-4-32k
+  - model_name: openai/gpt-4-32k-0314
+    litellm_params:
+      model: gpt-4-32k-0314      
+  - model_name: openai/gpt-4-0125-preview
+    litellm_params:
+      model: gpt-4-0125-preview
+  - model_name: openai/gpt-4-1106-preview
+    litellm_params:
+      model: gpt-4-1106-preview   
+  - model_name: openai/gpt-4-0314
+    litellm_params:
+      model: gpt-4-0314
+  - model_name: openai/gpt-3.5-turbo-1106
+    litellm_params:
+      model: gpt-3.5-turbo-1106             
+  - model_name: openai/gpt-3.5-turbo
+    litellm_params:
+      model: gpt-3.5-turbo
+  - model_name: openai-dall-e-3
+    litellm_params:
+      model: dall-e-3      
+  - model_name: cohere/command-r
+    litellm_params:
+      model: command-r
+  - model_name: cohere/command-r-plus
+    litellm_params:
+      model: command-r-plus
+  - model_name: cohere/command-nightly
+    litellm_params:
+      model: command-nightly
+  - model_name: cohere/command-medium
+    litellm_params:
+      model: cohere/command-medium
+  - model_name: cohere/command-light
+    litellm_params:
+      model: cohere/command-light
+  - model_name: openrouter/auto
+    litellm_params:
+      model: openrouter/auto
+  - model_name: openrouter/nousresearch/nous-capybara-7b:free
+    litellm_params:
+      model: openrouter/nousresearch/nous-capybara-7b:free
+  - model_name: openrouter/nousresearch/hermes-2-pro-llama-3-8b
+    litellm_params:
+      model: openrouter/nousresearch/hermes-2-pro-llama-3-8b  
+  - model_name: openrouter/mistralai/mistral-7b-instruct:free
+    litellm_params:
+      model: openrouter/mistralai/mistral-7b-instruct:free
+  - model_name: openrouter/mistralai/mistral-7b-instruct
+    litellm_params:
+      model: openrouter/mistralai/mistral-7b-instruct
+  - model_name: openrouter/mistralai/mistral-7b-instruct-v0.3
+    litellm_params:
+      model: openrouter/mistralai/mistral-7b-instruct-v0.3
+  - model_name: openrouter/microsoft/phi-3-mini-128k-instruct:free
+    litellm_params:
+      model: openrouter/microsoft/phi-3-mini-128k-instruct:free
+  - model_name: openrouter/microsoft/phi-3-mini-128k-instruct:free
+    litellm_params:
+      model: openrouter/microsoft/phi-3-mini-128k-instruct:free
+  - model_name: openrouter/microsoft/phi-3-mini-128k-instruct
+    litellm_params:
+      model: openrouter/microsoft/phi-3-mini-128k-instruct
+  - model_name: openrouter/microsoft/phi-3-medium-128k-instruct:free
+    litellm_params:
+      model: openrouter/microsoft/phi-3-medium-128k-instruct:free
+  - model_name: openrouter/microsoft/phi-3-mini-128k-instruct
+    litellm_params:
+      model: openrouter/microsoft/phi-3-mini-128k-instruct
+  - model_name: openrouter/google/gemini-flash-1.5
+    litellm_params:
+      model: openrouter/google/gemini-flash-1.5
+  - model_name: openrouter/google/gemma-7b-it:free
+    litellm_params:
+      model: openrouter/google/gemma-7b-it:free
+   
+litellm_settings:
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+  drop_params: True
+  max_budget: 100 
+  budget_duration: 30d
+  num_retries: 5
+  request_timeout: 600
+
+general_settings: 
+  proxy_budget_rescheduler_min_time: 30
+  proxy_budget_rescheduler_max_time: 60
