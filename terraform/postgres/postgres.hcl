@@ -109,6 +109,7 @@ job "postgres" {
         image = "${image}"
         ports = ["postgres"]
         userns = "keep-id:uid=70,gid=70"
+        image_pull_timeout = "15m"
         logging = {
           driver = "journald"
           options = [
@@ -153,6 +154,7 @@ EOT
         image = "docker.io/dpage/pgadmin4:latest"
         userns = "keep-id:uid=5050,gid=101"
         ports = ["pgadmin"]
+        image_pull_timeout = "15m"
         logging = {
           driver = "journald"
           options = [
