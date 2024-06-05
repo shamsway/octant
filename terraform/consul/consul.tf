@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "consul" {
-  address    = "server.shamsway.consul:8500"
+  address    = "${var.consul}:8500"
   datacenter = "shamsway"
 }
 
