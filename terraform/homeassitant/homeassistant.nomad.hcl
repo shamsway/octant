@@ -104,7 +104,7 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "ghcr.io/home-assistant/home-assistant:stable"
+        image = "ghcr.io/home-assistant/home-assistant:2024.6"
         privileged = true
         network_mode = "host"
         ports = ["http"]
@@ -138,10 +138,11 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "ghcr.io/music-assistant/server"
+        image = "ghcr.io/music-assistant/server:2.0.4"
         privileged = true
         network_mode = "host"
         ports = ["music","streams"]
+        volumes = ["/mnt/services/musicassistant:/data"]
         logging = {
           driver = "journald"
           options = [
@@ -150,16 +151,6 @@ job "homeassistant" {
             }
           ]
         }         
-      }
-
-      volume_mount {
-        volume      = "homeassistant-data"
-        destination = "/data"
-        read_only   = false
-      }
-
-      env {
-        
       }
 
       resources {
@@ -171,7 +162,7 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "docker.io/rhasspy/wyoming-whisper"
+        image = "docker.io/rhasspy/wyoming-whisper:2.1.0"
         args = ["--model", "tiny-int8", "--language", "en"]
         network_mode = "host"
       }
@@ -185,7 +176,7 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "docker.io/rhasspy/wyoming-piper"
+        image = "docker.io/rhasspy/wyoming-piper:1.5.0"
         args = ["--voice", "en_US-lessac-medium"]
         network_mode = "host"
       }
