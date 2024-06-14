@@ -192,6 +192,42 @@ resource "cloudflare_record" "printer" {
   allow_overwrite = false
 }
 
+resource "cloudflare_record" "cablight1" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "cablight1"
+  value   = "192.168.252.194"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "cablight2" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "cablight2"
+  value   = "192.168.252.157"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "lrlight" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "lrlight"
+  value   = "192.168.252.234"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "matrixlight" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "matrixlight"
+  value   = "192.168.252.157"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
 resource "cloudflare_record" "phil" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "phil"
@@ -228,6 +264,15 @@ resource "cloudflare_record" "consul-a03" {
   allow_overwrite = false
 }
 
+resource "cloudflare_record" "consul-a04" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "consul"
+  value   = cloudflare_record.robert
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
 resource "cloudflare_record" "nomad-a01" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "nomad"
@@ -241,6 +286,24 @@ resource "cloudflare_record" "nomad-a02" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "nomad"
   value   = cloudflare_record.bobby.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = true
+}
+
+resource "cloudflare_record" "nomad-a03" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "nomad"
+  value   = cloudflare_record.billy.value
+  type    = "A"
+  proxied = false
+  allow_overwrite = true
+}
+
+resource "cloudflare_record" "nomad-a04" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "nomad"
+  value   = cloudflare_record.robert.value
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -267,7 +330,7 @@ resource "cloudflare_record" "wildcardmad-a02" {
 resource "cloudflare_record" "wildcardmad-a03" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "*"
-  value   = cloudflare_record.billy.value
+  value   = cloudflare_record.robert.value
   type    = "A"
   proxied = false
   allow_overwrite = true
