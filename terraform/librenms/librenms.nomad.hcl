@@ -63,7 +63,8 @@ job "librenms" {
             
       check {
         name     = "alive"
-        type     = "tcp"
+        type     = "http"
+        path     = "/"
         interval = "10s"
         timeout  = "2s"
       }
@@ -130,6 +131,7 @@ job "librenms" {
         LOG_IP_VAR = "http_x_forwarded_for"       
         LIBRENMS_WEATHERMAP = "true"
         LIBRENMS_SNMP_COMMUNITY = "shamsway"
+        LIBRENMS_BASE_URL = "librenms.shamsway.net"
       }
 
       volume_mount {
@@ -139,7 +141,7 @@ job "librenms" {
       }
 
       resources {
-        memory = 256
+        memory = 512
       }
     }
 
@@ -193,19 +195,19 @@ job "librenms" {
       }
 
       resources {
-        memory = 256
+        memory = 512
       }
     }
 
     task "librenms-rrdcached" {
       driver = "podman"
-      #user = "librenms"
+      #user = "rrdcached"
 
       config {
         image = "docker.io/crazymax/rrdcached:1.8.0-r5"
-        #userns = "keep-id:uid=1000,gid=1000"
+        #userns = "keep-id"
         ports = ["rrdcached"]
-        volumes = ["/mnt/services/librenms/config/rrd/db:/data/db","/mnt/services/librenms/config/rrd/journal:/data/journal"]
+        volumes = ["/mnt/services/librenms/rrdcached/db:/data/db","/mnt/services/librenms/rrdcached/journal:/data/journal"]
         logging = {
         driver = "journald"
         options = [
@@ -228,7 +230,7 @@ job "librenms" {
       }
 
       resources {
-        memory = 256
+        memory = 512
       }      
     }
   }
