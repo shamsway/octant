@@ -41,4 +41,4 @@ export RESTIC_REPOSITORY="s3:[repo]"
 export RESTIC_PASSWORD="password"
 export HOSTNAME="octant-backup"
 ```
-Run `terraform show terraform.tfstate` and copy the script contents to a file in the Occtant cluter (e.g. `/tmp/backup.sh`). Execute to debug.
+Run `terraform show terraform.tfstate` and copy the script contents to a file in the Occtant cluter (e.g. `/tmp/backup.sh`). Execute to debug. The rendered script is also stored in the Nomad variables under `nomad/jobs/restic-backup`
