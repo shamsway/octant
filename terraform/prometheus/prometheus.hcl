@@ -117,7 +117,7 @@ scrape_configs:
   - job_name: 'traefik'
     metrics_path: /metrics
     static_configs:
-      - targets: ['traefik.shamsway.net:8082']
+      - targets: {{ range service "traefik-metrics" -}}['traefik.service.consul:{{ .Port }}']{{- end }}
 
   # - job_name: 'nomad-jobs'
   #   metrics_path: /metrics
