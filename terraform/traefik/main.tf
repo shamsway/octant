@@ -26,6 +26,14 @@ resource "nomad_variable" "cloudflare_secrets" {
   }
 }
 
+data "template_file" "ingress_job_template" {
+  template = "${file("./ingress-lb.nomad.hcl")}"
+  vars = {
+    region = var.region
+    datacenter = var.datacenter
+  }
+}
+
 data "template_file" "traefik_job_template" {
   template = "${file("./traefik.nomad.hcl")}"
   vars = {
@@ -35,8 +43,13 @@ data "template_file" "traefik_job_template" {
   }
 }
 
-# Register job
+# Register jobs
 resource "nomad_job" "traefik" {
   depends_on = [nomad_variable.cloudflare_secrets]
   jobspec = "${data.template_file.traefik_job_template.rendered}"
+}
+
+resource "nomad_job" "ingress-lb" {
+  depends_on = [nomad_job.traefik]
+  jobspec = "${data.template_file.ingress_job_template.rendered}"
 }

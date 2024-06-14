@@ -22,16 +22,13 @@ job "traefik" {
     count = 1
     network {
       port "http" {
-        static = "80"
+        to = "80"
       }
       port "https" {
-        static = "443"
-      }
-      port "api" {
-        static = "8081"
+        to = "443"
       }
       port "metrics" {
-        static = "8082"
+        to = "8082"
       }
       port "admin" {
         static = "9002"
@@ -128,6 +125,23 @@ job "traefik" {
       }
     }
 
+    service {
+      name = "traefik-metrics"
+      tags = ["lb", "exporter", "metrics", "prometheus.scrape"]
+      provider = "consul"
+      port = "metrics"
+      check {
+        type     = "tcp"
+        interval = "10s"
+        timeout  = "5s"
+        path     = "/ping"
+      }
+
+      connect {
+        native = true
+      }
+    }
+
     task "traefik" {
       driver = "podman"
 
@@ -152,7 +166,7 @@ job "traefik" {
       config {
         image = "${image}"
         args  = ["--configFile", "$${NOMAD_TASK_DIR}/traefik.toml", "--providers.file.filename", "$${NOMAD_TASK_DIR}/dynamic.toml"]
-        ports = ["http", "https", "api", "metrics", "admin"]
+        ports = ["http", "https", "metrics", "admin"]
         logging = {
           driver = "journald"
           options = [
@@ -163,18 +177,6 @@ job "traefik" {
         }
       }
 
-      service {
-        name = "traefik-metrics"
-        tags = ["lb", "exporter", "metrics", "prometheus.scrape"]
-        provider = "consul"
-        port = "metrics"
-        check {
-          type     = "tcp"
-          interval = "10s"
-          timeout  = "5s"
-          path     = "/ping"
-        }
-      }
       resources {
         memory = 128
       }

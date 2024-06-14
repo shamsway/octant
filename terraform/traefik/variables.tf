@@ -22,7 +22,7 @@ variable "datacenter" {
 
 variable "image" {
   type = string
-  default = "docker.io/traefik:v3.0"
+  default = "docker.io/traefik:v3.0.2"
 }
 
 variable "CLOUDFLARE_USERNAME" {
