@@ -57,12 +57,13 @@ job "open-webui" {
 
     task "open-webui" {
       driver = "podman"
+      #user = "2000"
  
       config {
         image = "${image}"
-        #force_pull = true
+        force_pull = true
         image_pull_timeout = "15m"
-        userns = "keep-id"
+        #userns = "keep-id:uid=0,gid=0"
         ports = ["http"]
         volumes = ["/mnt/services/open-webui/data:/app/backend/data","/mnt/services/litellm/config.yaml:/app/backend/data/litellm/config.yaml"]
         logging = {

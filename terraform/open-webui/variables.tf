@@ -27,7 +27,7 @@ variable "datacenter" {
 
 variable "image" {
   type = string
-  default = "docker.io/dyrnq/open-webui:main"
+  default = "ghcr.io/open-webui/open-webui:v0.3.4"
 }
 
 variable "ollama_url" {
