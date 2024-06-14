@@ -65,6 +65,7 @@ job "litellm" {
         args = ["--config", "/app/config.yaml"]
         ports = ["http"]
         volumes = ["local/config.yaml:/app/config.yaml"]
+        force_pull = "true"
         image_pull_timeout = "15m"
         logging = {
           driver = "journald"

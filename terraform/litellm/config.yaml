@@ -26,7 +26,19 @@ model_list:
   - model_name: ollama/fixt/home-3b-v3
     litellm_params:
       model: ollama/fixt/home-3b-v3:latest
-      api_base: http://ollama.service.consul:11434      
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama_chat/wizardlm:7b-q4_K_S
+    litellm_params:
+      model: ollama_chat/wizardlm:7b-q4_K_S
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama_chat/wizardcoder:latest
+    litellm_params:
+      model: ollama/wizardcoder:latest
+      api_base: http://ollama.service.consul:11434
+  - model_name: ollama_chat/phi3:3.8b
+    litellm_params:
+      model: ollama/phi3:3.8b
+      api_base: http://ollama.service.consul:11434                
   - model_name: groq-llama3-8b
     litellm_params:
       model: groq/llama3-8b-8192
