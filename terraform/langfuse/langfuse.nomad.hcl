@@ -61,7 +61,7 @@ job "langfuse" {
           driver = "journald"
           options = [
             {
-              "tag" = "open-webui"
+              "tag" = "langfuse"
             }
           ]
         }                 
