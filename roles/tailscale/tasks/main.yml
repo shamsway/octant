@@ -56,7 +56,7 @@
     - name: Bring up tailscale router
       become: true
       ansible.builtin.shell: |
-        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --advertise-routes={{ tailscale_advertisements }} --snat-subnet-routes=false --accept-routes
+        tailscale up --reset --authkey="{{ lookup('env', 'TAILSCALE_CLOUD_KEY') }}" --advertise-routes={{ tailscale_advertisements }} --snat-subnet-routes=false --stateful-filtering=false --accept-routes
         iptables -t mangle -A FORWARD -i tailscale0 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 
 # - name: Configure routing advertisement
