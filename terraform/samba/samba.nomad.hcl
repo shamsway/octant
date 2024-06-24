@@ -21,7 +21,9 @@ job "samba" {
   }
 
   group "samba" {
-    count = 1
+    restart {
+      delay = "60s"
+    }
 
     network {
       port "smb" {
