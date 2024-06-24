@@ -51,6 +51,10 @@ model_list:
     litellm_params:
       model: groq/mixtral-8x7b-32768
       api_key: os.environ/GROQ_API_KEY
+  - model_name: anthropic/claude-3.5-sonnet
+    litellm_params:
+      model: claude-3-5-sonnet-20240620
+      max_tokens: 4096      
   - model_name: anthropic/claude-3-opus
     litellm_params:
       model: claude-3-opus-20240229
