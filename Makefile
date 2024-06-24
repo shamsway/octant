@@ -1,6 +1,6 @@
 GCP_VM_NAME := phil
 GCP_ZONE := us-central1-a
-GCP_PROJECT := shamsway
+GCP_PROJECT := octant-426722
 
 .PHONY: run run-flush-cache lint check-env
 
