@@ -1,5 +1,4 @@
-# terraform apply -var="TAILSCALE_KEY=${TAILSCALE_CLOUD_KEY}" -var="cloudflare_token=${CLOUDFLARE_TOKEN}"
-# terraform destroy -var="TAILSCALE_KEY=${TAILSCALE_CLOUD_KEY}" -var="cloudflare_token=${CLOUDFLARE_TOKEN}"
+# unset CLOUDFLARE_API_KEY
 
 terraform {
   required_providers {
@@ -16,7 +15,7 @@ terraform {
 }
 
 provider "google" {
-    project = "shamsway"
+    project = "octant-426722"
     region  = "us-central1"
 
 }
@@ -184,7 +183,7 @@ resource "google_compute_instance" "phil" {
   provisioner "remote-exec" {
     inline = [
       "sudo curl -fsSL https://tailscale.com/install.sh | sh",
-      "sudo tailscale up --accept-routes --accept-dns=false --authkey=${tailscale_tailnet_key.key.key} --advertise-routes=${google_compute_subnetwork.vpc_subnetwork.ip_cidr_range},35.199.192.0/19 --snat-subnet-routes=false",
+      "sudo tailscale up --accept-routes --accept-dns=false --authkey=${tailscale_tailnet_key.key.key} --advertise-routes=${google_compute_subnetwork.vpc_subnetwork.ip_cidr_range},35.199.192.0/19 --stateful-filtering=false --snat-subnet-routes=false",
       "sudo tailscale status",
       "sudo sysctl -w net.ipv4.ip_forward=1",
       "sudo sysctl -p",
