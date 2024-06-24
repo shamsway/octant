@@ -1,0 +1,87 @@
+@startuml
+!pragma teoz true
+skinparam dpi 300
+skinparam BoxPadding 10
+' Dark mode colors
+skinparam backgroundColor #2E3440
+skinparam ArrowColor #D8DEE9
+skinparam BoxBorderColor #D8DEE9
+' Font settings
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam defaultFontColor #D8DEE9
+skinparam defaultTextAlignment center
+
+skinparam linetype ortho
+
+' Set diagram size
+scale 800*600
+
+' Import Font Awesome
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+!include $ICONURL/common.puml
+!include $ICONURL/font-awesome-6/server.puml
+
+rectangle "Octant Consul/Nomad Architecture" #4C566A {
+    rectangle "Jerry" as jerry #3B4252 {
+        rectangle "Consul Server" as JerryConsulServer #D8277E {
+        }
+        rectangle "Nomad Server" as JerryNomadServer #00CA8E {
+        }
+        rectangle "Rootless" as JerryRootless #4C566A {
+            rectangle "Consul Agent" as JerryConsulAgent #D8277E
+            rectangle "Nomad Agent" as JerryNomadAgent #00CA8E
+        }
+        rectangle "Root" as JerryRoot #4C566A {
+            rectangle "Consul Agent" as JerryConsulAgentRoot #D8277E
+            rectangle "Nomad Agent" as JerryNomadAgentRoot #00CA8E
+        }
+    }
+
+    rectangle "Bobby" as bobby #3B4252 {
+        rectangle "Consul Server" as BobbyConsulServer #D8277E {
+        }
+        rectangle "Nomad Server" as BobbyNomadServer #00CA8E {
+        }
+        rectangle "Rootless" as BobbyRootless #4C566A {
+            rectangle "Consul Agent" as BobbyConsulAgent #D8277E
+            rectangle "Nomad Agent" as BobbyNomadAgent #00CA8E
+        }
+        rectangle "Root" as BobbyRoot #4C566A {
+            rectangle "Consul Agent" as BobbyConsulAgentRoot #D8277E
+            rectangle "Nomad Agent" as BobbyNomadAgentRoot #00CA8E
+        }
+    }
+
+    rectangle "Billy" as billy #3B4252 {
+        rectangle "Consul Server" as BillyConsulServer #D8277E {
+        }
+        rectangle "Nomad Server" as BillyNomadServer #00CA8E {
+        }
+        rectangle "Rootless" as BillyRootless #4C566A {
+            rectangle "Consul Agent" as BillyConsulAgent #D8277E
+            rectangle "Nomad Agent" as BillyNomadAgent #00CA8E
+        }
+        rectangle "Root" as BillyRoot #4C566A {
+            rectangle "Consul Agent" as BillyConsulAgentRoot #D8277E
+            rectangle "Nomad Agent" as BillyNomadAgentRoot #00CA8E
+        }
+    }
+}
+
+' Connections
+JerryConsulServer <--> BobbyConsulServer
+BobbyConsulServer <--> BillyConsulServer
+BillyConsulServer <--> JerryConsulServer
+
+JerryNomadServer <--> BobbyNomadServer
+BobbyNomadServer <--> BillyNomadServer
+BillyNomadServer <--> JerryNomadServer
+
+JerryConsulAgent <- JerryNomadAgent
+JerryConsulAgentRoot <- JerryNomadAgentRoot
+BobbyConsulAgent <- BobbyNomadAgent
+BobbyConsulAgentRoot <- BobbyNomadAgentRoot
+BillyConsulAgent <- BillyNomadAgent
+BillyConsulAgentRoot <- BillyNomadAgentRoot
+@enduml
