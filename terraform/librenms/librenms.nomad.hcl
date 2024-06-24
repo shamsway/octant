@@ -31,18 +31,6 @@ job "librenms" {
       }      
     }
 
-    volume "librenms-config" {
-      type      = "host"
-      read_only = false
-      source    = "librenms-config"
-    }
-
-    volume "librenms-data" {
-      type      = "host"
-      read_only = false
-      source    = "librenms-data"
-    }
-
     service {
       name = "librenms"
       provider = "consul"
@@ -95,7 +83,8 @@ job "librenms" {
       config {
         image = "docker.io/librenms/librenms:24.4.1"
         ports = ["http"]
-        cap_add = ["NET_RAW","NET_ADMIN"]  
+        cap_add = ["NET_RAW","NET_ADMIN"]
+        volumes = ["/mnt/services/librenms/config:/data"]
         #userns = "keep-id:uid=1000,gid=1000"
         logging = {
         driver = "journald"
@@ -134,12 +123,6 @@ job "librenms" {
         LIBRENMS_BASE_URL = "librenms.shamsway.net"
       }
 
-      volume_mount {
-        volume      = "librenms-config"
-        destination = "/data"
-        read_only   = false
-      }
-
       resources {
         memory = 512
       }
@@ -151,7 +134,8 @@ job "librenms" {
 
       config {
         image = "docker.io/librenms/librenms:24.4.1"
-        cap_add = ["NET_RAW","NET_ADMIN"] 
+        cap_add = ["NET_RAW","NET_ADMIN"]
+        volumes = ["/mnt/services/librenms/config:/data"]        
         network_mode = "host"
         privileged = true
         #userns = "keep-id:uid=1000,gid=1000"
@@ -186,12 +170,6 @@ job "librenms" {
         OPCACHE_MEM_SIZE = "128"   
         DISPATCHER_NODE_ID = "dispatcher"
         SIDECAR_DISPATCHER = "1"
-      }
-
-      volume_mount {
-        volume      = "librenms-config"
-        destination = "/data"
-        read_only   = false
       }
 
       resources {
