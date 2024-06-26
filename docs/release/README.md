@@ -181,10 +181,19 @@ Octant is an open source project that provides automation and infrastructure as 
 ## Features
 
 - Automated deployment of infrastructure components using Terraform
+- Workload scheduling via HashiCorp Nomad
+- Service discovery via HashiCorp Consul
+- Rootless Podman when possible, Root Podman when necessary
+- Traefik for reverse proxy and TLS cert generation with LetsEncrypt
 - Configuration management and provisioning using Ansible
 - Secrets management integration with 1Password
 - Connectivity between on-prem and cloud using Tailscale
-- Monitoring and alerting setup
+- Cloud Infrastructure in the major hyperscalers free-tier offerings, deployed with Terraform and automatically connected to Tailscale
+- Nomad Jobs for deploying basic components for Local LLM: Vector Database, Redis, Jupyter Notebooks, Ollama (optional)
+- Database services: postgres, mariadb, influxdb, redis, chromadb, weaviate
+- Monitoring and alerting with Prometheus, Grafana, Loki, LibreNMS and other tools
+- Automated backups to S3-compatible endpoints with Restic
+- (Optional) Distibuted storage with Ceph
 
 ## Getting Started
 
@@ -196,6 +205,14 @@ To get started with Octant, follow these steps:
 4. Run the automation scripts: [Provide instructions on how to run the automation scripts]
 
 For detailed instructions and documentation, please refer to the [docs](./docs) directory.
+
+## Q & A
+
+- For the 3-node architecture, are Consul, Nomad, and Ceph all running on the same three nodes, or do they have separate node clusters? Great question, the answer is a bit complex but it is what makes this lab unique. Both Consul and Nomad use the RAFT protocol for consensus, so the minimum starting cluster size is three. Expanding clusters should respect the requirement for odd numbers of members. Both Consul and Nomad follow a server/agent architecture, but the components can run on the same physical server or VM. Consul and Nomad servers form a quorum for consensus, but do little else. Consul and Nomad agents connect to the servers and perform the service discovery and container scheduling functions. In this lab frame work, each node runs these components: Consul server, Nomad Server, Consul rootless agent, Nomad rootless agent, Consul agent running as root, Nomad agent running as root. There is always a 1:1 correlation between corresponding Consul and Nomad agents. They work as a pair to perform their functions. Running both a rootless and root pair of each allows each node to be able to run either rootless containers, or those few containers requring root privileges. Ceph is also running to provide distributed storage. Each container (running as a Nomad job) stores stateful data on a cephfs mount shared across all the nodes. I forgot to mention this earlier, but there is one other networking component. An nginx tcp proxy runs on each node on ports 80 and 443, which direct any inbound traffic to traefik. 
+- How does Traefik interact with the other components in your setup? Is it running on all nodes or on a dedicated node? Traefik runs in a single container becuase clustering isn't supported in the open source version, so nginx is acting as a simple ingres. Traefik uses Consul service discovery and container tags to generate TLS certs and forward inbound traffic to the correct port on the container. Most ports use a random ports, but some containers run on well-known port numbers.
+- Are there any specific aspects of the Consul, Nomad, or Ceph setups that you want to highlight in the diagrams? For example, their roles in service discovery, workload scheduling, or distributed storage? Nothing specific apart from the basic functionality and how each component connects/compliments each other. I will dive into some specific components as work through the various scenarios.
+= Do you want to include any representation of the cloud infrastructure or Tailscale connectivity in these initial diagrams, or should we focus solely on the on-premises components for now? I would like to start with local connectivity, then layer on cloud connectivity in later diagrams.
+= Are there any specific conventions or styles you prefer for your diagrams? For example, color coding for different types of components or specific shapes for nodes vs. services? I don't have any in mind but I would like to follow generally accepted open source and cloud computing principals/vocabulatry. I am also open to suggestions for styles that may be helpful in communicating the various components in an easy to understand and asthetically pleasing way.
 
 ## Contributing
 
