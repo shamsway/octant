@@ -46,15 +46,32 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 
 ## Files and Folders
 
-`terraform/`
-- This folder contains Terraform configurations for deploying various services like Loki, Grafana, InfluxDB, Nginx, Postgres, Prometheus, and Traefik.
-- Todo: Add README files for each service, explaining their purpose, dependencies, and any specific setup instructions.
-- Todo: Review the configurations for any sensitive information like API keys, passwords, or tokens, and replace them with environment variables or secrets management.
+`ARCHIVE/`
+- Mostly unused things that will be removed soon
+
+`docs/`
+- Documentation and notes
+- Not anywhere near complete
+  
+`handlers/`
+- Ansible handlers
+
+`inventory/`
+- Ansible inventory and group variables
+
+`packer/`
+- Packer scripts for VMware and Hyper-V images
+- Bootstrap scripts for physical nodes
 
 `roles/`
 - The roles folder contains the Ansible roles for the initial setup and deployment of services (i.e. Consul, Nomad, Podman).
 - Todo: Add README file for each role, explaining its purpose, dependencies, and any specific configuration options.
 - Todo: Review the tasks and templates for any sensitive information and replace them with environment variables or secrets.
+
+`terraform/`
+- This folder contains Terraform configurations for deploying various services like Loki, Grafana, InfluxDB, Nginx, Postgres, Prometheus, and Traefik.
+- Todo: Add README files for each service, explaining their purpose, dependencies, and any specific setup instructions.
+- Todo: Review the configurations for any sensitive information like API keys, passwords, or tokens, and replace them with environment variables or secrets management.
 
 `add-folders.yml`
 - This Ansible playbook adds new folders to the Nomad configuration based on a CSV file.
