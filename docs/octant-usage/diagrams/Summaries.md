@@ -92,3 +92,25 @@ Billy -[hidden]down- Ceph3
 
 @enduml
 ```
+
+# Excalidraw
+
+Create a diagram based on these specifications
+
+## Project Overview
+- Project Name: Octant
+- Acronym Meaning: One password (1Password), Consul, Terraform, Ansible, Nomad, and Tailscale
+- Theme: AI focued home lab (with a few tributes to the Grateful Dead because the creator is a Deadhead)
+
+## Basic Homelab Setup
+- Three primary servers: Jerry, Bobby, and Billy
+- Key components on each server:
+- Nomad
+- Consul
+- Shared distributed storage: Ceph
+
+## Diagram Structure
+- Main container: "Octant Hybrid Home Lab"
+- Three server containers: Jerry, Bobby, Billy
+- Each contains Nomad and Consul services
+- Ceph Distributed Storage across all three servers
