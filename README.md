@@ -12,7 +12,7 @@
 ```
 **WARNING: Batteries are not included. This battlestation is not yet fully functional**
 
-Octant is an open source project that provides automation and infrastructure as code for setting up and managing a homelab environment. The project utilizes various tools and technologies such as 1Password, Consul, Terraform, Ansible, Nomad, and Tailscale to create a scalable and flexible homelab setup.
+Octant is an open source project that provides automation and infrastructure as code for setting up and managing a home lab environment. The project utilizes various tools and technologies such as 1Password, Consul, Terraform, Ansible, Nomad, and Tailscale to create a scalable and flexible home lab setup.
 
 ## Features
 
@@ -60,7 +60,7 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 - This Ansible playbook adds new folders to the Nomad configuration based on a CSV file.
 
 `configure-mounts.yml`
-- This Ansible playbook manages mountpoints across the homelab servers.
+- This Ansible playbook manages mountpoints across the home lab servers.
 - It installs necessary packages, creates mount directories, mounts NFS and SMB shares, and updates the fstab file.
 
 `homelab.yml`
