@@ -10,6 +10,8 @@
 
                    An opinionated home lab framework
 ```
+**WARNING: Batteries are not included. This battlestation is not yet fully functional**
+
 Octant is an open source project that provides automation and infrastructure as code for setting up and managing a homelab environment. The project utilizes various tools and technologies such as 1Password, Consul, Terraform, Ansible, Nomad, and Tailscale to create a scalable and flexible homelab setup.
 
 ## Features
@@ -78,6 +80,30 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 `.secrets.yml`
 - This file contains a secret key for Consul gossip encryption.
 - Ensure that this file is excluded from version control and not pushed to any public repository.
+
+## Diagrams
+
+Example architecture - initial cluster deployment
+![](docs/octant-usage/diagrams/01_architecture.png)
+
+Consul/Nomad Architecture
+![](docs/octant-usage/diagrams/03_nomad_consul.png)
+
+Ingress with nginx and Traefik
+![](docs/octant-usage/diagrams/04_ingress_tls.png)
+
+Tailscale Overview
+![](docs/octant-usage/diagrams/05_tailscale_overview.png)
+
+Tailscale Routing
+![](docs/octant-usage/diagrams/06_tailscale_routing.png)
+
+Tailscale Multicloud
+![](docs/octant-usage/diagrams/07_tailscale_multicloud.png)
+
+Getting Started
+![](docs/octant-usage/diagrams/08_getting_started.png)
+
 
 ## Q&A
 
