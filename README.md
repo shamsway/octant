@@ -94,9 +94,21 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 - This file defines the inventory groups and their associated variables.
 - It lists the servers and their specific configurations, such as region, Tailscale advertisements, and volume definitions.
 
+`Makefile`
+- Various make targets to deploy Ansible roles and other tasks
+  
+`todo.md`
+- A very ugly list of things I've done and things to do. Needs to be replaced with a changelog and GitHub issues.
+
 `.secrets.yml`
 - This file contains a secret key for Consul gossip encryption.
 - Ensure that this file is excluded from version control and not pushed to any public repository.
+
+## To do 
+- Add remaning Ansible Playbooks (`reset-X.yml`, `update-X.yml`) to readme
+- Convert `todo.md` to individual GitHub issues
+- Create changelog and automate updates
+- Stand up GitHub actions
 
 ## Diagrams
 
