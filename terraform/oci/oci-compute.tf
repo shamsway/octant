@@ -1,3 +1,4 @@
+# unset CLOUDFLARE_API_KEY;
 # terraform plan -var="cloudflare_token=${CLOUDFLARE_TOKEN}"
 # terraform apply -var="cloudflare_token=${CLOUDFLARE_TOKEN}"
 # terraform destroy -var="cloudflare_token=${CLOUDFLARE_TOKEN}"
@@ -42,14 +43,14 @@ data "cloudflare_zones" "domain" {
   }
 }
 
-data "external" "availability_domain" {
-  program = ["python", "check_arm_availability.py"]
+# data "external" "availability_domain" {
+#   program = ["python", "check_arm_availability.py"]
 
-  query = {
-    shape         = "VM.Standard.A1.Flex"
-    max_instances = 1
-  }
-}
+#   query = {
+#     shape         = "VM.Standard.A1.Flex"
+#     max_instances = 1
+#   }
+# }
 
 resource "tailscale_tailnet_key" "pigpen_key" {
   description   = "Ephemeral key for pigpen"
@@ -62,16 +63,16 @@ resource "tailscale_tailnet_key" "pigpen_key" {
   }  
 }
 
-resource "tailscale_tailnet_key" "mickey_key" {
-  description   = "Tailscale key for mickey"
-  reusable      = true
-  ephemeral     = false
-  preauthorized = true
-  tags          = ["tag:cloud"]
-  lifecycle {
-    prevent_destroy = true
-  }  
-}
+# resource "tailscale_tailnet_key" "mickey_key" {
+#   description   = "Tailscale key for mickey"
+#   reusable      = true
+#   ephemeral     = false
+#   preauthorized = true
+#   tags          = ["tag:cloud"]
+#   lifecycle {
+#     prevent_destroy = true
+#   }  
+# }
 
 resource "tailscale_tailnet_key" "tom_key" {
   description   = "Tailscale key for tom"
@@ -105,11 +106,11 @@ data "oci_identity_availability_domain" "ad" {
   ad_number      = 3
 }
 
-data "oci_core_images" "arm_images" {
-  compartment_id = oci_identity_compartment.octant_compartment.id
-  display_name = "Canonical-Ubuntu-22.04-aarch64-2024.02.18-0"
-  shape = "VM.Standard.A1.Flex"
-}
+# data "oci_core_images" "arm_images" {
+#   compartment_id = oci_identity_compartment.octant_compartment.id
+#   display_name = "Canonical-Ubuntu-22.04-aarch64-2024.02.18-0"
+#   shape = "VM.Standard.A1.Flex"
+# }
 
 resource "oci_core_internet_gateway" "igw" {
   compartment_id = oci_identity_compartment.octant_compartment.id
@@ -176,10 +177,6 @@ resource "oci_objectstorage_bucket" "image_bucket" {
   compartment_id = oci_identity_compartment.octant_compartment.id
   name           = "octant-image"
   namespace      = data.oci_objectstorage_namespace.namespace.namespace
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "oci_objectstorage_object" "octant_image_object" {
@@ -187,10 +184,6 @@ resource "oci_objectstorage_object" "octant_image_object" {
   source   = "./octantnode-disk1.vmdk"
   namespace = data.oci_objectstorage_namespace.namespace.namespace
   object    = "octantnode-disk1.vmdk"
-
-  lifecycle {
-    prevent_destroy = true
-  }  
 }
 
 resource "oci_core_image" "octant_image" {
@@ -314,60 +307,60 @@ resource "oci_core_instance" "tom" {
 } 
 
 # Create the Always Free Arm-based Ampere A1 VM
-resource "oci_core_instance" "mickey" {
-  availability_domain = data.external.availability_domain.result.availability_domain
-  compartment_id      = oci_identity_compartment.octant_compartment.id
-  shape               = "VM.Standard.A1.Flex"
-  display_name        = "mickey"
+# resource "oci_core_instance" "mickey" {
+#   availability_domain = data.external.availability_domain.result.availability_domain
+#   compartment_id      = oci_identity_compartment.octant_compartment.id
+#   shape               = "VM.Standard.A1.Flex"
+#   display_name        = "mickey"
 
-  shape_config {
-    ocpus         = 4
-    memory_in_gbs = 24
-  }
+#   shape_config {
+#     ocpus         = 4
+#     memory_in_gbs = 24
+#   }
 
-  source_details {
-    source_type = "image"
-    source_id   = data.oci_core_images.arm_images.images[0].id
-  }
+#   source_details {
+#     source_type = "image"
+#     source_id   = data.oci_core_images.arm_images.images[0].id
+#   }
 
-  create_vnic_details {
-    subnet_id = oci_core_subnet.subnet01.id
-    assign_public_ip = true
-    nsg_ids          = [oci_core_network_security_group.nsg.id]
-  }
+#   create_vnic_details {
+#     subnet_id = oci_core_subnet.subnet01.id
+#     assign_public_ip = true
+#     nsg_ids          = [oci_core_network_security_group.nsg.id]
+#   }
 
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file("~/.ssh/id_rsa")
-    host        = self.public_ip
-  }
+#   connection {
+#     type        = "ssh"
+#     user        = "ubuntu"
+#     private_key = file("~/.ssh/id_rsa")
+#     host        = self.public_ip
+#   }
 
-  extended_metadata = {
-    ssh_authorized_keys = file("${var.ssh_public_key}")
-  }
+#   extended_metadata = {
+#     ssh_authorized_keys = file("${var.ssh_public_key}")
+#   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo sed -i 's/127.0.0.1\tlocalhost/127.0.0.1\tlocalhostlocalhost ${oci_core_instance.mickey.display_name}/' /etc/hosts",
-      "sudo useradd -md /home/${var.admin_user} ${var.admin_user}",
-      "sudo usermod -aG sudo ${var.admin_user}",
-      "sudo mkdir /home/${var.admin_user}/.ssh",
-      "sudo cp ~/.ssh/authorized_keys /home/${var.admin_user}/.ssh",
-      "sudo chown -R ${var.admin_user}:${var.admin_user} /home/${var.admin_user}/.ssh",
-      "sudo cp /home/${var.admin_user}/.ssh/authorized_keys /root/.ssh/",
-      "sudo sed -i -e 's/#PermitRootLogin no/PermitRootLogin without-password/' -e 's/PermitRootLogin no/PermitRootLogin without-password/' /etc/ssh/sshd_config", 
-      "curl -fsSL https://tailscale.com/install.sh | sh",
-      "sudo tailscale up --accept-routes --accept-dns=false --authkey=${tailscale_tailnet_key.mickey_key.key}",      
-      "sudo systemctl restart sshd"
-    ]
-  }
+#   provisioner "remote-exec" {
+#     inline = [
+#       "sudo sed -i 's/127.0.0.1\tlocalhost/127.0.0.1\tlocalhostlocalhost ${oci_core_instance.mickey.display_name}/' /etc/hosts",
+#       "sudo useradd -md /home/${var.admin_user} ${var.admin_user}",
+#       "sudo usermod -aG sudo ${var.admin_user}",
+#       "sudo mkdir /home/${var.admin_user}/.ssh",
+#       "sudo cp ~/.ssh/authorized_keys /home/${var.admin_user}/.ssh",
+#       "sudo chown -R ${var.admin_user}:${var.admin_user} /home/${var.admin_user}/.ssh",
+#       "sudo cp /home/${var.admin_user}/.ssh/authorized_keys /root/.ssh/",
+#       "sudo sed -i -e 's/#PermitRootLogin no/PermitRootLogin without-password/' -e 's/PermitRootLogin no/PermitRootLogin without-password/' /etc/ssh/sshd_config", 
+#       "curl -fsSL https://tailscale.com/install.sh | sh",
+#       "sudo tailscale up --accept-routes --accept-dns=false --authkey=${tailscale_tailnet_key.mickey_key.key}",      
+#       "sudo systemctl restart sshd"
+#     ]
+#   }
 
-  provisioner "remote-exec" {
-    when = destroy
-    inline = [ "sudo tailscale logout" ]
-  }
-}
+#   provisioner "remote-exec" {
+#     when = destroy
+#     inline = [ "sudo tailscale logout" ]
+#   }
+# }
 
 
 # data "oci_core_images" "amd_images" {
@@ -382,11 +375,11 @@ data "tailscale_device" "pigpen" {
   wait_for = "30s"
 }
 
-data "tailscale_device" "mickey" {
-  depends_on = [oci_core_instance.mickey]
-  hostname = oci_core_instance.mickey.display_name
-  wait_for = "30s"
-}
+# data "tailscale_device" "mickey" {
+#   depends_on = [oci_core_instance.mickey]
+#   hostname = oci_core_instance.mickey.display_name
+#   wait_for = "30s"
+# }
 
 data "tailscale_device" "tom" {
   depends_on = [oci_core_instance.tom]
@@ -403,18 +396,18 @@ resource "cloudflare_record" "pigpen" {
   allow_overwrite = true
 }
 
-resource "cloudflare_record" "mickey" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "mickey"
-  value   = data.tailscale_device.mickey.addresses[0]
-  type    = "A"
-  proxied = false
-  allow_overwrite = true
-}
+# resource "cloudflare_record" "mickey" {
+#   zone_id = data.cloudflare_zones.domain.zones[0].id
+#   name    = "mickey"
+#   value   = data.tailscale_device.mickey.addresses[0]
+#   type    = "A"
+#   proxied = false
+#   allow_overwrite = true
+# }
 
 resource "cloudflare_record" "tom" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "mickey"
+  name    = "tom"
   value   = data.tailscale_device.tom.addresses[0]
   type    = "A"
   proxied = false
@@ -430,13 +423,13 @@ output "pigpen_tailscale_id" {
   value = data.tailscale_device.pigpen.id
 } 
 
-output "mickey_tailscale_ip" {
-  value = data.tailscale_device.mickey.addresses[0]
-}
+# output "mickey_tailscale_ip" {
+#   value = data.tailscale_device.mickey.addresses[0]
+# }
 
-output "mickey_tailscale_id" {
-  value = data.tailscale_device.mickey.id
-} 
+# output "mickey_tailscale_id" {
+#   value = data.tailscale_device.mickey.id
+# } 
 
 output "tom_tailscale_ip" {
   value = data.tailscale_device.tom.addresses[0]
