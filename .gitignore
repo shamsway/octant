@@ -16,9 +16,11 @@ examplefacts.json
 .secrets.yml
 hosts.ini
 todo.md
-bundle*
+bundle*.txt
+analysis*.txt
 file_tree.txt
 settings.json
 volumes.csv
 *.vmdk
-ARCHIVE/
+/ARCHIVE/
+/.vscode/
