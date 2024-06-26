@@ -115,6 +115,9 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 Example architecture - initial cluster deployment
 ![](docs/octant-usage/diagrams/01_architecture.png)
 
+GPU/lLM connectivity
+![](docs/octant-usage/diagrams/02_gpu_ollama.png)
+
 Consul/Nomad Architecture
 ![](docs/octant-usage/diagrams/03_nomad_consul.png)
 
