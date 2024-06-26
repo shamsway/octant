@@ -136,22 +136,6 @@
 - name: Configure dnsmasq for DNS servers
   when: dnsserver is defined and dnsserver == true
   block:
-    - name: Check if resolv.conf is immutable
-      ansible.builtin.stat:
-        path: /etc/resolv.conf
-      register: resolv_conf_stat
-
-    - name: Ensure resolv.conf contains only the specified line
-      ansible.builtin.copy:
-        content: nameserver 127.0.0.1
-        dest: /etc/resolv.conf
-      when: "'immutable' not in resolv_conf_stat.stat.attributes"
-
-    - name: Set resolv.conf attribute to immutable (read only)
-      ansible.builtin.file:
-        path: /etc/resolv.conf
-        attributes: +i
-
     - name: Install dnsmasq
       ansible.builtin.package:
         name: dnsmasq
@@ -203,9 +187,6 @@
         state: started
         enabled: true
 
-- name: Configure dnsmasq for DNS clients
-  when: dnsserver is not defined or dnsserver == false
-  block:
     - name: Check if resolv.conf is immutable
       ansible.builtin.stat:
         path: /etc/resolv.conf
@@ -220,8 +201,11 @@
     - name: Set resolv.conf attribute to immutable (read only)
       ansible.builtin.file:
         path: /etc/resolv.conf
-        attributes: +i
+        attributes: +i        
 
+- name: Configure dnsmasq for DNS clients
+  when: dnsserver is not defined or dnsserver == false
+  block:
     - name: Install dnsmasq
       ansible.builtin.package:
         name: dnsmasq
@@ -279,6 +263,22 @@
         name: dnsmasq
         state: started
         enabled: true
+
+    - name: Check if resolv.conf is immutable
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
+      register: resolv_conf_stat
+
+    - name: Ensure resolv.conf contains only the specified line
+      ansible.builtin.copy:
+        content: nameserver 127.0.0.1
+        dest: /etc/resolv.conf
+      when: "'immutable' not in resolv_conf_stat.stat.attributes"
+
+    - name: Set resolv.conf attribute to immutable (read only)
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        attributes: +i        
 
 - name: Update all packages
   ansible.builtin.include_role:
