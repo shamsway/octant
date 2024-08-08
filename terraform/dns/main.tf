@@ -192,6 +192,42 @@ resource "cloudflare_record" "printer" {
   allow_overwrite = false
 }
 
+resource "cloudflare_record" "desklight" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "desklight"
+  value   = "192.168.252.21"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "tuneslight" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "tuneslight"
+  value   = "192.168.252.22"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "mediapi" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "mediapi"
+  value   = "192.168.252.23"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "macbook" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "macbook"
+  value   = "192.168.252.30"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
 resource "cloudflare_record" "cablight1" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "cablight1"
@@ -223,6 +259,15 @@ resource "cloudflare_record" "matrixlight" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "matrixlight"
   value   = "192.168.252.157"
+  type    = "A"
+  proxied = false
+  allow_overwrite = false
+}
+
+resource "cloudflare_record" "tvlight" {
+  zone_id = data.cloudflare_zones.domain.zones[0].id
+  name    = "tvlight"
+  value   = "192.168.252.237"
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -267,7 +312,7 @@ resource "cloudflare_record" "consul-a03" {
 resource "cloudflare_record" "consul-a04" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "consul"
-  value   = cloudflare_record.robert
+  value   = cloudflare_record.robert.value
   type    = "A"
   proxied = false
   allow_overwrite = false
