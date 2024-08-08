@@ -51,22 +51,22 @@ When setting up Git on a new system, it's important to configure your user name 
    git commit -m "Description of changes"
    ```
 
-### Updating the Public Repository
+### Updating the Public Release Repository
 
 When ready to update the public version:
 
-1. Checkout the public branch:
+1. Checkout the release branch:
    ```
-   git checkout public
+   git checkout release
    ```
 2. Merge changes from your private main branch:
    ```
    git merge main
    ```
 3. Review changes to ensure no private information is included.
-4. Push to the public repository:
+4. Push to the public release repository:
    ```
-   git push public public:main
+   git push release release:main
    ```
 
 ### Cherry-Picking Specific Changes
@@ -74,31 +74,31 @@ When ready to update the public version:
 To apply specific commits to the public branch:
 
 1. Identify the commit hash you want to apply.
-2. Checkout the public branch:
+2. Checkout the public release branch:
    ```
-   git checkout public
+   git checkout release
    ```
 3. Cherry-pick the desired commit:
    ```
    git cherry-pick <commit-hash>
    ```
-4. Push to the public repository:
+4. Push to the public release repository:
    ```
-   git push public public:main
+   git push release release:main
    ```
 
 ### Handling Public Contributions
 
-1. Pull changes from the public repository to your public branch:
+1. Pull changes from the public release repository to your release branch:
    ```
-   git checkout public
-   git pull public main
+   git checkout release
+   git pull release main
    ```
 2. Review the changes.
-3. If approved, merge the public branch into your private main branch:
+3. If approved, merge the public release branch into your private main branch:
    ```
    git checkout main
-   git merge public
+   git merge release
    ```
 
 ## Best Practices for Open-Source Management
