@@ -20,15 +20,6 @@
     owner: "{{ user }}"
     group: "{{ group }}"
 
-- name: Verify folder presence and ownership
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: directory
-    owner: "{{ user }}"
-    group: "{{ group }}"
-    mode: "0755"
-  loop: "{{ volumes }}"
-
 - name: Install {{ role_name }}
   ansible.builtin.include_role:
     name: install-hashi

@@ -17,7 +17,9 @@
 - name: Install {{ name }}
   ansible.builtin.package:
     name: "{{ package }}"
-    state: present
+    state: latest
+    update_cache: yes
+    only_upgrade: true
 
 # Performed later in the script. Remove?
 # - name: Register systemd service

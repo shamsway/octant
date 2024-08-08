@@ -39,6 +39,33 @@
     user: root
     group: root
 
+# Disable the default consul service (installed by apt) and create an override to prevent it from starting
+- name: Stop and disable default consul service
+  systemd:
+    name: consul
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Create systemd override for default consul service
+  file:
+    path: /etc/systemd/system/consul.service.d
+    state: directory
+    mode: '0755'
+
+- name: Create systemd override file
+  copy:
+    content: |
+      [Unit]
+      ConditionPathExists=!/etc/consul.d/consul.hcl
+
+      [Service]
+      ExecStart=
+      ExecStart=/bin/true
+    dest: /etc/systemd/system/consul.service.d/override.conf
+    mode: '0644'
+
+# Configure consul encryption/TLS
 - name: Check for consul_gossip_key and generate if needed
   ansible.builtin.include_role:
     name: configure-consul
@@ -108,21 +135,13 @@
     group: root
     mode: "0644"
 
-# - name: Configure /etc/resolv.conf with a single resolver
-#   lineinfile:
-#     path: /etc/resolv.conf
-#     line: nameserver 127.0.0.1
-#     regexp: '^nameserver'
-#     state: present
-#     create: yes
-
-# - name: Remove any other configuration from /etc/resolv.conf
-#   lineinfile:
-#     path: /etc/resolv.conf
-#     regexp: '^(?!nameserver 127\.0\.0\.1$).*'
-#     state: absent
-
 - name: Restart {{ role_name }}
   ansible.builtin.systemd:
     name: "{{ role_name }}"
-    state: restarted    
+    state: restarted
+
+- name: Wait for {{ role_name }} to start
+  ansible.builtin.wait_for:
+    port: "{{ consul.ports.http }}"
+    timeout: 60
+  changed_when: false

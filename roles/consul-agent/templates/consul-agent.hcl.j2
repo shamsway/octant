@@ -2,6 +2,7 @@ node_name = "{{ inventory_hostname.split('.')[0] }}-agent"
 server = false
 datacenter = "{{ datacenter }}"
 data_dir = "{{ datadirs[role_name] }}"
+experiments = ["v1dns"]
 
 connect {
   enabled = true

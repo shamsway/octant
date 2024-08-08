@@ -320,7 +320,7 @@
       - cockpit-doc
       - snmp
       - snmpd
-    state: present
+    state: latest
 
 - name: Fix number of file opened
   ansible.builtin.copy:

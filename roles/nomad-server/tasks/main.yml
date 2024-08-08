@@ -38,6 +38,32 @@
     user: root
     group: root
 
+# Disable the default nomad service (installed by apt) and create an override to prevent it from starting
+- name: Stop and disable default nomad service
+  systemd:
+    name: nomad
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Create systemd override directory
+  file:
+    path: /etc/systemd/system/nomad.service.d
+    state: directory
+    mode: '0755'
+
+- name: Create systemd override for default nomad service
+  copy:
+    content: |
+      [Unit]
+      ConditionPathExists=!/etc/nomad.d/nomad.hcl
+
+      [Service]
+      ExecStart=
+      ExecStart=/bin/true
+    dest: /etc/systemd/system/nomad.service.d/override.conf
+    mode: '0644'
+
 - name: Check for nomad_gossip_key and generate if needed
   ansible.builtin.include_role:
     name: configure-nomad
@@ -63,3 +89,9 @@
   ansible.builtin.systemd:
     name: "{{ role_name }}"
     state: restarted
+
+- name: Wait for {{ role_name }} to start
+  ansible.builtin.wait_for:
+    port: "{{ nomad.ports.http }}"
+    timeout: 60
+  changed_when: false    
