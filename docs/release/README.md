@@ -18,7 +18,7 @@ When setting up Git on a new system, it's important to configure your user name 
 
 3. Set your Git email address:
    ```
-   git config --global user.email "youremail@example.com"
+   "youremail@example.com"
    ```
    Replace "youremail@example.com" with your actual email address.
 
