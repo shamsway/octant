@@ -3,6 +3,12 @@ variable "OP_API_TOKEN" {
   type = string
 }
 
+variable "OP_API_URL" {
+  description = "URL for 1password connect vault"
+  type = string
+  default = "https://opapi.shamsway.net"
+}
+
 variable "nomad" {
   description = "Nomad server address"
   type = string
@@ -27,7 +33,7 @@ variable "datacenter" {
 
 variable "tvh_image" {
   type = string
-  default = "docker.io/linuxserver/tvheadend:b1005850-ls211"
+  default = "docker.io/linuxserver/tvheadend:b774bdd2-ls222"
 }
 
 variable "gluetun_image" {

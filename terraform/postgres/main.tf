@@ -1,3 +1,4 @@
+# unset OP_SERVICE_ACCOUNT_TOKEN
 terraform {
   required_providers {
     onepassword = {

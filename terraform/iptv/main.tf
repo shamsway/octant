@@ -1,3 +1,5 @@
+#
+
 terraform {
   required_providers {
     onepassword = {
@@ -19,7 +21,7 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.OP_API_URL}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
