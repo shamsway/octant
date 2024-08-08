@@ -51,31 +51,38 @@ EOF
         perms = "775"        
         data = <<EOH
 #!/bin/bash
+# Download Pluto Channel List
 #wget -q https://i.mjh.nz/PlutoTV/us-tvh.m3u8 -O /mnt/services/tvheadend/config/data/m3u/us-tvh.m3u8
-wget -q https://i.mjh.nz/PlutoTV/us.m3u8 -O /mnt/services/tvheadend/config/data/m3u/us-tvh.m3u8
+#wget -q https://i.mjh.nz/PlutoTV/us.m3u8 -O /mnt/services/tvheadend/config/data/m3u/us-tvh.m3u8
+# Download Apollo Channel List
 wget -q https://tvnow.best/api/list/alphaambush/nC-hQj@j93dZJiv8 -O /tmp/Apollo.m3u8
+# Split Apollo Channel List into seperate M3Us
 python3 /mnt/services/iptvtools/m3u-filter.py --m3u /tmp/Apollo.m3u8 --output-dir /mnt/services/tvheadend/config/data/m3u --output-file Apollo
-wget -q https://i.mjh.nz/PlutoTV/us.xml.gz -O /tmp/us.xml.gz
-gunzip -f /tmp/us.xml.gz
-wget -q https://epg.tvnow.best/utc.xml.gz -O /tmp/utc.xml.gz
+# Download Pluto Guide
+# wget -q https://i.mjh.nz/PlutoTV/us.xml.gz -O /tmp/us.xml.gz
+# gunzip -f /tmp/us.xml.gz
+# Download Apollo Guide
+wget -q https://epg.starlite.best/utc.xml.gz -O /tmp/utc.xml.gz
 gunzip -f /tmp/utc.xml.gz
-wget -q https://guidexml.tvnow.best/ -O /tmp/utclite.xml
+#wget -q https://epg.starlite.best/utclite.xml -O /tmp/utclite.xml
 python3 /mnt/services/iptvtools/zap2it-scrape.py -c $SECRETS/zap2it.ini -o /tmp/zap2it.xml
-echo '=== Pluto TV ==='
-python3 /mnt/services/iptvtools/xmltv-info.py /tmp/us.xml
+#echo '=== Pluto TV ==='
+#python3 /mnt/services/iptvtools/xmltv-info.py /tmp/us.xml
 echo '=== Apollo Full ==='
 python3 /mnt/services/iptvtools/xmltv-info.py /tmp/utc.xml
-echo '=== Apollo Lite ==='
-python3 /mnt/services/iptvtools/xmltv-info.py /tmp/utclite.xml
+#echo '=== Apollo Lite ==='
+#python3 /mnt/services/iptvtools/xmltv-info.py /tmp/utclite.xml
 echo '=== Locals ==='
 python3 /mnt/services/iptvtools/xmltv-info.py /tmp/zap2it.xml
 cp /tmp/*.xml /mnt/services/nginx/html/xmltv/
 #cp /tmp/utc.xml /mnt/services/tvheadend/config/data/
 #cp /tmp/utclite.xml /mnt/services/tvheadend/config/data/
 #cp /tmp/zap2it.xml /mnt/services/tvheadend/config/data/
-python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/utclite.xml /tmp/zap2it.xml /mnt/services/tvheadend/config/data/guide.xml
+python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/utc.xml /tmp/zap2it.xml /mnt/services/tvheadend/config/data/guide.xml
 #python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/temp.xml /tmp/utclite.xml /tmp/guide.xml
 #python3 /mnt/services/iptvtools/xmltv-merge.py /tmp/zap2it.xml /tmp/guide.xml /mnt/services/tvheadend/config/data/guide.xml
+echo '=== Merged ==='
+python3 /mnt/services/iptvtools/xmltv-info.py /mnt/services/tvheadend/config/data/guide.xml
 EOH
       }    
     }
