@@ -4,6 +4,8 @@
 **/.terraform*
 **/terraform.tfstate*
 **/.env
+**/venv
+**/.venv
 packer/output-octantnode
 packer/output-octantnode/*
 packer/packer_cache/
