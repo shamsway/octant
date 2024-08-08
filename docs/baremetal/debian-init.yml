@@ -1,0 +1,176 @@
+---
+# eval $(op account add --signin)
+# op run -- ansible-playbook -i localhost, -c local debian_config.yml
+# op account forget --all
+- name: Configure Debian Server
+  hosts: all
+  become: yes
+  vars:
+    timezone: UTC
+    ssh_host_key: "{{ lookup('community.general.onepassword', 'bobby_ssh', field='private key', vault='Dev') }}"
+    ssh_host_cert: "{{ lookup('community.general.onepassword', 'bobby_ssh', field='public key', vault='Dev') }}"
+    root_password: "{{ lookup('community.general.onepassword', 'bobby_creds', vault='Dev') }}"
+    local_server: "https://nginx.shamsway.net"
+    local_config_path: "lab_network_config.json"
+
+  tasks:
+    - name: Fetch network configuration
+      uri:
+        url: "{{ local_server }}/lab_network_config.json"
+        return_content: yes
+      register: network_config_response
+      ignore_errors: yes
+
+    - name: Read local network configuration file
+      slurp:
+        src: "{{ local_config_path }}"
+      register: local_network_config
+      when: network_config_response is failed
+
+    - name: Set network configurations from web or local source
+      set_fact:
+        network_configs: "{{ (network_config_response is success) | ternary(network_config_response.content, local_network_config['content'] | b64decode) | from_json }}"
+
+    - name: Validate network configuration
+      assert:
+        that:
+          - network_configs is mapping
+          - network_configs.keys() | length > 0
+          - network_configs[ansible_hostname] is defined
+          - network_configs[ansible_hostname].ip is defined
+          - network_configs[ansible_hostname].netmask is defined
+          - network_configs[ansible_hostname].gateway is defined
+          - network_configs[ansible_hostname].dns is defined
+        fail_msg: "Invalid network configuration format"
+
+    - name: Set network configuration for this host
+      set_fact:
+        network_config: "{{ network_configs[ansible_hostname] }}"
+
+    - name: Log configuration source
+      debug:
+        msg: "Using {{ 'web' if network_config_response is success else 'local' }} network configuration"
+
+    - name: Configure static IP
+      template:
+        src: interfaces.j2
+        dest: /etc/network/interfaces.d/eth0
+      notify: Restart networking
+
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+    - name: Configure localization
+      locale_gen:
+        name: en_US.UTF-8
+        state: present
+
+    - name: Set root password
+      user:
+        name: root
+        password: "{{ root_password | password_hash('sha512') }}"
+
+    - name: Install required packages
+      apt:
+        name:
+          - openssh-server
+          - sudo
+          - wget
+          - curl
+          - build-essential
+          - cloud-init
+          - cloud-initramfs-growroot
+          - jq
+          - grc
+          - git
+          - tmux
+          - htop
+          - unzip
+          - pydf
+          - yafc
+          - nfs-kernel-server
+          - ntp
+          - frr
+          - rsync
+          - netcat-traditional
+          - dnsmasq
+          - mtr-tiny
+          - speedometer
+          - bridge-utils
+          - acl
+          - automake
+          - autoconf
+          - systemd-container
+          - net-tools
+          - bind9-dnsutils
+          - man
+          - golang
+          - podman
+          - podman-compose
+          - crun
+          - cockpit
+          - cockpit-podman
+          - cockpit-pcp
+          - cockpit-doc
+          - open-vm-tools
+        state: present
+        update_cache: yes
+
+    - name: Add HashiCorp GPG key
+      apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+        state: present
+
+    - name: Add HashiCorp repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Add Tailscale GPG key
+      apt_key:
+        url: https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg
+        state: present
+
+    - name: Add Tailscale repository
+      apt_repository:
+        repo: "deb https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Set SSH host private key
+      copy:
+        content: "{{ ssh_host_key }}"
+        dest: /etc/ssh/ssh_host_rsa_key
+        mode: '0600'
+
+    - name: Set SSH host public key
+      copy:
+        content: "{{ ssh_host_cert }}"
+        dest: /etc/ssh/ssh_host_key.pub
+        mode: '0644'
+      notify: Restart SSH
+
+    - name: Update GRUB configuration
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^#?GRUB_GFXMODE='
+        line: 'GRUB_GFXMODE=1280x1024x8'
+      notify: Update GRUB
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Update GRUB
+      command: update-grub
+
+    - name: Restart networking
+      service:
+        name: networking
+        state: restarted   

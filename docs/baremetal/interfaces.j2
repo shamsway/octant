@@ -1,0 +1,5 @@
+auto eth0
+iface eth0 inet static
+    address {{ network_config.ip }}/{{ network_config.netmask }}
+    gateway {{ network_config.gateway }}
+    dns-nameservers {{ network_config.dns | join(' ') }}
