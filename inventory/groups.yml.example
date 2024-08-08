@@ -5,7 +5,7 @@ servers:
       server: true
       dnsserver: true
       region: home
-      tailscale_advertisements: 192.168.252.0/24,192.168.240.0/24
+      tailscale_advertisements: 192.168.1.0/24,192.168.2.0/24
     bobby.shamsway.net:
       server: true
       dnsserver: true
@@ -23,13 +23,13 @@ servers:
       server: true
       dnsserver: false
       region: gcp
-      tailscale_advertisements: 192.168.250.0/24,35.199.192.0/19
-    # pigpen.shamsway.net:
-    #   region: oci
-    # tom.shamsway.net:
-    #   region: oci
+      tailscale_advertisements: 192.168.10.0/24,35.199.192.0/19
+    pigpen.shamsway.net:
+      region: oci
+    tom.shamsway.net:
+      region: oci
   vars:
-    reboot: false
+    reboot: false # Set to true to reboot hosts after running the Ansible requirements role.
     volumes:
       - name: traefik-data
         path: /mnt/services/traefik/data
@@ -39,16 +39,7 @@ servers:
         backup: true        
       - name: traefik-config
         path: /mnt/services/traefik/config
-        backup: true        
-      - name: tvheadend-recordings
-        path: /mnt/recordings/tvheadend
-        backup: false
-      - name: tvheadend-config
-        path: /mnt/services/tvheadend/config
-        backup: true
-      - name: tvheadend-data
-        path: /mnt/services/tvheadend/data
-        backup: true                     
+        backup: true                  
       - name: postgres-data
         path: /mnt/services/postgres
         backup: true        
@@ -88,30 +79,12 @@ servers:
       - name: litellm
         path: /mnt/services/litellm
         backup: true
-      - name: registry-config/
-        path: /mnt/services/registry/config
-        backup: true
-      - name: registry-data/
-        path: /mnt/services/registry/config
-        backup: true
-      - name: emby-config
-        path: /mnt/services/emby/config
-        backup: false
-      - name: emby-data
-        path: /mnt/services/emby/data
-        backup: false
       - name: unifi-config
         path: /mnt/services/unifi/config
         backup: true
       - name: unifi-data
         path: /mnt/services/unifi/data
         backup: true
-      - name: neo4j-config
-        path: /mnt/services/neo4j/config
-        backup: true
-      - name: neo4j-data
-        path: /mnt/services/neo4j/data
-        backup: false
       - name: 1password-config
         path: /mnt/services/1password/config
         backup: true
@@ -148,9 +121,6 @@ servers:
       - name: gpt4all-config
         path: /mnt/services/gpt4all/config
         backup: true
-      - name: semaphoreui
-        path: /mnt/services/semaphore/config
-        backup: true
       - name: affine
         path: /mnt/services/affine/config
         backup: true
@@ -160,20 +130,11 @@ servers:
       - name: nautobot-config
         path: /mnt/services/nautobot/config
         backup: true
-      - name: media-library
-        path: /mnt/services/library
-        backup: true
       - name: n8n-config
         path: /mnt/services/n8n/config
         backup: true
       - name: pgweb-config
         path: /mnt/services/pgweb/config
-        backup: true
-      - name: threadfin
-        path: /mnt/services/threadfin
-        backup: true
-      - name: xteve
-        path: /mnt/services/xteve
         backup: true
       - name: librenms-data
         path: /mnt/services/librenms/data

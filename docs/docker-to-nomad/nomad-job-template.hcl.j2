@@ -1,6 +1,6 @@
 {% for service in services %}
 job "{{ service.name }}" {
-  datacenters = ["shamsway"]
+  datacenters = ["{{ service.datacenter }}"]
   type        = "service"
 
   # Adjust as needed for rootless/root containers

@@ -1,18 +1,5 @@
 # Nomad Operations
 
-## Links
-- https://storiesfromtheherd.com/nomad-tips-and-tricks-766878dfebf4
-- Running Linux Containers on WSL using Nomad: https://dev.to/ggmueller/running-linux-containers-on-wsl-using-nomad-80o
-
-## Update shares available to Nomad
-- Edit inventory/groups.yml
-- Add the new volume(s) to volumes: group
-- Run configure-mounts.yml playbook
-  - All hosts: 'ansible-playbook configure-mounts.yml -i inventory/groups.yml'
-  - Single host: 'ansible-playbook configure-mounts.yml -i inventory/groups.yml -l [hostname]'
-- Run update-nomad.yml playbook, one host at a time. This playbook drains the host, updates the Nomad configuration, and restarts the Nomad agent.
-  - Single host: 'ansible-playbook update-nomad.yml -i inventory/groups.yml -l [hostname]'
-
 ## Troubleshooting
 
 Look at all consul and nomad logs
@@ -33,7 +20,7 @@ List CSI plugins
 
 ## Running multiple Nomad agents
 
-Yes, it is possible to run multiple Nomad agents on a single server. This can be useful in scenarios where you want to have separate Nomad environments or handle different types of workloads with different configurations.
+It is possible to run multiple Nomad agents on a single server. This can be useful in scenarios where you want to have separate Nomad environments or handle different types of workloads with different configurations.
 
 To run multiple Nomad agents on a single server, you need to ensure that each agent has its own unique configuration and uses different ports and directories to avoid conflicts. Here's a general approach to setting up multiple Nomad agents:
 

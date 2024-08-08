@@ -26,28 +26,31 @@ uid: 2000
 gid: 2000
 #gid: 100
 
+# Replace these values to match your environment
 tld: net
-domain: shamsway
-datacenter: shamsway
-snmp_community: shamsway
-admin_user: matt
-admin_email: admin@shamsway.net
-location: "Lexington, KY"
+domain: octant
+datacenter: octant
+snmp_community: octant
+admin_user: admin
+admin_email: admin@change.me
+location: "Home Lab Location"
 
 external_dns_resolver1: 1.1.1.1
 external_dns_resolver2: 8.8.8.8
 
-dns1: 192.168.252.6
-dns2: 192.168.252.7
+# Pick two of your home lab servers to serve as DNS resolvers
+dns1: 192.168.1.6
+dns2: 192.168.1.7
 
 internal_subnets:
-  - 192.168.252.0/24
-  - 192.168.240.0/24
+  - 192.168.1.0/24
+  - 192.168.2.0/24
 
-user_public_key: /Users/matt/.ssh/id_rsa.pub
+user_public_key: /path/to/your/id_rsa.pub
 #ansible_ssh_pipelining: false
 
-restic_repository: "s3:s3.us-west-000.backblazeb2.com/octant-backup"
+# Replace with the URL for your S3 (or compatible) bucket for Restick backups
+restic_repository: "s3:s3.change.me/octant-backup-bucket"
 
 consul:
   # Check this blog post before enable this variable
@@ -55,7 +58,7 @@ consul:
   enable_script_check: false
   ca_enabled: true
   tls_enabled: true
-  cname: consul.shamsway.net
+  cname: consul.octant.net
   # Services #
   # agent_services: false
   # service_sanity_healthcheck: true # Perform healthcheck on services priot to registration
@@ -85,6 +88,7 @@ consul:
     - 8600/tcp
     - 8502/tcp
 
+# Only Podman is enabled by default.
 podman: true
 docker: false
 

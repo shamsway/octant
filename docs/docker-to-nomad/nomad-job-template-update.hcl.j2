@@ -1,5 +1,5 @@
 job "{{ job.name }}" {
-  datacenters = ["shamsway"]
+  datacenters = ["{{ job.datacenter }}"]
   type        = "service"
 
   # Adjust as needed for rootless/root containers
