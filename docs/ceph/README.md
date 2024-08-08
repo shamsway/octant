@@ -1,4 +1,4 @@
-# Add a Ceph node
+# Install Ceph on the first node
 
 Disable local NFS server
 
@@ -8,16 +8,19 @@ sudo systemctl mask nfs-server.service
 ```
 
 ```bash
-sudo apt install ceph-common ceph-mon ceph-osd ceph-mds ceph-mgr ceph-fuse ceph-base python3-ceph ceph-mgr-dashboard cephadm
+sudo apt install ceph-common ceph-mon ceph-osd ceph-mds ceph-mgr ceph-fuse ceph-base python3-ceph ceph-mgr-dashboard cephadm xfsprogs
 
 cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.252.6 --cluster-network 192.168.252.0/24 --ssh-user hashi --ssh-private-key /opt/homelab/data/home/.ssh/id_rsa --ssh-public-key /opt/homelab/data/home/.ssh/id_rsa.pub --apply-spec ceph-bootstrap.yml --allow-overwrite
 
 sudo ceph cephadm set-user hashi
 ```
-NOTE: `sudo apt install ceph-common cephadm` may be all that is needed for everything but the first ceph node?
+NOTE: `sudo apt install ceph-common cephadm xfsprogs` may be all that is needed for everything but the first ceph node?
 NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client before bootstrapping the new node. This is to avoid the NFS client from interfering with the Ceph bootstrap process.
 
 ceph orch host add jerry 192.168.252.6 --labels _admin
+
+# Configure additional nodes
+
 ceph orch host add bobby 192.168.252.7 --labels _admin
 ceph orch host add billy 192.168.252.8 --labels _admin
 ceph orch host add robert 192.168.252.10 --labels _admin
@@ -61,6 +64,14 @@ ceph orch daemon add osd *<host>*:*<device-path>*
 Examples:
 Raw disk: `ceph orch daemon add osd --method raw billy:/dev/sdb`
 LVM: `ceph orch daemon add osd bobby:/dev/ceph-vg/ceph-lv`
+
+## Update /etc/fstab
+
+Add a line to /etc/fstab to mount the shared cephfs storage. Replace IP with the local server IP if it is running a ceph mon daemon. Otherwise, use the IP of a valid mon daemon.
+
+```
+[IP]:/ /mnt/services ceph name=admin,secretfile=/etc/ceph/admin.secret,noatime,_netdev 0 0
+```
 
 ### Updating settings for "V2P" hosts
 Some fixes for things when a VM is converted to a physical host
@@ -220,7 +231,7 @@ sudo mount /dev/rbd0 /mnt/rbd
 
 Edit /etc/fstab:
 ```bash
-/dev/rbd0 /mnt/rbd xfs defaults noauto 0 0
+/dev/rbd/rbd_[name]/image_[name] /mnt/rbd xfs defaults,noauto,nofail 0 0
 ```
 
 Create /etc/ceph/rbdmap:
