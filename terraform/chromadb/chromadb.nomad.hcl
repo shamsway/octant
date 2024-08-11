@@ -1,11 +1,11 @@
 variable "datacenter" {
   type = string
-  default = "shamsway"
+  default = "octant"
 }
 
 variable "domain" {
   type = string
-  default = "shamsway.net"
+  default = "octant.net"
 }
 
 variable "certresolver" {
@@ -20,7 +20,7 @@ variable "servicename" {
 
 variable "dns" {
   type = list(string)
-  default = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
 }
 
 job "chroma" {
@@ -50,7 +50,7 @@ job "chroma" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.${var.servicename}.rule=Host(`chroma.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
         "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
         "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
         "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",

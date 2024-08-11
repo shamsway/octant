@@ -1,5 +1,55 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "homeassistant"
+}
+
+variable "ha_image" {
+  type = string
+  default = "ghcr.io/home-assistant/home-assistant:2024.6"
+}
+
+variable "ma_image" {
+  type = string
+  default = "ghcr.io/music-assistant/server:2.0.4"
+}
+
+variable "whisper_image" {
+  type = string
+  default = "docker.io/rhasspy/wyoming-whisper:2.1.0"
+}
+
+variable "piper_image" {
+  type = string
+  default = "docker.io/rhasspy/wyoming-piper:1.5.0"
+}
+
+variable "cloudflared_image" {
+  type = string
+  default = "docker.io/cloudflare/cloudflared:latest"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
 job "homeassistant" {
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
   # Adjust as needed for rootless/root containers
@@ -8,16 +58,10 @@ job "homeassistant" {
     value = "false"
   }
 
-  # Temporary until lab is fully on physical hardware
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
+  # Pin Home Assistant to a node so it's IP doesn't change
   constraint {
     attribute = "${node.unique.name}"
-    value = "jerry-agent-root"
+    value = "server1-agent-root"
   }
 
   group "homeassistant" {
@@ -38,7 +82,7 @@ job "homeassistant" {
       }
 
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = var.dns
       }      
     }
 
@@ -49,17 +93,17 @@ job "homeassistant" {
     }
 
     service {
-      name = "homeassistant"
+      name = var.servicename
       task = "homeassistant"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
-        "traefik.consulcatalog.connect=false",          
-        "traefik.http.routers.homeassistant.rule=Host(`ha.shamsway.net`)",
-        "traefik.http.routers.homeassistant.entrypoints=web,websecure",
-        "traefik.http.routers.homeassistant.tls.certresolver=cloudflare",
-        "traefik.http.routers.homeassistant.middlewares=redirect-web-to-websecure@internal",
+        "traefik.consulcatalog.connect=false",
+        "traefik.http.routers.${var.servicename}.rule=Host(`ha.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",  
       ]
 
       connect {
@@ -83,9 +127,9 @@ job "homeassistant" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",          
-        "traefik.http.routers.musicassistant.rule=Host(`music.shamsway.net`)",
+        "traefik.http.routers.musicassistant.rule=Host(`music.${var.domain}`)",
         "traefik.http.routers.musicassistant.entrypoints=web,websecure",
-        "traefik.http.routers.musicassistant.tls.certresolver=cloudflare",
+        "traefik.http.routers.musicassistant.tls.certresolver=${var.certresolver}",
         "traefik.http.routers.musicassistant.middlewares=redirect-web-to-websecure@internal",
       ]
       connect {
@@ -104,7 +148,7 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "ghcr.io/home-assistant/home-assistant:2024.6"
+        image = var.ha_image
         privileged = true
         network_mode = "host"
         ports = ["http"]
@@ -138,7 +182,7 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "ghcr.io/music-assistant/server:2.0.4"
+        image = var.ma_image
         privileged = true
         network_mode = "host"
         ports = ["music","streams"]
@@ -162,7 +206,7 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "docker.io/rhasspy/wyoming-whisper:2.1.0"
+        image = var.whisper_image
         args = ["--model", "tiny-int8", "--language", "en"]
         network_mode = "host"
       }
@@ -176,7 +220,7 @@ job "homeassistant" {
       driver = "podman"
 
       config {
-        image = "docker.io/rhasspy/wyoming-piper:1.5.0"
+        image = var.piper_image
         args = ["--voice", "en_US-lessac-medium"]
         network_mode = "host"
       }
@@ -199,10 +243,8 @@ job "homeassistant" {
       user = "nonroot"
 
       config {
-        image = "docker.io/cloudflare/cloudflared:latest"
+        image = var.cloudflared_image
         network_mode = "bridge"
-        #entrypoint = ["cloudflared"]
-        #args = ["tunnel", "run", "--token", "eyJhIjoiMmYxYzBlZWU4NmU0YTg1OTkyMWQ2MmY4ZTU3NzYwYmYiLCJ0IjoiNWUxNGE5ZjMtMjkzNy00NWQwLWIzNDAtYmEzZTU1NTI0N2YwIiwicyI6Ik9HRTFZekF4WkRFdE5XUmhPUzAwWkRjekxUaGlZbVl0T1dJeU1Ua3pOams0WVdWbCJ9"]
         args = ["tunnel", "--loglevel", "debug", "run"]
         logging = {
           driver = "journald"

@@ -39,12 +39,12 @@ data "google_compute_zones" "available" {
 }
 
 resource "google_compute_network" "vpc_network" {
-  name                    = "shamsway-vpc-usc1"
+  name                    = "octant-vpc-usc1"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "vpc_subnetwork" {
-  name          = "sparklepants"
+  name          = "octant-net"
   ip_cidr_range = "192.168.250.0/24"
   region        = "us-central1"
   network       = google_compute_network.vpc_network.self_link
@@ -55,7 +55,7 @@ resource "google_compute_subnetwork" "vpc_subnetwork" {
 
 resource "google_compute_route" "home_lab_route" {
   name         = "home-lab-route"
-  dest_range   = "192.168.252.0/24"
+  dest_range   = "192.168.1.0/24"
   network      = google_compute_network.vpc_network.self_link
   next_hop_instance = google_compute_instance.phil.self_link
   priority     = 1000
@@ -76,27 +76,10 @@ resource "google_dns_managed_zone" "consul" {
 
   forwarding_config {
     target_name_servers {
-      ipv4_address = "192.168.252.1"
+      ipv4_address = "192.168.1.1"
     }
   }
 }
-
-# Disable default SSH rule - Terraform can't do this, so use gcloud cli or API
-# resource "google_compute_firewall" "disable_default_ssh" {
-#   name    = "default-allow-ssh"
-#   network = google_compute_network.vpc_network.self_link
-
-#   allow {
-#     protocol = "tcp"
-#     ports    = ["22"]
-#   }
-
-#   source_ranges = ["0.0.0.0/0"]
-#   target_tags   = ["default-allow-ssh"]
-
-#   disabled = true
-# }
-
 # Add IAP, Home IP
 resource "google_compute_firewall" "allow_ssh" {
   name    = "allow-ssh"

@@ -1,6 +1,8 @@
+# Example of a statically defined service in Consul. In this example, Ollama is running on a Windows PC with a GPU.
+
 resource "consul_node" "ollama_node" {
   name    = "ollama"
-  address = "192.168.252.10"
+  address = "192.168.1.10"
 
   meta = {
     "external-node"  = "true"

@@ -8,7 +8,7 @@ provider "cloudflare" {
 }
 
 variable "domain_name" {
-  default = "shamsway.net"
+  default = "octant.net"
 }
 
 # variable "TAILSCALE_KEY" {

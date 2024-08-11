@@ -30,7 +30,7 @@ provider "cloudflare" {
 }
 
 variable "domain_name" {
-  default = "shamsway.net"
+  default = "octant.net"
 }
 
 data "cloudflare_zones" "domain" {
@@ -42,7 +42,7 @@ data "cloudflare_zones" "domain" {
 resource "cloudflare_record" "edgerouter" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "edgerouter"
-  value   = "192.168.252.1"
+  value   = "192.168.1.1"
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -51,7 +51,7 @@ resource "cloudflare_record" "edgerouter" {
 resource "cloudflare_record" "joan" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "joan"
-  value   = "192.168.252.5"
+  value   = "192.168.1.5"
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -60,7 +60,7 @@ resource "cloudflare_record" "joan" {
 resource "cloudflare_record" "jerry" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "jerry"
-  value   = "192.168.252.6"
+  value   = "192.168.1.6"
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -69,7 +69,7 @@ resource "cloudflare_record" "jerry" {
 resource "cloudflare_record" "bobby" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "bobby"
-  value   = "192.168.252.7"
+  value   = "192.168.1.7"
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -78,196 +78,16 @@ resource "cloudflare_record" "bobby" {
 resource "cloudflare_record" "billy" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "billy"
-  value   = "192.168.252.8"
+  value   = "192.168.1.8"
   type    = "A"
   proxied = false
   allow_overwrite = true
 }
 
-resource "cloudflare_record" "nfs" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "nfs"
-  value   = "192.168.252.9"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
 resource "cloudflare_record" "robert" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "robert"
-  value   = "192.168.252.10"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "basementswitch" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "basementswitch"
-  value   = "192.168.252.11"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "officeswitch" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "officeswitch"
-  value   = "192.168.252.12"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "basementap" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "basementap"
-  value   = "192.168.252.13"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "officeap" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "officeap"
-  value   = "192.168.252.14"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "lrtv" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "lrtv"
-  value   = "192.168.252.15"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "basementtv" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "basementtv"
-  value   = "192.168.252.16"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "bedroomtv" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "bedroomtv"
-  value   = "192.168.252.17"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "audreytv" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "audreytv"
-  value   = "192.168.252.18"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "lextv" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "lextv"
-  value   = "192.168.252.19"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "printer" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "printer"
-  value   = "192.168.252.20"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "desklight" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "desklight"
-  value   = "192.168.252.21"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "tuneslight" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "tuneslight"
-  value   = "192.168.252.22"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "mediapi" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "mediapi"
-  value   = "192.168.252.23"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "macbook" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "macbook"
-  value   = "192.168.252.30"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "cablight1" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "cablight1"
-  value   = "192.168.252.194"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "cablight2" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "cablight2"
-  value   = "192.168.252.157"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "lrlight" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "lrlight"
-  value   = "192.168.252.234"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "matrixlight" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "matrixlight"
-  value   = "192.168.252.157"
-  type    = "A"
-  proxied = false
-  allow_overwrite = false
-}
-
-resource "cloudflare_record" "tvlight" {
-  zone_id = data.cloudflare_zones.domain.zones[0].id
-  name    = "tvlight"
-  value   = "192.168.252.237"
+  value   = "192.168.1.10"
   type    = "A"
   proxied = false
   allow_overwrite = false

@@ -1,13 +1,37 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "grafana"
+}
+
+variable "image" {
+  type = string
+  default = "docker.io/grafana/grafana:10.4.1"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
 job "grafana" {
   region      = "home"
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
-
-  constraint {
-    attribute = "${attr.kernel.name}"
-    value     = "(linux|darwin)"
-    operator  = "regexp"
-  }
 
   constraint {
     attribute = "${meta.rootless}"
@@ -21,10 +45,14 @@ job "grafana" {
       port "http" {
         static = 3000
       }
+
+      dns {
+        servers = var.dns
+      }        
     }
 
     service {
-        name = "grafana"
+        name = var.servicename
         port = "http"
         provider = "consul"
 
@@ -33,12 +61,12 @@ job "grafana" {
         }        
 
         tags = [
-            "traefik.enable=true",
-            "traefik.consulcatalog.connect=false",
-            "traefik.http.routers.grafana.rule=Host(`grafana.shamsway.net`)",
-            "traefik.http.routers.grafana.entrypoints=web,websecure",
-            "traefik.http.routers.grafana.tls.certresolver=cloudflare",
-            "traefik.http.routers.grafana.middlewares=redirect-web-to-websecure@internal",       
+          "traefik.enable=true",
+          "traefik.consulcatalog.connect=false",
+          "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
+          "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+          "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+          "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",    
         ]
 
         check {
@@ -64,10 +92,9 @@ job "grafana" {
 
     task "grafana" {
       driver = "podman"
-      # user = "2000:100"
 
       config {
-        image = "docker.io/grafana/grafana:10.4.1"
+        image = var.image
         ports = ["http"]        
         userns = "keep-id:uid=472,gid=472"
         logging = {

@@ -18,7 +18,7 @@ homeassistant:
   currency: USD
   country: US
   time_zone: "America/New_York"
-  external_url: "https://ha.shamsway.net"
+  external_url: "https://ha.octant.net"
   internal_url: "http://homeassistant.service.consul:8123"
   debug: false
 
