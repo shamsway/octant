@@ -81,6 +81,4 @@
     - role: nomad-agent-root
       tags: nomad-agent-root   
     - role: restic
-      tags: restic      
-    - role: telegraf-agent
-      tags: telegraf-agent
+      tags: restic

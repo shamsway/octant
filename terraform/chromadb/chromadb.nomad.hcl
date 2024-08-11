@@ -1,16 +1,25 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
 job "chroma" {
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type = "service"
 
   constraint {
     attribute = "${meta.rootless}"
     value = "true"
-  }
-
-  affinity {
-    attribute = "${meta.class}"
-    value = "physical"
-    weight = 100
   }
 
   group "chroma" {
@@ -31,9 +40,9 @@ job "chroma" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.chroma.rule=Host(`chroma.shamsway.net`)",
+        "traefik.http.routers.chroma.rule=Host(`chroma.${var.datacenter}`)",
         "traefik.http.routers.chroma.entrypoints=web,websecure",
-        "traefik.http.routers.chroma.tls.certresolver=cloudflare",
+        "traefik.http.routers.chroma.tls.certresolver=${var.certresolver}",
         "traefik.http.routers.chroma.middlewares=redirect-web-to-websecure@internal",
       ]
 

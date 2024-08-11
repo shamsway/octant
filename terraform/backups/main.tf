@@ -19,7 +19,7 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }

@@ -9,21 +9,27 @@ variable "OP_API_TOKEN" {
   type = string
 }
 
+variable "op_api_url" {
+  description = "URL for 1password connect vault"
+  type = string
+  default = "https://opapi.octant.net"
+}
+
 variable "nomad" {
   description = "Nomad server address"
   type = string
-  default = "nomad.shamsway.net"
+  default = "nomad.octant.net"
 }
 
 variable "consul" {
   description = "Consul server address"
   type = string
-  default = "consul.shamsway.net"
+  default = "consul.octant.net"
 }
 
 variable "datacenter" {
   type = string
-  default = "shamsway"
+  default = "octant"
 }
 
 variable "region" {
@@ -38,7 +44,7 @@ variable "shared_dir" {
 
 variable "datacenter" {
   type = string
-  default = "home"
+  default = "octant"
 }
 
 variable "image" {
@@ -48,5 +54,5 @@ variable "image" {
 
 variable "pgadmin_email" {
   type = string
-  default = "pgadmin@shamsway.net"
+  default = "pgadmin@octant.net"
 }
