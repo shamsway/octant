@@ -1,16 +1,26 @@
 variable "datacenter" {
   type = string
-  default = "octant"
+  default = "shamsway"
 }
 
 variable "domain" {
   type = string
-  default = "octant.net"
+  default = "shamsway.net"
 }
 
 variable "certresolver" {
   type = string
   default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "chroma"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
 }
 
 job "chroma" {
@@ -29,21 +39,21 @@ job "chroma" {
         to = "8000"
       }
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = var.dns
       }
     }
 
     service {
-      name = "chroma"
+      name = var.servicename
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.chroma.rule=Host(`chroma.${var.datacenter}`)",
-        "traefik.http.routers.chroma.entrypoints=web,websecure",
-        "traefik.http.routers.chroma.tls.certresolver=${var.certresolver}",
-        "traefik.http.routers.chroma.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.${var.servicename}.rule=Host(`chroma.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
@@ -70,7 +80,7 @@ job "chroma" {
           driver = "journald"
           options = [
             {
-              "tag" = "chroma"
+              "tag" = "${var.servicename}"
             }
           ]
         }
