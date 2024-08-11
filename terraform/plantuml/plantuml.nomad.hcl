@@ -31,7 +31,7 @@ job "plantuml" {
       port = "http"
       tags = [
         "traefik.enable=true",
-		"traefik.consulcatalog.connect=false",
+		    "traefik.consulcatalog.connect=false",
         "traefik.http.routers.plantuml.rule=Host(`plantuml.shamsway.net`)",
         "traefik.http.routers.plantuml.entrypoints=web,websecure",
         "traefik.http.routers.plantuml.tls.certresolver=cloudflare",
