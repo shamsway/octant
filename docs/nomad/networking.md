@@ -80,7 +80,7 @@ In this example, Nomad will allocate a dynamic host port and map it to port 8080
 To configure Traefik to route traffic to your Nomad services and handle SSL/TLS termination, you need to specify the appropriate tags in your Nomad job specification. Here's an explanation of the typical Traefik tags used:
 
 - `traefik.enable=true`: Enables Traefik for the service.
-- `traefik.http.routers.<router-name>.rule`: Specifies the routing rule for the service. In your example, `Host(\`nginx.shamsway.net\`)` is used to route requests based on the hostname.
+- `traefik.http.routers.<router-name>.rule`: Specifies the routing rule for the service. In your example, `Host(\`nginx.octant.net\`)` is used to route requests based on the hostname.
 - `traefik.http.routers.<router-name>.entrypoints`: Specifies the entrypoints for the router. In your example, `web` and `websecure` are used, indicating that the service should be accessible via both HTTP and HTTPS.
 - `traefik.http.routers.<router-name>.tls.certresolver`: Specifies the certificate resolver to use for SSL/TLS termination. In your example, `cloudflare` is used, which means Traefik will use the Cloudflare certificate resolver to obtain and manage SSL/TLS certificates.
 - `traefik.http.routers.<router-name>.middlewares`: Specifies any middlewares to apply to the router. In your example, `redirect-web-to-websecure@internal` is used, which redirects HTTP traffic to HTTPS.
@@ -88,7 +88,7 @@ To configure Traefik to route traffic to your Nomad services and handle SSL/TLS 
 ```hcl
 tags = [
   "traefik.enable=true",
-  "traefik.http.routers.nginx.rule=Host(`nginx.shamsway.net`)",
+  "traefik.http.routers.nginx.rule=Host(`nginx.octant.net`)",
   "traefik.http.routers.nginx.entrypoints=web,websecure",
   "traefik.http.routers.nginx.tls.certresolver=cloudflare",
   "traefik.http.routers.nginx.middlewares=redirect-web-to-websecure@internal",
@@ -100,7 +100,7 @@ The additional tag `traefik.http.services.nginx.loadbalancer.server.port=${NOMAD
 
 With these tags, Traefik will:
 1. Enable routing for the service.
-2. Route requests based on the specified hostname (`nginx.shamsway.net`).
+2. Route requests based on the specified hostname (`nginx.octant.net`).
 3. Handle incoming requests on both HTTP (`web`) and HTTPS (`websecure`) entrypoints.
 4. Use the Cloudflare certificate resolver to obtain and manage SSL/TLS certificates.
 5. Redirect HTTP traffic to HTTPS using the specified middleware.

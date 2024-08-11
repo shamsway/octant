@@ -45,7 +45,7 @@ leave_on_terminate = false
 skip_leave_on_interrupt = true
 rejoin_after_leave = true
 
-# Use inventory hostnames for home, insert .ts before .shamsway.net for cloud-based servers
+# Use inventory hostnames for home, insert .ts before domain namefor cloud-based servers
 
 {% if hostvars[inventory_hostname]['region'] == "home" %}
 retry_join = [

@@ -35,7 +35,7 @@ Octant is an open source project that provides automation and infrastructure as 
 
 To get started with Octant, follow these steps:
 
-1. Clone the repository: `git clone https://github.com/[fixme]]`
+1. Clone the repository: `git clone https://github.com/shamsway/octant`
 2. Install the required dependencies
 3. Configure the necessary variables
 4. Run the Ansible playbooks to configure the initial cluster
@@ -45,9 +45,6 @@ To get started with Octant, follow these steps:
 For detailed instructions and documentation, please refer to the [docs](./docs) directory.
 
 ## Files and Folders
-
-`ARCHIVE/`
-- Mostly unused things that will be removed soon
 
 `docs/`
 - Documentation and notes
@@ -61,7 +58,7 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 
 `packer/`
 - Packer scripts for VMware and Hyper-V images
-- Bootstrap scripts for physical nodes
+- Bootstrap scripts
 
 `roles/`
 - The roles folder contains the Ansible roles for the initial setup and deployment of services (i.e. Consul, Nomad, Podman).

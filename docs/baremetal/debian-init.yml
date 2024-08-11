@@ -10,8 +10,8 @@
     ssh_host_key: "{{ lookup('community.general.onepassword', 'bobby_ssh', field='private key', vault='Dev') }}"
     ssh_host_cert: "{{ lookup('community.general.onepassword', 'bobby_ssh', field='public key', vault='Dev') }}"
     root_password: "{{ lookup('community.general.onepassword', 'bobby_creds', vault='Dev') }}"
-    local_server: "https://nginx.shamsway.net"
-    local_config_path: "lab_network_config.json"
+    local_server: "http://nginx.octant.net" # Replace with your local web server
+    local_config_path: "lab_network_config.json" # Local config to use in case web server is unavailable/not used
 
   tasks:
     - name: Fetch network configuration

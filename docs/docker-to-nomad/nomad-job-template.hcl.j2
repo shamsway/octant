@@ -8,14 +8,7 @@ job "{{ service.name }}" {
     attribute = "${meta.rootless}"
     value = "true"
   }
-
-  # Temporary until lab is fully on physical hardware
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
+  
   group "{{ service.name }}" {
     network {
       port "{{ service.portname}}" {
@@ -39,7 +32,7 @@ job "{{ service.name }}" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",          
-        "traefik.http.routers.{{ service.name }}.rule=Host(`{{ service.name }}.shamsway.net`)",
+        "traefik.http.routers.{{ service.name }}.rule=Host(`{{ service.name }}.{{ service.domain }}`)",
         "traefik.http.routers.{{ service.name }}.entrypoints=web,websecure",
         "traefik.http.routers.{{ service.name }}.tls.certresolver=cloudflare",
         "traefik.http.routers.{{ service.name }}.middlewares=redirect-web-to-websecure@internal",

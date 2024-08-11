@@ -1,5 +1,5 @@
 [global_tags]
-dc = "shamsway"
+dc = "{{ datacenter }}"
 
 [agent]
 interval = "10s"
@@ -18,8 +18,8 @@ omit_hostname = false
 [[outputs.influxdb_v2]]
 urls = ["http://influxdb.shamsway.net:8086"]
 token = "pharisee-window-flemish"
-organization = "shamsway"
-bucket = "hell-in-a-bucket"
+organization = "{{ datacenter }}"
+bucket = "{{ datacenter }}-bucket"
 
 [[inputs.cpu]]
 ## Whether to report per-cpu stats or not

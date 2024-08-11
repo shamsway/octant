@@ -1,32 +1,32 @@
 ---
 servers:
   hosts:
-    jerry.shamsway.net:
+    jerry.octant.net:
       server: true
       dnsserver: true
       region: home
       tailscale_advertisements: 192.168.1.0/24,192.168.2.0/24
-    bobby.shamsway.net:
+    bobby.octant.net:
       server: true
       dnsserver: true
       region: home
-    billy.shamsway.net:
+    billy.octant.net:
       server: true
       dnsserver: true
       region: home
-    robert.shamsway.net:
+    robert.octant.net:
       server: true
       dnsserver: false
       docker: true
       region: home      
-    phil.shamsway.net:
+    phil.octant.net:
       server: true
       dnsserver: false
       region: gcp
       tailscale_advertisements: 192.168.10.0/24,35.199.192.0/19
-    pigpen.shamsway.net:
+    pigpen.octant.net:
       region: oci
-    tom.shamsway.net:
+    tom.octant.net:
       region: oci
   vars:
     reboot: false # Set to true to reboot hosts after running the Ansible requirements role.

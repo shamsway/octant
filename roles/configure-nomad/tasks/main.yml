@@ -37,8 +37,8 @@
   with_dict:
     NOMAD_ADDR: "https://nomad.{{ datacenter }}.{{ tld }}:{{ nomad.ports.https }}"
     NOMAD_CACERT: "{{ configdirs['tls'] }}/consul-agent-ca.pem"
-    NOMAD_CLIENT_CERT: "{{ configdirs['tls'] }}/shamsway-cli-consul-0.pem"
-    NOMAD_CLIENT_KEY: "{{ configdirs['tls'] }}/shamsway-cli-consul-0-key.pem" 
+    NOMAD_CLIENT_CERT: "{{ configdirs['tls'] }}/{{ datacenter }}-cli-consul-0.pem"
+    NOMAD_CLIENT_KEY: "{{ configdirs['tls'] }}/{{ datacenter }}-cli-consul-0-key.pem" 
 
 - name: Adding environment variables to direnv
   ansible.builtin.lineinfile:
@@ -51,5 +51,5 @@
   with_dict:
     NOMAD_ADDR: "https://nomad.{{ datacenter }}.{{ tld }}:{{ nomad.ports.https }}"
     NOMAD_CACERT: "~/.tls/consul-agent-ca.pem"
-    NOMAD_CLIENT_CERT: "~/.tls/shamsway-cli-consul-0.pem"
-    NOMAD_CLIENT_KEY: "~/.tls/shamsway-cli-consul-0-key.pem" 
+    NOMAD_CLIENT_CERT: "~/.tls/{{ datacenter }}-cli-consul-0.pem"
+    NOMAD_CLIENT_KEY: "~/.tls/{{ datacenter }}-cli-consul-0-key.pem" 
