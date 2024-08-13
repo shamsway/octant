@@ -1,13 +1,37 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "nginx"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "image" {
+  type = string
+  default = "docker.io/nginxinc/nginx-unprivileged:1.25.4"
+}
+  
   job "nginx" {
     region      = "home"
-    datacenters = ["shamsway"]
+    datacenters = ["${var.datacenter}"]
     type        = "service"
-
-    constraint {
-      attribute = "${attr.kernel.name}"
-      value     = "linux"
-    }
-
     constraint {
       attribute = "${meta.rootless}"
       value = "true"
@@ -30,21 +54,21 @@
         }
 
         dns {
-          servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+          servers = var.dns
         }        
       }
 
       service {
-        name = "web"
+        name = var.servicename
         port = "http"
         provider = "consul"       
 
         tags = [
-            "traefik.enable=true",
-            "traefik.consulcatalog.connect=false",          
-            "traefik.http.routers.web.rule=Host(`web.shamsway.net`)",
-            "traefik.http.routers.web.entrypoints=web,websecure",
-            "traefik.http.routers.web.tls.certresolver=cloudflare", 
+          "traefik.enable=true",
+          "traefik.consulcatalog.connect=false",          
+          "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
+          "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+          "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
         ]
 
         connect {
@@ -70,14 +94,14 @@
         driver = "podman"
 
         config {
-          image = "docker.io/nginxinc/nginx-unprivileged:1.25.4"
+          image = var.image
           ports = ["http", "httpalt", "https"]        
           userns = "keep-id:uid=101,gid=101"
           logging = {
             driver = "journald"
             options = [
               {
-                "tag" = "nginx"
+                "tag" = "${var.servicename}"
               }
             ]
           }        

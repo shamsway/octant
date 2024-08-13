@@ -1,6 +1,36 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "loki"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "image" {
+  type = string
+  default = "docker.io/grafana/loki:2.9.4"
+}
+
 job "loki" {
   region      = "home"
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
   constraint {
@@ -25,7 +55,7 @@ job "loki" {
       user = "10001:10001"
       driver = "podman"
       config {
-        image = "docker.io/grafana/loki:2.9.4"
+        image = var.image
         userns = "keep-id:uid=10001,gid=10001"
         args = [
           "-config.file",
@@ -41,14 +71,14 @@ job "loki" {
       }
 
       service {
-        name = "loki"
+        name = "${var.servicename}"
         port = "loki"
         tags = [
-            "traefik.enable=true",
-            "traefik.http.routers.loki.rule=Host(`loki.shamsway.net`)",
-            "traefik.http.routers.loki.entrypoints=web,websecure",
-            "traefik.http.routers.loki.tls.certresolver=cloudflare",
-            "traefik.http.routers.loki.middlewares=redirect-web-to-websecure@internal",       
+          "traefik.enable=true",
+          "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
+          "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+          "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+          "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",     
         ]    
 
         check {

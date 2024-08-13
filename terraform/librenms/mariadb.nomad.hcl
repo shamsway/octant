@@ -1,19 +1,62 @@
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "mariadb"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "image" {
+  type = string
+  default = "docker.io/mariadb:10"
+}
+
+variable "TZ" {
+  type    = string
+  default = "America/New_York"
+}
+
+variable "MYSQL_ALLOW_EMPTY_PASSWORD" {
+  type    = string
+  default = "yes"
+}
+
+variable "MYSQL_DATABASE" {
+  type    = string
+  default = "librenms"
+}
+
+variable "MYSQL_USER" {
+  type    = string
+  default = "librenms"
+}
+
+variable "MYSQL_PASSWORD" {
+  type    = string
+  default = "As3cur3P@ssw0rd!"
+}
+
 job "mariadb" {
   region = "home"
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
   # Adjust as needed for rootless/root containers
   constraint {
     attribute = "${meta.rootless}"
     value = "true"
-  }
-
-  # Temporary until lab is fully on physical hardware
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
   }
 
   group "mariadb" {
@@ -23,7 +66,7 @@ job "mariadb" {
         to = 3306
       }
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = var.dns
       }      
     }
 
@@ -34,7 +77,7 @@ job "mariadb" {
     }
 
     service {
-      name = "mariadb"
+      name = "${var.servicename}"
       provider = "consul"
       port = "mariadb"
 
@@ -55,7 +98,7 @@ job "mariadb" {
       user = "mysql"
 
       config {
-        image = "docker.io/mariadb:10"
+        image = "${var.image}"
         userns = "keep-id:uid=999,gid=999"
         command = "mysqld"
         ports = ["mariadb"]
@@ -64,18 +107,18 @@ job "mariadb" {
           driver = "journald"
           options = [
             {
-              "tag" = "mariadb"
+              "tag" = "${var.servicename}"
             }
           ]
         }         
       }
 
       env {
-        TZ = "America/New_York"
-        MYSQL_ALLOW_EMPTY_PASSWORD = "yes"
-        MYSQL_DATABASE = "librenms"
-        MYSQL_USER = "librenms"
-        MYSQL_PASSWORD = "As3cur3P@ssw0rd!"    
+        TZ = var.TZ
+        MYSQL_ALLOW_EMPTY_PASSWORD = var.MYSQL_ALLOW_EMPTY_PASSWORD
+        MYSQL_DATABASE = var.MYSQL_DATABASE
+        MYSQL_USER = var.MYSQL_USER
+        MYSQL_PASSWORD = var.MYSQL_PASSWORD 
       }
 
       volume_mount {

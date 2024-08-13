@@ -19,7 +19,7 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
@@ -102,6 +102,10 @@ data "template_file" "litellm_job_template" {
     region = var.region
     datacenter = var.datacenter
     image = var.image
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)    
     db_name = var.db_name
     db_server = var.db_server
     langfuse_url = var.langfuse_url

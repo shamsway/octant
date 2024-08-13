@@ -1,6 +1,6 @@
 job "jupyter" {
-  region = "${var.region}"
-  datacenters = ["${var.datacenter}"]
+  region = "${region}"
+  datacenters = ["${datacenter}"]
   type        = "service"
 
   constraint {
@@ -16,20 +16,20 @@ job "jupyter" {
       }
 
       dns {
-        servers = var.dns
+        servers = ${dns}
       }         
     }
 
     service {
-      name = var.servicename
+      name = "${servicename}"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
 		    "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
-        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
-        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
       ]
 
       connect {
@@ -49,7 +49,7 @@ job "jupyter" {
       driver = "podman"
 
       config {
-        image = "${var.image}"
+        image = "${image}"
         ports = ["http"]
         image_pull_timeout = "15m"
         args = ["start-notebook.py","--IdentityProvider.token='6476bd640f20936608a5f0b6b5f00820'","--NotebookApp.allow_origin='https://colab.research.google.com'","--NotebookApp.port_retries=0", "--NotebookApp.disable_check_xsrf=True"]
@@ -59,7 +59,7 @@ job "jupyter" {
           driver = "journald"
           options = [
             {
-              "tag" = "${var.servicename}"
+              "tag" = "${servicename}"
             }
           ]
         }                 

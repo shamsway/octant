@@ -7,12 +7,6 @@ job "langfuse" {
     attribute = "$${meta.rootless}"
     value = "true"
   }
-  
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
 
   group "langfuse" {
     network {
@@ -21,20 +15,20 @@ job "langfuse" {
       }
 
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = ${dns}
       }         
     }
 
     service {
-      name = "langfuse"
+      name = "${servicename}"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
-		"traefik.consulcatalog.connect=false",
-        "traefik.http.routers.langfuse.rule=Host(`langfuse.shamsway.net`)",
-        "traefik.http.routers.langfuse.entrypoints=web,websecure",
-        "traefik.http.routers.langfuse.tls.certresolver=cloudflare",
+		    "traefik.consulcatalog.connect=false",
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
       ]
 
       connect {
@@ -61,18 +55,18 @@ job "langfuse" {
           driver = "journald"
           options = [
             {
-              "tag" = "langfuse"
+              "tag" = "${servicename}"
             }
           ]
         }                 
       }
 
       env {
-        NEXTAUTH_URL = "https://langfuse.shamsway.net"
-        NEXTAUTH_SECRET = "mysecret"
-        SALT = "mysalt"
-        TELEMETRY_ENABLED = "true"
-        LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES = "false"
+        NEXTAUTH_URL = "${nextauth_url}"
+        NEXTAUTH_SECRET = "${nextauth_secret}"
+        SALT = "${salt}"
+        TELEMETRY_ENABLED = "${telemetry_enabled}"
+        LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES = "${langfuse_enable_experimental_features}"
       }
 
       template {

@@ -1,19 +1,202 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "librenms"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "librenms_image" {
+  type = string
+  default = "docker.io/librenms/librenms:24.4.1"
+}
+
+variable "rrdcached_image" {
+  type = string
+  default = "docker.io/crazymax/rrdcached:1.8.0-r5"
+}
+
+variable "TZ" {
+  type    = string
+  default = "America/New_York"
+}
+
+variable "PUID" {
+  type    = string
+  default = "2000"
+}
+
+variable "PGID" {
+  type    = string
+  default = "2000"
+}
+
+variable "DB_HOST" {
+  type    = string
+  default = "mariadb.service.consul"
+}
+
+variable "DB_NAME" {
+  type    = string
+  default = "librenms"
+}
+
+variable "DB_USER" {
+  type    = string
+  default = "librenms"
+}
+
+variable "DB_PASSWORD" {
+  type    = string
+  default = "As3cur3P@ssw0rd!"
+}
+
+variable "DB_TIMEOUT" {
+  type    = string
+  default = "60"
+}
+
+variable "REDIS_HOST" {
+  type    = string
+  default = "redis.service.consul"
+}
+
+variable "REDIS_DB" {
+  type    = string
+  default = "2"
+}
+
+variable "REDIS_CACHE_DB" {
+  type    = string
+  default = "3"
+}
+
+variable "CACHE_DRIVER" {
+  type    = string
+  default = "redis"
+}
+
+variable "SESSION_DRIVER" {
+  type    = string
+  default = "redis"
+}
+
+variable "RRDCACHED_SERVER" {
+  type    = string
+  default = "rrdcached.service.consul:42217"
+}
+
+variable "MEMORY_LIMIT" {
+  type    = string
+  default = "256M"
+}
+
+variable "MAX_INPUT_VARS" {
+  type    = string
+  default = "1000"
+}
+
+variable "UPLOAD_MAX_SIZE" {
+  type    = string
+  default = "16M"
+}
+
+variable "OPCACHE_MEM_SIZE" {
+  type    = string
+  default = "128"
+}
+
+variable "REAL_IP_FROM" {
+  type    = string
+  default = "0.0.0.0/32"
+}
+
+variable "REAL_IP_HEADER" {
+  type    = string
+  default = "X-Forwarded-For"
+}
+
+variable "LOG_IP_VAR" {
+  type    = string
+  default = "http_x_forwarded_for"
+}
+
+variable "LIBRENMS_WEATHERMAP" {
+  type    = string
+  default = "true"
+}
+
+variable "LIBRENMS_SNMP_COMMUNITY" {
+  type    = string
+  default = "shamsway"
+}
+
+variable "LIBRENMS_BASE_URL" {
+  type    = string
+  default = "librenms.shamsway.net"
+}
+
+variable "DISPATCHER_NODE_ID" {
+  type    = string
+  default = "dispatcher"
+}
+
+variable "SIDECAR_DISPATCHER" {
+  type    = string
+  default = "1"
+}
+
+variable "LOG_LEVEL" {
+  type    = string
+  default = "LOG_INFO"
+}
+
+variable "WRITE_TIMEOUT" {
+  type    = string
+  default = "1800"
+}
+
+variable "WRITE_JITTER" {
+  type    = string
+  default = "1800"
+}
+
+variable "WRITE_THREADS" {
+  type    = string
+  default = "4"
+}
+
+variable "FLUSH_DEAD_DATA_INTERVAL" {
+  type    = string
+  default = "3600"
+}
+
 job "librenms" {
   region = "home"
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
   # Adjust as needed for rootless/root containers
   constraint {
     attribute = "${meta.rootless}"
     value = "false"
-  }
-
-  # Temporary until lab is fully on physical hardware
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
   }
 
   group "librenms" {
@@ -27,22 +210,22 @@ job "librenms" {
       }
 
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = var.dns
       }      
     }
 
     service {
-      name = "librenms"
+      name = var.servicename
       provider = "consul"
       task = "librenms"
       port = "http"
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",          
-        "traefik.http.routers.librenms.rule=Host(`librenms.shamsway.net`)",
-        "traefik.http.routers.librenms.entrypoints=web,websecure",
-        "traefik.http.routers.librenms.tls.certresolver=cloudflare",
-        "traefik.http.routers.librenms.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
@@ -78,49 +261,47 @@ job "librenms" {
 
     task "librenms" {
       driver = "podman"
-      #user = "librenms"
 
       config {
-        image = "docker.io/librenms/librenms:24.4.1"
+        image = var.librenms_image
         ports = ["http"]
         cap_add = ["NET_RAW","NET_ADMIN"]
         volumes = ["/mnt/services/librenms/config:/data"]
-        #userns = "keep-id:uid=1000,gid=1000"
         logging = {
         driver = "journald"
         options = [
             {
-            "tag" = "librenms"
+            "tag" = "${var.servicename}"
             }
           ]
         }         
       }
 
       env {
-        TZ = "America/New_York"
-        PUID = "2000"
-        PGID = "2000"
-        DB_HOST = "mariadb.service.consul"
-        DB_NAME = "librenms"
-        DB_USER = "librenms"
-        DB_PASSWORD = "As3cur3P@ssw0rd!"
-        DB_TIMEOUT = "60"
-        REDIS_HOST = "redis.service.consul"
-        REDIS_DB = "2"
-        REDIS_CACHE_DB = "3"
-        CACHE_DRIVER = "redis"
-        SESSION_DRIVER = "redis"
-        RRDCACHED_SERVER = "rrdcached.service.consul:42217"
-        MEMORY_LIMIT = "256M"
-        MAX_INPUT_VARS = "1000"
-        UPLOAD_MAX_SIZE = "16M"
-        OPCACHE_MEM_SIZE = "128"
-        REAL_IP_FROM = "0.0.0.0/32"
-        REAL_IP_HEADER = "X-Forwarded-For"
-        LOG_IP_VAR = "http_x_forwarded_for"       
-        LIBRENMS_WEATHERMAP = "true"
-        LIBRENMS_SNMP_COMMUNITY = "shamsway"
-        LIBRENMS_BASE_URL = "librenms.shamsway.net"
+        TZ = var.TZ
+        PUID = var.PUID
+        PGID = var.PGID
+        DB_HOST = var.DB_HOST
+        DB_NAME = var.DB_NAME
+        DB_USER = var.DB_USER
+        DB_PASSWORD = var.DB_PASSWORD
+        DB_TIMEOUT = var.DB_TIMEOUT
+        REDIS_HOST = var.REDIS_HOST
+        REDIS_DB = var.REDIS_DB
+        REDIS_CACHE_DB = var.REDIS_CACHE_DB
+        CACHE_DRIVER = var.CACHE_DRIVER
+        SESSION_DRIVER = var.SESSION_DRIVER
+        RRDCACHED_SERVER = var.RRDCACHED_SERVER
+        MEMORY_LIMIT = var.MEMORY_LIMIT
+        MAX_INPUT_VARS = var.MAX_INPUT_VARS
+        UPLOAD_MAX_SIZE = var.UPLOAD_MAX_SIZE
+        OPCACHE_MEM_SIZE = var.OPCACHE_MEM_SIZE
+        REAL_IP_FROM = var.REAL_IP_FROM
+        REAL_IP_HEADER = var.REAL_IP_HEADER
+        LOG_IP_VAR = var.LOG_IP_VAR
+        LIBRENMS_WEATHERMAP = var.LIBRENMS_WEATHERMAP
+        LIBRENMS_SNMP_COMMUNITY = var.LIBRENMS_SNMP_COMMUNITY
+        LIBRENMS_BASE_URL = var.LIBRENMS_BASE_URL
       }
 
       resources {
@@ -130,15 +311,13 @@ job "librenms" {
 
     task "librenms-poller" {
       driver = "podman"
-      #user = "librenms"
 
       config {
-        image = "docker.io/librenms/librenms:24.4.1"
+        image = var.librenms_image
         cap_add = ["NET_RAW","NET_ADMIN"]
         volumes = ["/mnt/services/librenms/config:/data"]        
         network_mode = "host"
         privileged = true
-        #userns = "keep-id:uid=1000,gid=1000"
         logging = {
         driver = "journald"
         options = [
@@ -150,26 +329,26 @@ job "librenms" {
       }
 
       env {
-        TZ = "America/New_York"
-        PUID = "2000"
-        PGID = "2000"
-        DB_HOST = "mariadb.service.consul"
-        DB_NAME = "librenms"
-        DB_USER = "librenms"
-        DB_PASSWORD = "As3cur3P@ssw0rd!"
-        DB_TIMEOUT = "60"
-        REDIS_HOST = "redis.service.consul"
-        REDIS_DB = "2"
-        REDIS_CACHE_DB = "3"
-        RRDCACHED_SERVER = "rrdcached.service.consul:42217"
-        CACHE_DRIVER = "redis"
-        SESSION_DRIVER = "redis"
-        MEMORY_LIMIT = "256M"
-        MAX_INPUT_VARS = "1000"
-        UPLOAD_MAX_SIZE = "16M"
-        OPCACHE_MEM_SIZE = "128"   
-        DISPATCHER_NODE_ID = "dispatcher"
-        SIDECAR_DISPATCHER = "1"
+        TZ = var.TZ
+        PUID = var.PUID
+        PGID = var.PGID
+        DB_HOST = var.DB_HOST
+        DB_NAME = var.DB_NAME
+        DB_USER = var.DB_USER
+        DB_PASSWORD = var.DB_PASSWORD
+        DB_TIMEOUT = var.DB_TIMEOUT
+        REDIS_HOST = var.REDIS_HOST
+        REDIS_DB = var.REDIS_DB
+        REDIS_CACHE_DB = var.REDIS_CACHE_DB
+        RRDCACHED_SERVER = var.RRDCACHED_SERVER
+        CACHE_DRIVER = var.CACHE_DRIVER
+        SESSION_DRIVER = var.SESSION_DRIVER
+        MEMORY_LIMIT = var.MEMORY_LIMIT
+        MAX_INPUT_VARS = var.MAX_INPUT_VARS
+        UPLOAD_MAX_SIZE = var.UPLOAD_MAX_SIZE
+        OPCACHE_MEM_SIZE = var.OPCACHE_MEM_SIZE
+        DISPATCHER_NODE_ID = var.DISPATCHER_NODE_ID
+        SIDECAR_DISPATCHER = var.SIDECAR_DISPATCHER
       }
 
       resources {
@@ -179,11 +358,9 @@ job "librenms" {
 
     task "librenms-rrdcached" {
       driver = "podman"
-      #user = "rrdcached"
 
       config {
-        image = "docker.io/crazymax/rrdcached:1.8.0-r5"
-        #userns = "keep-id"
+        image = var.rrdcached_image
         ports = ["rrdcached"]
         volumes = ["/mnt/services/librenms/rrdcached/db:/data/db","/mnt/services/librenms/rrdcached/journal:/data/journal"]
         logging = {

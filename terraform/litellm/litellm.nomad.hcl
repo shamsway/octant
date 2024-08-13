@@ -8,12 +8,6 @@ job "litellm" {
     value = "true"
   }
   
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
   group "litellm" {
 
     network {
@@ -22,7 +16,7 @@ job "litellm" {
       }
 
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = ${dns}
       }         
     }
 
@@ -33,15 +27,15 @@ job "litellm" {
     }    
 
     service {
-      name = "litellm"
+      name = "${servicename}"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
 				"traefik.consulcatalog.connect=false",
-        "traefik.http.routers.litellm.rule=Host(`litellm.shamsway.net`)",
-        "traefik.http.routers.litellm.entrypoints=web,websecure",
-        "traefik.http.routers.litellm.tls.certresolver=cloudflare",
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
       ]
 
       connect {
@@ -71,7 +65,7 @@ job "litellm" {
           driver = "journald"
           options = [
             {
-              "tag" = "open-webui"
+              "tag" = "${servicename}"
             }
           ]
         }                 

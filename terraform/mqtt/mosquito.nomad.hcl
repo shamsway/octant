@@ -1,19 +1,41 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "mqtt"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "image" {
+  type = string
+  default = "docker.io/eclipse-mosquitto:2.0.18"
+}
+
 job "mqtt" {
   region = "home"
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
-  # Adjust as needed for rootless/root containers
   constraint {
     attribute = "${meta.rootless}"
     value = "true"
-  }
-
-  # Temporary until lab is fully on physical hardware
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
   }
 
   group "mqtt" {
@@ -23,12 +45,12 @@ job "mqtt" {
         to = 1883
       }
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = var.dns
       }      
     }
 
     service {
-      name = "mqtt"
+      name = var.servicename
       provider = "consul"
       port = "mqtt"
 
@@ -49,7 +71,7 @@ job "mqtt" {
       user = "1883"
 
       config {
-        image = "docker.io/eclipse-mosquitto:2.0.18"
+        image = var.image
         userns = "keep-id:uid=1883,gid=1883"
         volumes = ["/mnt/services/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf","/mnt/services/mosquitto/data:/mosquitto/data","/mnt/services/mosquitto/log:/mosquitto/log"]
         ports = ["mqtt"]
@@ -57,7 +79,7 @@ job "mqtt" {
           driver = "journald"
           options = [
             {
-              "tag" = "mqtt"
+              "tag" = "${var.servicename}"
             }
           ]
         }         

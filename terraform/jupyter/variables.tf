@@ -1,7 +1,7 @@
 variable "nomad" {
   description = "Nomad server address"
   type = string
-  default = "nomad.shamsway.net"
+  default = "nomad.octant.net"
 }
 
 variable "region" {
@@ -11,7 +11,7 @@ variable "region" {
 
 variable "datacenter" {
   type = string
-  default = "shamsway"
+  default = "octant"
 }
 
 variable "image" {

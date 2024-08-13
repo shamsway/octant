@@ -19,7 +19,7 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
@@ -81,6 +81,10 @@ data "template_file" "nautobot_job" {
     region = var.region
     datacenter = var.datacenter
     image = var.image
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)    
     nautobot_config = base64encode(data.template_file.nautobot_config.rendered)
     uwsgi_ini = data.local_file.uwsgi_ini.content_base64
     nautobot_superuser_email = var.admin_email

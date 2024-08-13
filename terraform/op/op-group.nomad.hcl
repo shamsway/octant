@@ -1,18 +1,46 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "op-connect"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "opapi_image" {
+  type = string
+  default = "1password/connect-api:latest"
+}
+
+variable "osync_image" {
+  type = string
+  default = "1password/connect-sync:latest"
+}
+
 job "op-connect" {
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type = "service"
 
   constraint {
       attribute = "${meta.rootless}"
       value     = "true"
   }
-
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
   group "op-connect" {
     network {
       port "opapi" {
@@ -34,7 +62,7 @@ job "op-connect" {
       }
 
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = var.dns
       }
     }
 
@@ -46,10 +74,10 @@ job "op-connect" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.opapi.rule=Host(`opapi.shamsway.net`)",
-        "traefik.http.routers.opapi.entrypoints=web,websecure",
-        "traefik.http.routers.opapi.tls.certresolver=cloudflare",
-        "traefik.http.routers.opapi.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.${var.servicename}.rule=Host(`opapi.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
@@ -73,10 +101,10 @@ job "op-connect" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.opsync.rule=Host(`opsync.shamsway.net`)",
-        "traefik.http.routers.opsync.entrypoints=web,websecure",
-        "traefik.http.routers.opsync.tls.certresolver=cloudflare",
-        "traefik.http.routers.opsync.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.${var.servicename}.rule=Host(`opsync.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
@@ -119,14 +147,14 @@ job "op-connect" {
       user = "2000"
 
       config {
-        image = "1password/connect-api:latest"
+        image = var.opapi_image
         ports = ["opapi","opapibus"]
         userns = "keep-id"
         logging {
           driver = "journald"
           options = [
             {
-            "tag" = "opapi"
+              "tag" = "opapi"
             }
           ]
         }
@@ -162,14 +190,14 @@ EOT
       user = "2000"
 
       config {
-        image = "1password/connect-sync:latest"
+        image = "var.opsync_image"
         ports = ["opsync","opsyncbus"]
         userns = "keep-id"  
         logging {
           driver = "journald"
           options = [
             {
-            "tag" = "opsync"
+              "tag" = "opsync"
             }
           ]
         }

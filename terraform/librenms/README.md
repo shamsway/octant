@@ -1,5 +1,12 @@
 # LibreNMS
 
+- Deploy the MariaDB Nomad job
+
+`nomad job run mariadb.nomad.hcl`
+
+- Deploy LibreNMS
+
+`nomad job run librenms.nomad.hcl`
 
 ## Volumes
 

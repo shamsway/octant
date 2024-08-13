@@ -2,21 +2,10 @@ job "open-webui" {
   region = "${region}"
   datacenters = ["${datacenter}"]
   type = "service"
-
-  constraint {
-    attribute = "$${attr.kernel.name}"
-    value     = "linux"
-  }
-
+  
   constraint {
     attribute = "$${meta.rootless}"
     value = "true"
-  }
-
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
   }
 
   group "open-webui" {
@@ -25,21 +14,21 @@ job "open-webui" {
         to = 8080
       }
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = ${dns}
       }      
     }
 
     service {
-      name = "chatllm"
+      name = "${servicename}"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.open-webui.rule=Host(`chatllm.shamsway.net`)",
-        "traefik.http.routers.open-webui.entrypoints=web,websecure",
-        "traefik.http.routers.open-webui.tls.certresolver=cloudflare",
-        "traefik.http.routers.open-webui.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
+        "traefik.http.routers.${servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
@@ -57,20 +46,18 @@ job "open-webui" {
 
     task "open-webui" {
       driver = "podman"
-      #user = "2000"
  
       config {
         image = "${image}"
         force_pull = true
         image_pull_timeout = "15m"
-        #userns = "keep-id:uid=0,gid=0"
         ports = ["http"]
         volumes = ["/mnt/services/open-webui/data:/app/backend/data","/mnt/services/litellm/config.yaml:/app/backend/data/litellm/config.yaml"]
         logging = {
           driver = "journald"
           options = [
             {
-              "tag" = "open-webui"
+              "tag" = "${servicename}"
             }
           ]
         }        

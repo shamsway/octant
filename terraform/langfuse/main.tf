@@ -19,7 +19,7 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
@@ -49,7 +49,16 @@ data "template_file" "langfuse_template" {
     datacenter = var.datacenter
     image = var.image
     db_name = var.db_name
-    db_server = var.db_server    
+    db_server = var.db_server
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)  
+    nextauth_url = var.nextauth_url
+    nextauth_secret = var.nextauth_secret
+    salt = var.salt
+    telemetry_enabled = var.telemetry_enabled
+    langfuse_enable_experimental_features = var.langfuse_enable_experimental_features
   }
 }
 

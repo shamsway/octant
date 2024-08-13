@@ -9,13 +9,6 @@ job "nautobot" {
     value = "true"
   }
 
-  # Temporary until lab is fully on physical hardware
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
   group "nautobot" {
     network {
       port "http" {
@@ -27,7 +20,7 @@ job "nautobot" {
       }
 
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = ${dns}
       }      
     }
 
@@ -38,17 +31,17 @@ job "nautobot" {
     }
 
     service {
-      name = "nautobot"
+      nname = "${servicename}"
       task = "nautobot"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",          
-        "traefik.http.routers.nautobot.rule=Host(`nautobot.shamsway.net`)",
-        "traefik.http.routers.nautobot.entrypoints=web,websecure",
-        "traefik.http.routers.nautobot.tls.certresolver=cloudflare",
-        "traefik.http.routers.nautobot.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
+        "traefik.http.routers.${servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
@@ -77,7 +70,7 @@ job "nautobot" {
           driver = "journald"
           options = [
             {
-              "tag" = "nautobot"
+              "tag" = "${servicename}"
             }
           ]
         }         

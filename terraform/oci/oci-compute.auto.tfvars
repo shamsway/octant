@@ -1,8 +1,0 @@
-tenancy_ocid="ocid1.tenancy.oc1..aaaaaaaa3hnevbwfckz5n5xbqcgzmmzbnpyqtbkuxckkcarfci5wagl3bdna"
-user_ocid="mattadamelliott@gmail.com"
-fingerprint="6a:30:6b:34:d8:98:8d:fb:2c:f7:1e:47:3c:ba:80:9e"
-private_key_path="/.oci/mattadamelliott@gmail.com_2024-04-25T17_26_34.317Z.pem"
-region="us-ashburn-1"
-local_ip = "162.211.39.153/32"
-admin_user = "matt"
-ssh_public_key = "~/.ssh/id_rsa.pub"

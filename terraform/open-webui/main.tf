@@ -20,7 +20,7 @@ provider "nomad" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
@@ -47,6 +47,10 @@ data "template_file" "open_webui_template" {
     region = var.region
     datacenter = var.datacenter
     image = var.image
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)
     ollama_url = var.ollama_url
     webui_auth = var.webui_auth
     webui_name = var.webui_name
