@@ -51,5 +51,5 @@ variable "region" {
 
 variable "datacenter" {
     type = string
-    default = "shamsway"
+    default = "octant"
 }

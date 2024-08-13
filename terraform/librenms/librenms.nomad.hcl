@@ -145,12 +145,12 @@ variable "LIBRENMS_WEATHERMAP" {
 
 variable "LIBRENMS_SNMP_COMMUNITY" {
   type    = string
-  default = "shamsway"
+  default = "octant"
 }
 
 variable "LIBRENMS_BASE_URL" {
   type    = string
-  default = "librenms.shamsway.net"
+  default = "librenms.octant.net"
 }
 
 variable "DISPATCHER_NODE_ID" {

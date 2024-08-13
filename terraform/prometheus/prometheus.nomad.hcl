@@ -142,7 +142,7 @@ scrape_configs:
   # - job_name: 'nomad-jobs'
   #   metrics_path: /metrics
   #   consul_sd_configs:
-  #     - server: 'consul.shamsway.net:8500'
+  #     - server: 'consul.service.consul:8500'
   #       tags: ['metrics']
   #       scheme: http
   #   relabel_configs:

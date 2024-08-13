@@ -68,5 +68,5 @@ variable "db_name" {
 
 variable "langfuse_url" {
   type = string
-  default = "https://langfuse.shamsway.net"
+  default = "https://langfuse.octant.net"
 }

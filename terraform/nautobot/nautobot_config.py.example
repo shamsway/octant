@@ -91,7 +91,7 @@ SECRET_KEY = "01234567901234678901234567980123456789"
 # Specify one or more name and email address tuples representing Nautobot administrators. These people will be notified of
 # application errors (assuming correct email settings are provided).
 ADMINS = [
-    ['Octant Admin', 'admin@shamsway.net']
+    ['Octant Admin', 'admin@octant.net']
 ]
 
 # URL schemes that are allowed within links in Nautobot

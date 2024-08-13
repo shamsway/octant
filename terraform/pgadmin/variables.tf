@@ -63,5 +63,5 @@ variable "dns" {
 
 variable "pgadmin_email" {
   type = string
-  default = "pgadmin@shamsway.net"
+  default = "pgadmin@octant.net"
 }
