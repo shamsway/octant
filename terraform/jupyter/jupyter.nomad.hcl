@@ -1,17 +1,11 @@
 job "jupyter" {
-  region = "${region}"
-  datacenters = ["${datacenter}"]
+  region = "${var.region}"
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
   constraint {
     attribute = "$${meta.rootless}"
     value = "true"
-  }
-  
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
   }
 
   group "jupyter" {
@@ -22,20 +16,20 @@ job "jupyter" {
       }
 
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = var.dns
       }         
     }
 
     service {
-      name = "jupyter"
+      name = var.servicename
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
 		    "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.jupyter.rule=Host(`jupyter.shamsway.net`)",
-        "traefik.http.routers.jupyter.entrypoints=web,websecure",
-        "traefik.http.routers.jupyter.tls.certresolver=cloudflare",
+        "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
       ]
 
       connect {
@@ -55,7 +49,7 @@ job "jupyter" {
       driver = "podman"
 
       config {
-        image = "${image}"
+        image = "${var.image}"
         ports = ["http"]
         image_pull_timeout = "15m"
         args = ["start-notebook.py","--IdentityProvider.token='6476bd640f20936608a5f0b6b5f00820'","--NotebookApp.allow_origin='https://colab.research.google.com'","--NotebookApp.port_retries=0", "--NotebookApp.disable_check_xsrf=True"]
@@ -65,7 +59,7 @@ job "jupyter" {
           driver = "journald"
           options = [
             {
-              "tag" = "jupyter"
+              "tag" = "${var.servicename}"
             }
           ]
         }                 

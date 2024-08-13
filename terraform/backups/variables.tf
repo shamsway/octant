@@ -42,11 +42,6 @@ variable "shared_dir" {
   default = "/opt/storage/"
 }
 
-variable "datacenter" {
-  type = string
-  default = "octant"
-}
-
 variable "image" {
   type = string
   default = "docker.io/postgres:16.2"
