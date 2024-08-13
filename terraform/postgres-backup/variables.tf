@@ -1,18 +1,13 @@
-variable "OP_API_TOKEN" {
-  description = "Auth token for 1password connect vault"
-  type = string
-}
-
 variable "nomad" {
   description = "Nomad server address"
   type = string
-  default = "nomad.shamsway.net"
+  default = "nomad.octant.net"
 }
 
 variable "consul" {
   description = "Consul server address"
   type = string
-  default = "consul.shamsway.net"
+  default = "consul.octant.net"
 }
 
 variable "region" {
@@ -27,5 +22,5 @@ variable "shared_dir" {
 
 variable "datacenter" {
   type = string
-  default = "shamsway"
+  default = "octant"
 }

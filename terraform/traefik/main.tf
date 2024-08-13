@@ -31,6 +31,11 @@ data "template_file" "ingress_job_template" {
   vars = {
     region = var.region
     datacenter = var.datacenter
+    domain = var.domain
+    image = var.nginx_image
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)    
   }
 }
 
@@ -39,7 +44,11 @@ data "template_file" "traefik_job_template" {
   vars = {
     region = var.region
     datacenter = var.datacenter
-    image = var.image
+    image = var.traefik_image
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)
   }
 }
 

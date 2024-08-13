@@ -9,13 +9,6 @@ job "redis" {
     value = "true"
   }
 
-  # Temporary until lab is fully on physical hardware
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
   group "redis" {
     network {
       port "redis" {
@@ -23,18 +16,12 @@ job "redis" {
         to = 6379
       }
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = ${dns}
       }      
     }
 
-    // volume "redis-data" {
-    //   type      = "host"
-    //   read_only = false
-    //   source    = "redis-data"
-    // }
-
     service {
-      name = "redis"
+      name = "${servicename}"
       provider = "consul"
       port = "redis"
 
@@ -62,18 +49,12 @@ job "redis" {
           driver = "journald"
           options = [
             {
-              "tag" = "redis"
+              "tag" = "${servicename}"
             }
           ]
         }         
       }
-
-      // volume_mount {
-      //   volume      = "redis-data"
-      //   destination = "/data"
-      //   read_only   = false
-      // }
-
+      
       resources {
         cpu    = 500
         memory = 256

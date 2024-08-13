@@ -3,10 +3,16 @@ variable "OP_API_TOKEN" {
   type = string
 }
 
+variable "op_api_url" {
+  description = "URL for 1password connect vault"
+  type = string
+  default = "https://opapi.octant.net"
+}
+
 variable "nomad" {
   description = "Nomad server address"
   type = string
-  default = "nomad.shamsway.net"
+  default = "nomad.octant.net"
 }
 
 variable "image" {
@@ -27,13 +33,13 @@ variable "restic_password" {
 }
 
 variable "AWS_ACCESS_KEY_ID" {
-  description = "Backblaze key ID for restic"
+  description = "S3/Backblaze key ID for restic"
   type        = string
   sensitive   = true
 }
 
 variable "AWS_SECRET_ACCESS_KEY" {
-  description = "Backblaze key for restic"
+  description = "S3/Backblaze key for restic"
   type        = string
   sensitive   = true
 }

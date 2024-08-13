@@ -9,6 +9,10 @@ data "template_file" "unifi_job_template" {
     region = var.region
     datacenter = var.datacenter
     image = var.image
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)    
   }
 }
 

@@ -1,5 +1,20 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "servicename" {
+  type = string
+  default = "whoami"
+}
+
+variable "image" {
+  type = string
+  default = "traefik/whoami"
+}
+
 job "whoami" {
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "system"
 
   constraint {
@@ -21,16 +36,16 @@ job "whoami" {
     }
 
     service {
-      name = "whoami"
+      name = var.servicename
       port = "http"
       provider = "consul"
 
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.whoami.rule=Host(`whoami.shamsway.net`)",
-        "traefik.http.routers.whoami.entrypoints=web,websecure",
-        "traefik.http.routers.whoami.tls.certresolver=cloudflare",
-        "traefik.http.routers.whoami.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
     }
 
@@ -42,7 +57,7 @@ job "whoami" {
       driver = "podman"
 
       config {
-        image = "traefik/whoami"
+        image = var.image
         ports = ["http"]
       }
     }

@@ -20,11 +20,11 @@
     address = ":8082"
 [http]
   [http.routers]
-    [http.routers.shamsway]
+    [http.routers.octant]
       entryPoints = ["websecure"]
-      rule = "Host(`*.shamsway.net`)"
-      service = "shamsway.net"
-      [http.routers.shamsway.tls]
+      rule = "Host(`*.octant.net`)"
+      service = "octant.net"
+      [http.routers.octant.tls]
         certResolver = "cloudflare"
     [http.routers.consul]
       entryPoints = ["http", "websecure"]
@@ -38,7 +38,7 @@
   [http.middlewares.https-redirect.redirectscheme]
     scheme = "https"
 [certificatesResolvers.cloudflare.acme]
-  email = "mattadamelliott@gmail.com"
+  email = "[changeme]"
   storage = "/acme/acme.json"
   [certificatesResolvers.cloudflare.acme.dnsChallenge]
     provider = "cloudflare"
@@ -58,16 +58,16 @@
 [providers.consulcatalog]
   exposedByDefault = false
   prefix = "traefik"
-  defaultRule = "Host(`{{ .Name }}.shamsway.net`) || Host(`{{ .Name }}.service.consul`)"
+  defaultRule = "Host(`{{ .Name }}.octant.net`) || Host(`{{ .Name }}.service.consul`)"
   connectAware = true
   connectByDefault = true        
   [providers.consulcatalog.endpoint]
-    address = "consul.shamsway.net:8501"
+    address = "consul.octant.net:8501"
     scheme = "https"
-    datacenter = "shamsway"
+    datacenter = "octant"
     endpointWaitTime = "15s"
     [tls]
       insecureskipverify = true
       ca = "/acme/consul-agent-ca.pem"
-      certFile = "/acme/shamsway-server-traefik-1.pem"
-      keyFile  = "/acme/shamsway-server-traefik-1-key.pem"
+      certFile = "/acme/octant-server-traefik-1.pem"
+      keyFile  = "/acme/octant-server-traefik-1-key.pem"

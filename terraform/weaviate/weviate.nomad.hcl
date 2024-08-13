@@ -1,16 +1,40 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "weaviate"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "image" {
+  type = string
+  default = "cr.weaviate.io/semitechnologies/weaviate:1.25.3"
+}
+
 job "weaviate" {
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
   constraint {
     attribute = "${meta.rootless}"
     value      = true
-  }
-
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
   }
 
   group "weaviate" {
@@ -30,20 +54,20 @@ job "weaviate" {
       }
 
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = var.dns
       }
     }
 
     service {
-      name = "weaviate"
+      name = var.servicename
       provider = "consul"
       port = "http"
       tags   = [
         "traefik.enable=true",
         "traefik.https=true",
         "traefik.https.entrypoints=https", 
-        "traefik.https.tls.certresolver=cloudflare",
-        "traefik.http.routers.weaviate.rule=Host(`weaviate.shamsway.net`)",
+        "traefik.https.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.weaviate.rule=Host(`${var.servicename}.${var.domain}`)",
       ]
 
       connect {
@@ -63,14 +87,14 @@ job "weaviate" {
       driver  = "podman"
 
       config {
-        image = "cr.weaviate.io/semitechnologies/weaviate:1.25.3"
+        image = var.image
         volumes = ["/mnt/services/weviate/data:/var/lib/weaviate"]
         ports = ["http","grpc","metrics"]
         logging = {
         driver = "journald"
         options = [
             {
-            "tag" = "weaviate"
+            "tag" = "${var.servicename}"
             }
           ]
         } 

@@ -19,17 +19,17 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
 
-data "onepassword_vault" "dev" {
-  name = "Dev"
+data "onepassword_vault" "vault" {
+  name = "${var.op_vault}"
 }
 
 data "onepassword_item" "job_pass" {
-  vault = data.onepassword_vault.dev.uuid
+  vault = data.onepassword_vault.vault.uuid
   title = "[replace]"
 }
 
@@ -46,6 +46,10 @@ data "template_file" "job_template" {
     region = var.region
     datacenter = var.datacenter
     image = var.image
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)    
   }
 }
 

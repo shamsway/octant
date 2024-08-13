@@ -12,7 +12,7 @@ provider "nomad" {
 }
 
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
@@ -43,7 +43,6 @@ locals {
   inventory         = yamldecode(data.local_file.inventory.content)
   inventory_vars    = yamldecode(data.local_file.inventory_vars.content)
   backup_volumes    = local.inventory.servers.vars.volumes
-  #restic_password   = var.restic_password
   restic_repository = local.inventory_vars.restic_repository
 }
 
@@ -73,7 +72,6 @@ data "template_file" "restic_job" {
     region            = var.region
     datacenter        = local.inventory_vars.datacenter
     image             = var.image
-    #backup_volumes    = jsonencode(local.backup_volumes)
     restic_repository = "${local.restic_repository}/nfs"
     restic_hostname   = var.restic_hostname
     # Filter the volumes to include only those with backup = true or backup attribute missing

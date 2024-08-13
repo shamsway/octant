@@ -8,10 +8,11 @@ job "unifi" {
     value = "false"
   }
 
-  constraint {
-    attribute = "$${node.unique.name}"
-    value = "bobby-agent-root"
-  }
+  # See README.md for explaination
+  # constraint {
+  #   attribute = "$${node.unique.name}"
+  #   value = "bobby-agent-root"
+  # }
 
   group "unifi" {
     network {
@@ -40,7 +41,7 @@ job "unifi" {
         to = 5514
       }
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = ${dns}
       }
     }
 
@@ -63,19 +64,19 @@ job "unifi" {
     }    
 
     service {
-      name = "unifi"
+      name = "${servicename}"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.unifi-network-application.rule=Host(`unifi.shamsway.net`)",
-        "traefik.http.routers.unifi-network-application.entrypoints=web,websecure",
-        "traefik.http.routers.unifi-network-application.tls.certresolver=cloudflare",        
-        "traefik.http.routers.unifi-network-application.middlewares=redirect-web-to-websecure@internal",
-        "traefik.http.services.unifi-network-application.loadbalancer.serverstransport=skipcertcheck@file",
-        "traefik.http.services.unifi-network-application.loadbalancer.server.scheme=https",
-        "traefik.http.services.unifi-network-application.loadbalancer.server.port=$${NOMAD_PORT_https}"
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",      
+        "traefik.http.routers.${servicename}.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.services.${servicename}.loadbalancer.serverstransport=skipcertcheck@file",
+        "traefik.http.services.${servicename}.loadbalancer.server.scheme=https",
+        "traefik.http.services.${servicename}.loadbalancer.server.port=$${NOMAD_PORT_https}"
       ]
 
       connect {
@@ -99,7 +100,6 @@ job "unifi" {
         image = "${image}"
         network_mode = "host"
         privileged = "true"
-        #userns = "keep-id:uid=999,gid=999"
         ports = ["http", "https", "stun", "discovery", "unifi-discovery", "remote-syslog"]
         logging = {
           driver = "journald"

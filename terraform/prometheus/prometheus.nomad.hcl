@@ -1,6 +1,36 @@
+variable "datacenter" {
+  type = string
+  default = "octant"
+}
+
+variable "domain" {
+  type = string
+  default = "octant.net"
+}
+
+variable "certresolver" {
+  type = string
+  default = "cloudflare"
+}
+
+variable "servicename" {
+  type = string
+  default = "prometheus"
+}
+
+variable "dns" {
+  type = list(string)
+  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+}
+
+variable "image" {
+  type = string
+  default = "docker.io/prom/prometheus:v2.51.1"
+}
+
 job "prometheus" {
   region      = "home"
-  datacenters = ["shamsway"]
+  datacenters = ["${var.datacenter}"]
   type        = "service"
 
   constraint {
@@ -14,16 +44,14 @@ job "prometheus" {
     weight    = 100
   }
 
-  group "monitoring" {
-    count = 1
-
+  group "prometheus" {
     network {
       port "http" {
         static = "9091"
       }
 
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = var.dns
       }      
     }
 
@@ -35,7 +63,7 @@ job "prometheus" {
 
 
     service {
-      name = "prometheus"
+      name = var.servicename
       port = "http"
       provider = "consul"
       connect {
@@ -43,12 +71,12 @@ job "prometheus" {
       }
 
       tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",
-          "traefik.http.routers.prometheus.rule=Host(`prometheus.shamsway.net`)",
-          "traefik.http.routers.prometheus.entrypoints=web,websecure",
-          "traefik.http.routers.prometheus.tls.certresolver=cloudflare",
-          "traefik.http.routers.prometheus.middlewares=redirect-web-to-websecure@internal",       
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=false",
+        "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
+        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",     
       ]
 
       check {
@@ -71,13 +99,13 @@ job "prometheus" {
       }
 
       config {
-        image = "docker.io/prom/prometheus:v2.51.1"
+        image = var.image
         userns = "keep-id"
         logging = {
           driver = "journald"
           options = [
             {
-              "tag" = "prometheus"
+              "tag" = "${var.servicename}"
             }
           ]
         } 
@@ -105,14 +133,6 @@ scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['127.0.0.1:9091']
-
-  - job_name: 'ceph'
-    honor_labels: true
-    static_configs:
-      - targets: ['bobby.shamsway.net:9283']
-        labels:
-          instance: bobby.shamsway.net
-          alias: ceph-exporter
 
   - job_name: 'traefik'
     metrics_path: /metrics
@@ -152,7 +172,7 @@ scrape_configs:
     params:
       format: ['prometheus']
     consul_sd_configs:
-      - server: 'consul.shamsway.net:8500'
+      - server: 'consul.service.consul:8500'
         services: ['consul']
         scheme: http
     relabel_configs:
@@ -170,7 +190,7 @@ scrape_configs:
 
   - job_name: 'nomad'
     consul_sd_configs:
-    - server: 'consul.shamsway.net:8500'
+    - server: 'consul.service.consul:8500'
       services: ['nomad']
       tags: ['http']
       scheme: http
@@ -188,7 +208,7 @@ scrape_configs:
 
   - job_name: 'nomad-client'
     consul_sd_configs:
-    - server: 'consul.shamsway.net:8500'
+    - server: 'consul.service.consul:8500'
       services: ['nomad-client']
       tags: ['http']
       scheme: http

@@ -6,10 +6,6 @@ job "postgres" {
   datacenters = ["${datacenter}"]
   type        = "service"
 
-  meta {
-    version = "2"
-  }
-
   constraint {
     attribute = "$${attr.kernel.name}"
     value     = "linux"
@@ -20,13 +16,7 @@ job "postgres" {
     value = "true"
   }
 
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
-  group "db" {
+  group "postgres" {
     count = 1
 
     network {
@@ -34,12 +24,9 @@ job "postgres" {
         static = 5432
       }
 
-      port "pgadmin" {
-        to = 80
-      }
 
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = ${dns}
       }            
     }
 
@@ -49,14 +36,8 @@ job "postgres" {
       source    = "postgres-data"
     }
 
-    volume "pgweb-config" {
-      type      = "host"
-      read_only = false
-      source    = "pgweb-config"
-    }
-
     service {
-      name = "postgres"
+      name = "${servicename}"
       provider = "consul"
       task = "postgres"      
       port = "postgres"
@@ -87,7 +68,7 @@ job "postgres" {
           driver = "journald"
           options = [
             {
-              "tag" = "postgres"
+              "tag" = "${servicename}"
             }
           ]
         } 

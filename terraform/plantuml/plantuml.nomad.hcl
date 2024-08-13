@@ -7,12 +7,6 @@ job "plantuml" {
     attribute = "$${meta.rootless}"
     value = "true"
   }
-  
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
 
   group "plantuml" {
     network {
@@ -21,20 +15,20 @@ job "plantuml" {
       }
 
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = ${dns}
       }         
     }
 
     service {
-      name = "plantuml"
+      name = "${servicename}"
       provider = "consul"
       port = "http"
       tags = [
         "traefik.enable=true",
 		    "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.plantuml.rule=Host(`plantuml.shamsway.net`)",
-        "traefik.http.routers.plantuml.entrypoints=web,websecure",
-        "traefik.http.routers.plantuml.tls.certresolver=cloudflare",
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
       ]
 
       connect {
@@ -61,7 +55,7 @@ job "plantuml" {
           driver = "journald"
           options = [
             {
-              "tag" = "plantuml"
+              "tag" = "${servicename}"
             }
           ]
         }                 

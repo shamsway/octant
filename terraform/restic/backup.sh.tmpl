@@ -54,7 +54,7 @@ EOF
   )
 
   # Store the JSON data in Consul's KV store
-  curl -X PUT -d "$json_data" -H "Content-Type: application/json" "http://consul.shamsway.net:8500/v1/kv/restic/backup/nomad/$${HOSTNAME}/results"
+  curl -X PUT -d "$json_data" -H "Content-Type: application/json" "http://consul.service.consul:8500/v1/kv/restic/backup/nomad/$${HOSTNAME}/results"
 else
   result_value="FAILED"
   json_data=$(cat <<EOF
@@ -65,7 +65,7 @@ else
 EOF
   )
   # Store the JSON data in Consul's KV store
-  curl -X PUT -d "$json_data" -H "Content-Type: application/json" "http://consul.shamsway.net:8500/v1/kv/restic/backup/nomad/$${HOSTNAME}/results"    
+  curl -X PUT -d "$json_data" -H "Content-Type: application/json" "http://consul.service.consul:8500/v1/kv/restic/backup/nomad/$${HOSTNAME}/results"    
 fi
 
 # Print the Restic output

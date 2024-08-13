@@ -8,17 +8,7 @@ job "traefik" {
     value = "true"
   }
 
-  meta {
-    version = "3"
-  }
-
-  affinity {
-    attribute = "$${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
-  group "lbs" {
+  group "traefik" {
     count = 1
     network {
       port "http" {
@@ -34,7 +24,7 @@ job "traefik" {
         static = "9002"
       }
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = ${dns}
       }       
     }
 
@@ -68,7 +58,7 @@ job "traefik" {
       tags = [
         "traefik",
         "traefik.enable=true",
-        "traefik.http.routers.dashboard.rule=Host(`traefik-http.shamsway.net`)",
+        "traefik.http.routers.dashboard.rule=Host(`traefik-http.${domain}`)",
         "traefik.http.routers.dashboard.service=api@internal",
         "traefik.http.routers.dashboard.entrypoints=web,websecure",
       ]
@@ -105,20 +95,7 @@ job "traefik" {
       }
       tags = [
         "traefik","traefik.enable=true","lb", "admin",
-        "traefik.http.routers.dashboard.rule=Host(`traefik.shamsway.net`)"
-        #"metrics",
-        #"metrics_port=8082",
-        #"metrics_scheme=http",
-        #"metrics_path=/metrics",
-        #"traefik.tags=clusterservice",
-        #"traefik.consulcatalog.connect=false",
-        #"traefik.http.routers.metrics.rule=PathPrefix(`/metrics`)",
-        #"traefik.http.routers.metrics.entrypoints=api",
-        #"traefik.http.routers.metrics.service=prometheus@internal",
-        #"traefik.http.routers.api.rule=(PathPrefix(`/api`) || PathPrefix(`/dashboard`))",
-        #"traefik.http.routers.api.entrypoints=api",
-        #"traefik.http.routers.api.service=api@internal",
-        #"traefik.http.routers.api.middlewares=AdminAuth@file"
+        "traefik.http.routers.dashboard.rule=Host(`${servicename}.${domain}`)"
       ]
       connect {
         native = true
@@ -171,7 +148,7 @@ job "traefik" {
           driver = "journald"
           options = [
             {
-              "tag" = "traefik"
+              "tag" = "${servicename}"
             }
           ]
         }

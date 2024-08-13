@@ -20,7 +20,7 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "https://opapi.shamsway.net"
+  url                   = "${var.op_api_url}"
   token                 = "${var.OP_API_TOKEN}"
   op_cli_path           = "/usr/local/bin/op"
 }
@@ -49,13 +49,16 @@ resource "nomad_variable" "postgres_backup_password" {
 }
 
 data "template_file" "postgres" {
-  template = "${file("./postgres.hcl")}"
+  template = "${file("./postgres.nomad.hcl")}"
   vars = {
     region = var.region
     shared_dir = var.shared_dir
     datacenter = var.datacenter
     image = var.image
-    pgadmin_email = var.pgadmin_email
+    domain = var.domain
+    certresolver = var.certresolver
+    servicename = var.servicename
+    dns = jsonencode(var.dns)
   }
 }
 

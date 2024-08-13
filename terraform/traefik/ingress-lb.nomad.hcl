@@ -8,11 +8,7 @@ job "ingress-lb" {
     value = "false"
   }
 
-  meta {
-    version = "1"
-  }
-
-  group "lbs" {
+  group "ingress-lb" {
     network {
       port "http" {
         static = "80"
@@ -27,7 +23,7 @@ job "ingress-lb" {
         to = "8081"
       }      
       dns {
-        servers = ["192.168.252.1", "192.168.252.6", "192.168.252.7"]
+        servers = ${dns}
       }
     }
 
@@ -40,12 +36,10 @@ job "ingress-lb" {
     task "nginx" {
       driver = "podman"
       config {
-        image = "docker.io/nginx"
-        #image = "docker.io/nginxinc/nginx-unprivileged:1.25.4"
+        image = "${image}"
         network_mode = "bridge"
         ports = ["http", "https", "httpalt"]
         volumes = ["local:/etc/nginx"]
-        #privileged = "true"
       }
 
       template {
@@ -91,7 +85,7 @@ http {
 
   server {
     listen 8081;
-    server_name consul.shamsway.net;
+    server_name consul.${domain};
     location / {
       proxy_pass http://consul;
       proxy_buffering off;
@@ -103,7 +97,7 @@ http {
 
   server {
     listen 8081;
-    server_name nomad.shamsway.net;
+    server_name nomad.${domain};
     location / {
       proxy_pass http://nomad;
       proxy_set_header X-Real-IP $remote_addr;
