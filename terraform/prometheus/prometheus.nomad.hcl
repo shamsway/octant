@@ -38,12 +38,6 @@ job "prometheus" {
     value = "true"
   }
 
-  affinity {
-    attribute = "${meta.class}"
-    value     = "physical"
-    weight    = 100
-  }
-
   group "prometheus" {
     network {
       port "http" {
