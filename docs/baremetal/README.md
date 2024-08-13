@@ -22,18 +22,16 @@
 - Install Ceph dependencies (add this to preseed.cfg or debian-octant-config.sh)
 - Add ceph node
 - Add ceph OSD
+- Configure mount points and any other desired storage config
+  - `/mnt/servces` is should be mounted and accessable by all hosts. This can be a distributed `cephfs` filesystem, an NFS-based NAS volume, or any other workable shared storage.
 - Add consul role
   - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "consul"`
-- Run configure mounts playbook
-  - `ansible-playbook configure-mounts.yml -i inventory/groups.yml -l` [host]
 - Add nomad role
   - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "consul"`
-- Join cluster
-  - `nomad server join "192.168.252.7:4648"`
+- Join the Nomad cluster
+  - `nomad server join "[first host]:4648"`
 - Clean up old data
   - `nomad system gc`
-- Add telegraf role
-  - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "telegraf-agent"` 
 - Add restic role
   - `ansible-playbook homelab.yml -i inventory/groups.yml -l [host] --tags "restic"` 
   - repo must be initialized before first use: `restic -r s3:[url]/[bucket] init`

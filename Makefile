@@ -44,9 +44,6 @@ deploy-role: check-env
 deploy-role-host: check-env
 	ansible-playbook homelab.yml -i inventory/groups.yml --tags "$(ROLE)" -l $(HOST)
 
-update-mounts: check-env
-	ansible-playbook configure-mounts.yml -i inventory/groups.yml
-
 update-nomad: check-env
 	ansible-playbook update-nomad.yml -i inventory/groups.yml -l $(HOST)
 

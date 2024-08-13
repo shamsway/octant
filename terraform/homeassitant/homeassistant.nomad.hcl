@@ -234,7 +234,7 @@ job "homeassistant" {
   group "ha_cloudflared" {
     network {      
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = var.dns
       }      
     }
 

@@ -73,10 +73,6 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 `add-folders.yml`
 - This Ansible playbook adds new folders to the Nomad configuration based on a CSV file.
 
-`configure-mounts.yml`
-- This Ansible playbook manages mountpoints across the home lab servers.
-- It installs necessary packages, creates mount directories, mounts NFS and SMB shares, and updates the fstab file.
-
 `homelab.yml`
 - The main Ansible playbook for setting up the home lab infrastructure
 - Uncludes tasks for setting up user accounts, installing required packages, and applying roles to the inventory.
@@ -93,9 +89,6 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 
 `Makefile`
 - Various make targets to deploy Ansible roles and other tasks
-  
-`todo.md`
-- A very ugly list of things I've done and things to do. Needs to be replaced with a changelog and GitHub issues.
 
 `.secrets.yml`
 - This file contains a secret key for Consul gossip encryption.

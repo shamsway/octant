@@ -1,6 +1,5 @@
-{% for service in services %}
-job "{{ service.name }}" {
-  datacenters = ["{{ service.datacenter }}"]
+job "{{ job.name }}" {
+  datacenters = ["{{ job.datacenter }}"]
   type        = "service"
 
   # Adjust as needed for rootless/root containers
@@ -8,23 +7,24 @@ job "{{ service.name }}" {
     attribute = "${meta.rootless}"
     value = "true"
   }
-  
-  group "{{ service.name }}" {
+
+  group "{{ job.name }}" {
     network {
-      port "{{ service.portname}}" {
-        static = {{ service.ports[0].split(':')[1] }}
+      port "{{ job.portname}}" {
+        static = {{ job.ports[0].split(':')[1] }}
       }
       dns {
-        servers = ["192.168.252.1","192.168.252.6","192.168.252.7"]
+        servers = ["192.168.1.1","192.168.1.6","192.1.252.7"]
       }      
     }
 
-    volume "{{ service.name }}" {
+    volume "{{ job.name }}-mount" {
       type      = "host"
       read_only = false
-      source    = "{{ service.name }}"
+      source    = "{{ job.name }}-mount"
     }
 
+    {% for service in services %}
     service {
       name = "{{ service.name }}"
       provider = "consul"
@@ -32,10 +32,10 @@ job "{{ service.name }}" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",          
-        "traefik.http.routers.{{ service.name }}.rule=Host(`{{ service.name }}.{{ service.domain }}`)",
-        "traefik.http.routers.{{ service.name }}.entrypoints=web,websecure",
-        "traefik.http.routers.{{ service.name }}.tls.certresolver=cloudflare",
-        "traefik.http.routers.{{ service.name }}.middlewares=redirect-web-to-websecure@internal",
+        "traefik.http.routers.{{ job.name }}.rule=Host(`{{ job.name }}.{{ job.domain }}`)",
+        "traefik.http.routers.{{ job.name }}.entrypoints=web,websecure",
+        "traefik.http.routers.{{ job.name }}.tls.certresolver=cloudflare",
+        "traefik.http.routers.{{ job.name }}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
@@ -50,31 +50,32 @@ job "{{ service.name }}" {
         timeout  = "2s"
       }
     }
+    {% endfor %}
 
-    task "{{ service.name }}" {
+    task "{{ job.name }}" {
       driver = "podman"
 
       config {
-        image = "{{ service.image }}"
+        image = "{{ job.image }}"
         ports = ["http"]
         logging = {
           driver = "journald"
           options = [
             {
-              "tag" = "{{ service.name }}"
+              "tag" = "{{ job.name }}"
             }
           ]
         }         
       }
 
       volume_mount {
-        volume      = "{{ service.name }}"
-        destination = "/app"
+        volume      = "{{ job.name }}-mount"
+        destination = "/path/to/mount"
         read_only   = false
       }
 
       env {
-        {% for env in service.environment %}
+        {% for env in job.environment %}
         {{ env.split('=')[0] }} = "{{ env.split('=')[1] }}"
         {% endfor %}
       }
@@ -86,4 +87,3 @@ job "{{ service.name }}" {
     }
   }
 }
-{% endfor %}

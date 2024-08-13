@@ -1,13 +1,29 @@
 # Using Claude AI to convert Docker Compose files to Nomad
 
-The prompt and instructions below can be used to convert docker-compose to Nomad job files.
+`sl-docker-to-nomad.py` is a Streamlit/Python app that can be used to convert Docker Compose files to Nomad job specs.
+
+# Setup
+
+- Ensure you have a working API key for Claude.
+- Review `nomad-job-template.hcl.j2` and adjust as needed for your environment.
+- Install python requrements
+
+`python -m pip install -r requirements.txt`
+
+- Run `sl-docker-to-nomad.py`
+
+`streamlit run sl-docker-to-nomad`
+
+# Using any LLM to convert Docker Compose files to Nomad
+
+The prompt and instructions below can be used to convert a Docker Compose file to Nomad job.
 
 ## Prompt
 
-Please convert the following docker-compose YAML to a Nomad job configuration:
+Please convert the following docker compose YAML to a Nomad job configuration:
 
 ```yaml
-[Insert your docker-compose YAML here]
+[Insert your docker compose YAML here]
 ```
 
 Consider the following requirements:
@@ -25,15 +41,15 @@ Provide podman commands to run the container from the command line to verify it 
 ## Instructions
 
 To use this prompt:
-1. Replace `[Insert your docker-compose YAML here]` with your actual docker-compose YAML content.
+1. Replace `[Insert your docker compose YAML here]` with your actual docker compose YAML content.
 2. Provide the prompt to the LLM (e.g., ChatGPT, GPT-4).
-3. The LLM will generate the corresponding Nomad job configuration based on the provided docker-compose YAML and the specified requirements.
+3. The LLM will generate the corresponding Nomad job configuration based on the provided docker- ompose YAML and the specified requirements.
 
 When you provide this prompt to the LLM, it will generate a Nomad job configuration similar to the one I provided earlier.
 
 Using an LLM prompt allows you to quickly convert docker-compose YAML to Nomad job configurations without writing custom code. However, keep in mind that the generated configuration may require some adjustments based on your specific environment and requirements.
 
-If you prefer a code-based solution, I can provide you with a Python script that demonstrates how to parse the docker-compose YAML and generate the corresponding Nomad job configuration. Let me know if you'd like me to provide that as well.
+If you prefer a code-based solution, I can provide you with a Python script that demonstrates how to parse the docker compose YAML and generate the corresponding Nomad job configuration. Let me know if you'd like me to provide that as well.
 
 # Anthropic Python SDK and API Docs Summary
 

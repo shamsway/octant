@@ -7,23 +7,25 @@ sudo systemctl disable nfs-server.service
 sudo systemctl mask nfs-server.service
 ```
 
+Install ceph and depedencies
+
 ```bash
 sudo apt install ceph-common ceph-mon ceph-osd ceph-mds ceph-mgr ceph-fuse ceph-base python3-ceph ceph-mgr-dashboard cephadm xfsprogs
 
-cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.252.6 --cluster-network 192.168.252.0/24 --ssh-user hashi --ssh-private-key /opt/homelab/data/home/.ssh/id_rsa --ssh-public-key /opt/homelab/data/home/.ssh/id_rsa.pub --apply-spec ceph-bootstrap.yml --allow-overwrite
+cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.1.6 --cluster-network 192.168.1.0/24 --ssh-user hashi --ssh-private-key /opt/homelab/data/home/.ssh/id_rsa --ssh-public-key /opt/homelab/data/home/.ssh/id_rsa.pub --apply-spec ceph-bootstrap.yml --allow-overwrite
 
 sudo ceph cephadm set-user hashi
 ```
 NOTE: `sudo apt install ceph-common cephadm xfsprogs` may be all that is needed for everything but the first ceph node?
 NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client before bootstrapping the new node. This is to avoid the NFS client from interfering with the Ceph bootstrap process.
 
-ceph orch host add jerry 192.168.252.6 --labels _admin
+ceph orch host add jerry 192.168.1.6 --labels _admin
 
 # Configure additional nodes
 
-ceph orch host add bobby 192.168.252.7 --labels _admin
-ceph orch host add billy 192.168.252.8 --labels _admin
-ceph orch host add robert 192.168.252.10 --labels _admin
+ceph orch host add bobby 192.168.1.7 --labels _admin
+ceph orch host add billy 192.168.1.8 --labels _admin
+ceph orch host add robert 192.168.1.10 --labels _admin
 
 ## Prepare disk(s)
 
@@ -267,7 +269,7 @@ EXPORT
 
     CLIENT
     {
-        Clients = "192.168.252.0/24";
+        Clients = "192.168.1.0/24";
         Access_Type = RO;
     }
 
