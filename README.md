@@ -40,7 +40,7 @@ To get started with Octant, follow these steps:
 3. Configure the necessary variables
 4. Run the Ansible playbooks to configure the initial cluster
 5. Deploy cloud resources with Terraform
-6. Deploy services to Nomad with Terraform
+6. Deploy services to Nomad
 
 For detailed instructions and documentation, please refer to the [docs](./docs) directory.
 
@@ -67,11 +67,9 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 
 `terraform/`
 - This folder contains Terraform configurations for deploying various services like Loki, Grafana, InfluxDB, Nginx, Postgres, Prometheus, and Traefik.
-- Todo: Add README files for each service, explaining their purpose, dependencies, and any specific setup instructions.
+- Some jobs are a bare Nomad job without a Terraform "wrapper". These jobs can be easily deployed with `nomad job run`, and will be migrated to Terraform in the future.
 - Todo: Review the configurations for any sensitive information like API keys, passwords, or tokens, and replace them with environment variables or secrets management.
-
-`add-folders.yml`
-- This Ansible playbook adds new folders to the Nomad configuration based on a CSV file.
+- Todo: Decide if this folder should be renamed to `services` or `jobs`.
 
 `homelab.yml`
 - The main Ansible playbook for setting up the home lab infrastructure
@@ -93,10 +91,10 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 `.secrets.yml`
 - This file contains a secret key for Consul gossip encryption.
 - Ensure that this file is excluded from version control and not pushed to any public repository.
+- Todo: Move secrets to 1password, if possible.
 
 ## To do 
-- Add remaning Ansible Playbooks (`reset-X.yml`, `update-X.yml`) to readme
-- Convert `todo.md` to individual GitHub issues
+- Create GitHub issues for future work/add roadmap
 - Create changelog and automate updates
 - Stand up GitHub actions
 
