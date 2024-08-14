@@ -13,7 +13,8 @@
 
 ## Usage
 - Review the variables configured in both `librenms.nomad.hcl` and `mariadb.nomad.hcl`
-- Deploy the MariaDB Nomad job
+- Deploy Redis (located in the `terraform\redis` folder)
+- Deploy MariaDB
 
 `nomad job run mariadb.nomad.hcl`
 

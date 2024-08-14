@@ -1,5 +1,17 @@
 # 1Password Connect
 
+**Description:** 1Password Connect allows you to securely access and manage your 1Password vault items programmatically.
+
+**Use cases:** 
+- Securely retrieve secrets for other applications in your home lab
+- Automate password management tasks
+
+**Rootless container:** Yes
+
+**Usage:** `nomad job run op-group.nomad.hcl`
+
+**URL:** https://developer.1password.com/docs/connect/
+
 ## Docs
 
 - https://developer.1password.com/docs/connect/get-started/

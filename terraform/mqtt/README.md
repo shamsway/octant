@@ -1,9 +1,14 @@
-# Mosquitto MQTT Container
+## MQTT
 
-## Container info
+**Description:** MQTT (Message Queuing Telemetry Transport) is a lightweight messaging protocol for small sensors and mobile devices.
 
-```bash
-# cat /etc/passwd
-root:x:0:0:root:/root:/bin/ash
-mosquitto:x:1883:1883:mosquitto:/var/empty:/sbin/nologin
-```
+**Use cases:**
+- IoT device communication
+- Real-time messaging for home automation
+- Publish-subscribe messaging patterns
+
+**Rootless container:** Yes
+
+**Usage:** `nomad job run mosquito.nomad.hcl`
+
+**URL:** https://mqtt.org/

@@ -5,6 +5,8 @@
 - Debug and optimize AI-powered applications
 - Track usage and costs of LLM API calls
 
+**Rootless container:** Yes
+
 **Usage:**
 
 Initialize Terraform

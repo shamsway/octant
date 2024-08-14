@@ -1,7 +1,17 @@
-# UniFI Controller
+# UniFI Server
 
-Link: https://github.com/jacobalberty/unifi-docker?tab=readme-ov-file#environment-variables
-Alternate Link: https://github.com/linuxserver/docker-unifi-network-application
+**Description:** The UniFi Server is the management software for Ubiquiti's UniFi network devices.
+
+**Use cases:**
+- Manage UniFi network devices (access points, switches, security gateways)
+- Monitor network performance and usage
+- Configure network settings and policies
+
+**Rootless container:** No
+
+**URLs:** 
+- https://www.ui.com/software/
+- https://github.com/jacobalberty/unifi-docker
 
 ## Traefik Config
 

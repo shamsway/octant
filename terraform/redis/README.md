@@ -1,17 +1,24 @@
 # Redis
 
-## Container info
+**Description:** Redis is an open-source, in-memory data structure store, used as a database, cache, and message broker.
 
-Running as root
+**Use cases:**
+- Cache frequently accessed data
+- Implement pub/sub messaging systems
+- Store session data for web applications
 
+**Rootless container:** Yes
+
+**Usage:**
+- Change default variables set in `variables.tf` or set appropriate environment variables.
+- Initialize Terraform
+```sh
+terraform init
 ```
-root@7818add94c16:/data# whoami
-root
-root@7818add94c16:/data# id -u
-0
-root@7818add94c16:/data# id -g
-0
-root@7818add94c16:/data# cat /etc/passwd
-root:x:0:0:root:/root:/bin/bash
-redis:x:999:999::/home/redis:/bin/sh
+
+- Deploy job
+```sh
+terraform apply -auto-approve
 ```
+
+**URL:** https://redis.io/
