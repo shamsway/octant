@@ -93,11 +93,6 @@ For detailed instructions and documentation, please refer to the [docs](./docs) 
 - Ensure that this file is excluded from version control and not pushed to any public repository.
 - Todo: Move secrets to 1password, if possible.
 
-## To do 
-- Create GitHub issues for future work/add roadmap
-- Create changelog and automate updates
-- Stand up GitHub actions
-
 ## Diagrams
 
 Example architecture - initial cluster deployment
@@ -121,8 +116,12 @@ Tailscale Multicloud
 Getting Started
 ![](docs/octant-usage/diagrams/08_getting_started.png)
 
-
-## Q&A
+## To do 
+- Create GitHub issues for future work/add roadmap
+- Create changelog and automate updates
+- Stand up GitHub actions
+- 
+## FAQ
 
 - For the 3-node architecture, are Consul, Nomad, and Ceph all running on the same three nodes, or do they have separate node clusters? Great question, the answer is a bit complex but it is what makes this lab unique. Both Consul and Nomad use the RAFT protocol for consensus, so the minimum starting cluster size is three. Expanding clusters should respect the requirement for odd numbers of members. Both Consul and Nomad follow a server/agent architecture, but the components can run on the same physical server or VM. Consul and Nomad servers form a quorum for consensus, but do little else. Consul and Nomad agents connect to the servers and perform the service discovery and container scheduling functions. In this lab framework, each node runs these components: Consul server, Nomad Server, Consul rootless agent, Nomad rootless agent, Consul agent running as root, Nomad agent running as root. There is always a 1:1 correlation between corresponding Consul and Nomad agents. They work as a pair to perform their functions. Running both a rootless and root pair of each allows each node to be able to run either rootless containers, or those few containers requring root privileges. Ceph is also running to provide distributed storage. Each container (running as a Nomad job) stores stateful data on a cephfs mount shared across all the nodes. An nginx tcp proxy runs on each node on ports 80 and 443, which direct any inbound traffic to traefik. 
 - How does Traefik interact with the other components in your setup? Is it running on all nodes or on a dedicated node? Traefik runs in a single container becuase clustering isn't supported in the open source version, so nginx is acting as a simple ingress. Traefik uses Consul service discovery and container tags to generate TLS certs and forward inbound traffic to the correct port on the container. Most ports use a random ports, but some containers run on well-known ports.
