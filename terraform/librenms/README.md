@@ -1,5 +1,18 @@
 # LibreNMS
 
+**Description:** LibreNMS is a fully featured network monitoring system that provides a wealth of features and device support.
+
+**Use cases:**
+- Monitor network devices and servers
+- Generate bandwidth and utilization graphs
+- Set up alerts for network issues
+
+**Rootless container:** No
+
+**URL:** https://www.librenms.org/
+
+## Usage
+- Review the variables configured in both `librenms.nomad.hcl` and `mariadb.nomad.hcl`
 - Deploy the MariaDB Nomad job
 
 `nomad job run mariadb.nomad.hcl`
@@ -69,22 +82,4 @@
 * `LIBRENMS_WEATHERMAP_SCHEDULE`: CRON expression format (default `*/5 * * * *`)
 * `MEMCACHED_HOST`: Hostname / IP address of a Memcached server
 * `MEMCACHED_PORT`: Port of the Memcached server (default `11211`)
-* `RRDCACHED_SERVER`: RRDcached server (eg. `rrdcached:42217`)
-
-## Container Info
-
-librenms
-```bash
-7fb2b6082303:/opt/librenms# cat /etc/passwd
-root:x:0:0:root:/root:/bin/ash
-librenms:x:2000:2000:Linux User,,,:/home/librenms:/bin/sh
-```
-
-rrdcache
-```bash
-ee0b655d017d:/data# whoami
-root
-ee0b655d017d:/data# cat /etc/passwd
-root:x:0:0:root:/root:/bin/ash
-rrdcached:x:2000:2000:Linux User,,,:/home/rrdcached:/bin/sh
-```
+* `RRDCACHED_SERVER`: RRDcached server (eg. `rrdcached:42217`

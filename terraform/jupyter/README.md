@@ -1,12 +1,24 @@
-# Jupyter Notebook Server
+## Jupyter
 
-## Container Info
+**Description:** Jupyter provides interactive computing environments for data science and scientific computing.
 
-```bash
-$ cat /etc/passwd
-root:x:0:0:root:/root:/bin/bash
-jovyan:x:1000:100::/home/jovyan:/bin/bash
+**Use cases:**
+- Develop and share documents containing live code, equations, visualizations, and narrative text
+- Perform data analysis and machine learning experiments
+- Create interactive dashboards
 
-$ pwd
-/home/jovyan
+**Rootless container:** Yes
+
+**Usage:**
+
+Initialize Terraform
+```sh
+terraform init
 ```
+
+Deploy job
+```sh
+terraform apply -auto-approve
+```
+
+**URL:** https://jupyter.org/

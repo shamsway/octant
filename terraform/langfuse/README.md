@@ -1,14 +1,20 @@
-# Langfuse
+**Description:** Langfuse is an open-source observability and analytics platform for LLM (Large Language Model) applications.
 
+**Use cases:**
+- Monitor and analyze LLM application performance
+- Debug and optimize AI-powered applications
+- Track usage and costs of LLM API calls
 
-## Container info
+**Usage:**
 
-```bash
-/app $ whoami
-nextjs
-/app $ cat /etc/passwd
-root:x:0:0:root:/root:/bin/sh
-nobody:x:65534:65534:nobody:/:/sbin/nologin
-node:x:1000:1000:Linux User,,,:/home/node:/bin/sh
-nextjs:x:1001:65533:Linux User,,,:/home/nextjs:/sbin/nologin
+Initialize Terraform
+```sh
+terraform init
 ```
+
+Deploy job
+```sh
+terraform apply -auto-approve
+```
+
+**URL:** https://langfuse.com/

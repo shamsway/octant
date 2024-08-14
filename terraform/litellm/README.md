@@ -1,28 +1,21 @@
-# LiteLLM AI API Router
+**Description:** LiteLLM is a library that provides a uniform interface to different LLM providers.
 
-## Example .env file
+**Use cases:**
+- Simplify integration with multiple LLM providers in your applications
+- Standardize LLM API calls across different services
 
-```bash
-# OpenAI
-OPENAI_API_KEY = "[key]"
-OPENAI_API_BASE = ""
-# Cohere
-COHERE_API_KEY = ""
-# OpenRouter
-OR_SITE_URL = ""
-OR_APP_NAME = "LiteLLM Example app"
-OR_API_KEY = ""
-# Azure API base URL
-AZURE_API_BASE = ""
-# Azure API version
-AZURE_API_VERSION = ""
-# Azure API key
-AZURE_API_KEY = ""
-# Replicate
-REPLICATE_API_KEY = ""
-REPLICATE_API_TOKEN = ""
-# Anthropic
-ANTHROPIC_API_KEY = ""
-# Infisical
-INFISICAL_TOKEN = ""
+**URL:** https://github.com/BerriAI/litellm
+
+**Rootless container:** Yes
+
+**Usage:**
+- Copy `config.yaml.example` to `config.yaml` and adjust as needed.
+- Review `main.tf` and ensure all secrets are configured.
+- Initialize Terraform
+```sh
+terraform init
+```
+- Deploy job
+```sh
+terraform apply -auto-approve
 ```
