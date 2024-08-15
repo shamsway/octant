@@ -1,0 +1,30 @@
+---
+- name: Resetting servers
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  tasks:
+    - name: Remove Consul and Nomad
+      ansible.builtin.apt:
+        name:
+          - consul
+          - nomad
+        state: absent
+
+    - name: Remove contents of /opt/homelab
+      ansible.builtin.file:
+        path: /opt/homelab
+        state: absent
+
+- hosts: localhost
+  become: false
+  tasks:
+    - name: Remove variables from .secrets.yml
+      ansible.builtin.file:
+        path: .secrets.yml
+        state: absent
+    - name: Create a new .secrets.yml file
+      ansible.builtin.file:
+        path: .secrets.yml
+        state: touch
+        mode: "0700"

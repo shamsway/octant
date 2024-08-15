@@ -1,0 +1,15 @@
+---
+- name: Restart consul
+  ansible.builtin.systemd:
+    name: consul
+    state: restarted
+
+- name: Restart nomad
+  ansible.builtin.systemd:
+    name: nomad
+    state: restarted
+
+- name: Restart container
+  ansible.builtin.systemd:
+    name: "{{ container_engine | default('podman') }}"
+    state: restarted

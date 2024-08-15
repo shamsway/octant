@@ -1,0 +1,62 @@
+#!/bin/bash
+
+source /etc/restic-env
+
+# Install updates
+restic self-update
+
+# Prune backups older than 180 days
+restic forget --prune --keep-daily 180
+
+# Run the Restic backup command
+restic_output=$(restic backup \
+  --json --exclude="*/cache/*" \
+  --exclude="*/alloc/*" \
+  --exclude="*/vfs/*" \
+  --exclude="*/vfs-images/*" \
+  --exclude="*/vfs-layers/*" \
+  /etc \
+  /opt/homelab \
+  /home 2>&1)
+
+# Get the backup result and timestamp
+backup_result=$?
+backup_timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+
+# Set the result value based on the exit code
+if [ $backup_result -eq 0 ]; then
+  result_value="SUCCESSFUL"
+  # Extract relevant information from the JSON output
+  files_new=$(echo "$restic_output" | jq -r '.files_new' | awk '{sum+=$1} END {print sum}')
+  files_changed=$(echo "$restic_output" | jq -r '.files_changed' | awk '{sum+=$1} END {print sum}')
+  data_added=$(echo "$restic_output" | jq -r '.data_added' | awk '{sum+=$1} END {print sum}')
+  total_files_processed=$(echo "$restic_output" | jq -r '.total_files_processed' | awk '{sum+=$1} END {print sum}')
+  total_bytes_processed=$(echo "$restic_output" | jq -r '.total_bytes_processed' | awk '{sum+=$1} END {print sum}')
+  snapshot_id=$(echo "$restic_output" | jq -r '.snapshot_id' | tail -1)  
+else
+  result_value="FAILED"
+fi
+
+# Create a JSON object with the backup result, timestamp, and additional information
+json_data=$(cat <<EOF
+{
+  "result": "$result_value",
+  "timestamp": "$backup_timestamp",
+  "files_new": $files_new,
+  "files_changed": $files_changed,
+  "data_added": $data_added,
+  "total_files_processed": $total_files_processed,
+  "total_bytes_processed": $total_bytes_processed,
+  "snapshot_id": "$snapshot_id"
+}
+EOF
+)
+
+# Store the JSON data in Consul's KV store
+curl -X PUT -d "$json_data" -H "Content-Type: application/json" "http://localhost:8500/v1/kv/restic/backup/{{ inventory_hostname }}/results"
+
+# Print the Restic output
+echo "$restic_output"
+echo "$json_data"
+
+restic check

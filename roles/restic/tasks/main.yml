@@ -1,0 +1,38 @@
+---
+- name: Install Restic
+  apt:
+    name: restic
+    state: present
+
+- name: Create Restic environment file
+  template:
+    src: restic-env.j2
+    dest: /etc/restic-env
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Create Restic password file
+  copy:
+    content: "{{ lookup('env', 'RESTIC_PASSWORD') }}"
+    dest: /etc/restic-password
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Create Restic backup script
+  template:
+    src: restic-backup.sh.j2
+    dest: /usr/local/bin/restic-backup.sh
+    owner: root
+    group: root
+    mode: '0755'   
+
+- name: Schedule Restic backup cron job
+  cron:
+    name: "Restic backup"
+    user: root
+    cron_file: restic_backup
+    minute: "0"
+    hour: "3"
+    job: "/usr/local/bin/restic-backup.sh"        

@@ -1,0 +1,64 @@
+---
+- name: Start all Consul Servers
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Start consul-server
+      ansible.builtin.service:
+        name: "consul-server"
+        state: started
+
+    - name: Wait for consul-server to start
+      ansible.builtin.wait_for:
+        port: "{{ consul.ports.http }}"
+        timeout: 60
+      changed_when: false
+
+- name: Start all Consul Agents
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Start consul-agent
+      ansible.builtin.service:
+        name: "consul-agent"
+        state: started
+
+    - name: Wait for consul-agent to start
+      ansible.builtin.wait_for:
+        port: "{{ consul.ports.agent_http }}"
+        timeout: 60
+      changed_when: false
+
+- name: Start all Consul Root Agents
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Start consul-agent-root
+      ansible.builtin.service:
+        name: "consul-agent-root"
+        state: started
+
+    - name: Wait for consul-root-agent to start
+      ansible.builtin.wait_for:
+        port: "{{ consul.ports.root_agent_http }}"
+        timeout: 60
+      changed_when: false        
+

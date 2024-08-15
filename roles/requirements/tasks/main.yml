@@ -1,0 +1,465 @@
+---
+- name: Set a hostname
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname.split('.')[0] }}"
+    use: debian
+
+# Setup hashi service account
+- name: Ensure group {{ group }} exists
+  ansible.builtin.group:
+    name: "{{ group }}"
+    state: present
+    gid: "{{ gid }}"
+
+- name: Add {{ user }} user
+  ansible.builtin.user:
+    name: "{{ user }}"
+    uid: "{{ uid }}"
+    group: "{{ group }}"
+    state: present
+    system: true
+    # shell: /usr/bin/false
+    shell: /bin/bash
+    home: "{{ datadir }}/home"
+    groups:
+      - sudo
+
+- name: Allow {{ user }} to have passwordless sudo
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers.d/{{ user }}
+    state: present
+    create: true
+    line: "{{ user }} ALL=(ALL) NOPASSWD: ALL"
+
+# Create console-only user (defined in .secrets.yml)
+- name: Create consule-only user {{ console_user }}
+  ansible.builtin.user:
+    name: "{{ console_user }}"
+    create_home: yes
+    shell: /bin/bash
+
+- name: Set a password for {{ console_user }}
+  ansible.builtin.user:
+    name: "{{ console_user }}"
+    password: "{{ console_password | password_hash('sha512') }}"
+
+- name: Deny SSH access for the {{ console_user }}
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "DenyUsers {{ console_user }}"
+    state: present
+
+- name: Allow {{ console_user }} to have passwordless sudo
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers.d/{{ console_user }}
+    state: present
+    create: true
+    line: "{{ console_user }} ALL=(ALL) NOPASSWD: ALL"
+
+- name: Create netns group
+  ansible.builtin.group:
+    name: netns
+    state: present
+
+- name: Add hashi user to netns group
+  ansible.builtin.user:
+    name: "{{ user }}"
+    groups: netns
+    append: yes
+
+- name: Ensure /var/run/netns directory exists
+  ansible.builtin.file:
+    path: /var/run/netns
+    state: directory
+    owner: root
+    group: netns
+    mode: '0770'
+
+- name: Set ownership and permissions for /var/run/netns
+  ansible.builtin.file:
+    path: /var/run/netns
+    owner: root
+    group: netns
+    mode: '0770'
+
+- name: Create sudoers file for nomad-netns
+  ansible.builtin.copy:
+    content: |
+      {{ user }} ALL=(root) NOPASSWD: /bin/mount --make-rshared /var/run/netns
+    dest: /etc/sudoers.d/nomad-netns
+    validate: visudo -cf %s
+    mode: '0440'
+
+# Setup Admin account
+- name: Create user {{ admin_user }}
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    shell: /bin/bash
+    state: present
+    groups:
+      - sudo
+      - "{{ group }}"
+
+- name: Allow {{ admin_user }} to have passwordless sudo
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers.d/{{ admin_user }}
+    state: present
+    create: true
+    line: "{{ admin_user }} ALL=(ALL) NOPASSWD: ALL"
+
+- name: Set up authorized keys for {{ admin_user }}
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', user_public_key) }}"
+
+# Configure DNS
+- name: Add hostname to /etc/hosts
+  vars:
+    comment: "# added by ansible"
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: 127[.]0[.]0[.]1.*
+    line: 127.0.0.1 localhost.localdomain localhost {{ ansible_hostname }} {{ comment }}
+    state: present
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Remove 127.0.1.1 line from /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    state: absent
+
+
+- name: Configure dnsmasq for DNS servers
+  when: dnsserver is defined and dnsserver == true
+  block:
+    - name: Install dnsmasq
+      ansible.builtin.package:
+        name: dnsmasq
+        state: present
+
+    - name: Check if dnsmasq configuration file exists
+      ansible.builtin.stat:
+        path: /etc/dnsmasq.d/octant.conf
+      register: dnsmasq_conf
+
+    - name: Create dnsmasq server configuration file if it doesn't exist
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.d/octant.conf
+        content: |
+          # Disable returning entries from /etc/hosts
+          no-hosts
+          cache-size=0
+          server=1.1.1.1
+          server=8.8.8.8
+          server=/.consul/127.0.0.1#8600
+        owner: root
+        group: root
+        mode: "0644"
+      when: not dnsmasq_conf.stat.exists
+
+    - name: Stop and disable systemd-resolved
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: false
+      register: systemd_resolved_result
+      failed_when: false
+      changed_when: false
+      ignore_errors: true      
+
+    - name: Print message if systemd-resolved service is not found
+      ansible.builtin.debug:
+        msg: "systemd-resolved service not found on the target host"
+      when: systemd_resolved_result.failed and "Could not find the requested service" in systemd_resolved_result.msg
+
+    - name: Restart dnsmasq
+      ansible.builtin.service:
+        name: dnsmasq
+        state: restarted
+
+    - name: Ensure dnsmasq is running
+      ansible.builtin.service:
+        name: dnsmasq
+        state: started
+        enabled: true
+
+    - name: Check if resolv.conf is immutable
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
+      register: resolv_conf_stat
+
+    - name: Ensure resolv.conf contains only the specified line
+      ansible.builtin.copy:
+        content: nameserver 127.0.0.1
+        dest: /etc/resolv.conf
+      when: "'immutable' not in resolv_conf_stat.stat.attributes"
+
+    - name: Set resolv.conf attribute to immutable (read only)
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        attributes: +i        
+
+- name: Configure dnsmasq for DNS clients
+  when: dnsserver is not defined or dnsserver == false
+  block:
+    - name: Install dnsmasq
+      ansible.builtin.package:
+        name: dnsmasq
+        state: present
+
+    - name: Check if dnsmasq configuration file exists
+      ansible.builtin.stat:
+        path: /etc/dnsmasq.d/octant-client.conf
+      register: dnsmasq_conf
+
+    - name: Create dnsmasq client configuration file if it doesn't exist
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.d/octant-client.conf
+        content: |
+          {% if region == 'home' %}
+          server=192.168.252.1
+          server=192.168.252.6
+          server=192.168.252.7
+          server=1.1.1.1
+          {% elif region == 'gcp' %}
+          server=169.254.169.254
+          server=/.consul/192.168.252.1
+          {% else %}
+          server=1.1.1.1
+          server=8.8.8.8
+          server=/.consul/192.168.252.1
+          {% endif %}
+        owner: root
+        group: root
+        mode: "0644"
+      when: not dnsmasq_conf.stat.exists
+
+    - name: Stop and disable systemd-resolved
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: false
+      register: systemd_resolved_result
+      failed_when: false
+      changed_when: false
+      ignore_errors: true      
+
+    - name: Print message if systemd-resolved service is not found
+      ansible.builtin.debug:
+        msg: "systemd-resolved service not found on the target host"
+      when: systemd_resolved_result.failed and "Could not find the requested service" in systemd_resolved_result.msg
+
+    - name: Restart dnsmasq
+      ansible.builtin.service:
+        name: dnsmasq
+        state: restarted
+
+    - name: Ensure dnsmasq is running
+      ansible.builtin.service:
+        name: dnsmasq
+        state: started
+        enabled: true
+
+    - name: Check if resolv.conf is immutable
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
+      register: resolv_conf_stat
+
+    - name: Ensure resolv.conf contains only the specified line
+      ansible.builtin.copy:
+        content: nameserver 127.0.0.1
+        dest: /etc/resolv.conf
+      when: "'immutable' not in resolv_conf_stat.stat.attributes"
+
+    - name: Set resolv.conf attribute to immutable (read only)
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        attributes: +i        
+
+- name: Update all packages
+  ansible.builtin.include_role:
+    name: server-update
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - acl
+      - apt-transport-https
+      - build-essential
+      - automake
+      - autoconf
+      - ca-certificates
+      - dnsmasq
+      - systemd-container
+      - curl
+      - gnupg
+      - wget
+      - unzip
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - net-tools
+      - htop
+      - bind9-dnsutils
+      - iptables-persistent
+      - traceroute
+      - man
+      - golang
+      - podman
+      - podman-compose
+      - git
+      - crun
+      - ntpstat
+      - cockpit
+      - cockpit-podman
+      - cockpit-pcp
+      - cockpit-doc
+      - snmp
+      - snmpd
+    state: latest
+
+- name: Fix number of file opened
+  ansible.builtin.copy:
+    src: nofile.conf
+    dest: /etc/security/limits.d/90-nofile.conf
+    mode: "0644"
+
+- name: Enable cockpit service
+  ansible.builtin.systemd_service:
+    name: cockpit
+    enabled: true
+
+- name: Disable smbd service
+  ansible.builtin.systemd_service:
+    name: smbd
+    enabled: false
+  when: ansible_facts.services['smbd.service'] is defined
+
+- name: Configure snmpd
+  template:
+    src: snmpd.conf.j2
+    dest: /etc/snmp/snmpd.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure snmpd is running and enabled
+  service:
+    name: snmpd
+    state: started
+    enabled: true
+
+- name: Daemon Reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Install LibreNMS check_mk agent
+  block:
+    - name: Clone LibreNMS agent repository
+      ansible.builtin.git:
+        repo: https://github.com/librenms/librenms-agent.git
+        dest: /opt/librenms-agent
+
+    - name: Copy check_mk_agent to /usr/bin
+      ansible.builtin.copy:
+        src: /opt/librenms-agent/check_mk_agent
+        dest: /usr/bin/check_mk_agent
+        remote_src: true
+        mode: '0755'
+
+    - name: Copy check_mk service and socket files
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /etc/systemd/system/
+        remote_src: true
+      loop:
+        - /opt/librenms-agent/check_mk@.service
+        - /opt/librenms-agent/check_mk.socket
+
+    - name: Create directories for check_mk plugins and local scripts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - /usr/lib/check_mk_agent/plugins
+        - /usr/lib/check_mk_agent/local
+
+    - name: Copy agent-local scripts
+      ansible.builtin.copy:
+        src: /opt/librenms-agent/agent-local/
+        dest: /usr/lib/check_mk_agent/local/
+        remote_src: true
+        mode: '0755'
+
+    - name: Enable and start check_mk socket
+      ansible.builtin.systemd:
+        name: check_mk.socket
+        state: started
+        enabled: yes
+
+- name: Check if cloud-init is already disabled
+  ansible.builtin.stat:
+    path: /etc/cloud/cloud-init.disabled
+  register: cloud_init_disabled
+
+- name: Disable cloud-init for home servers (leave cloud-based servers enbled)
+  when: not cloud_init_disabled.stat.exists and region == "home"
+  block:
+    - name: Create /etc/cloud directory
+      ansible.builtin.file:
+        path: /etc/cloud
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Create /etc/cloud/cloud-init.disabled file
+      ansible.builtin.file:
+        path: /etc/cloud/cloud-init.disabled
+        state: touch
+        mode: "0644"
+      become: true
+
+- name: Disable SSH root login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+
+- name: Disable staging users
+  vars:
+    staging_users:
+      - debian
+      - packer
+  block:
+  - name: Disable staging users
+    user:
+      name: "{{ item }}"
+      shell: /usr/sbin/nologin
+      password: '*'
+      state: present
+    loop: "{{ staging_users }}"
+
+  - name: Remove staging users user from sudoers
+    lineinfile:
+      path: /etc/sudoers
+      regexp: '^{{ item }}'
+      state: absent
+    loop: "{{ staging_users }}"
+
+  - name: Lock staging user accounts
+    command: usermod -L {{ item }}
+    loop: "{{ staging_users }}" 
+
+- name: Restart SSH service
+  service:
+    name: sshd
+    state: restarted
+
+- name: Conditionally reboot the machine based on the 'reboot' inventory variable
+  ansible.builtin.reboot: {}
+  when: hostvars[inventory_hostname].reboot | default(false) | bool

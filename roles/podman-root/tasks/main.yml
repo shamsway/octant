@@ -1,0 +1,64 @@
+- name: Install containernetworking-plugins
+  package:
+    name: containernetworking-plugins
+    state: present
+
+- name: Create CNI plugins directory
+  file:
+    path: /opt/cni/bin
+    state: directory
+    mode: '0755'
+
+- name: Find containernetworking-plugins files
+  find:
+    paths: /usr/lib/cni
+    patterns: "*"
+  register: cni_plugins
+
+- name: Link CNI plugins to /opt/cni/bin
+  file:
+    src: "{{ item.path }}"
+    dest: "/opt/cni/bin/{{ item.path | basename }}"
+    state: link
+  loop: "{{ cni_plugins.files }}"
+
+- name: Create temporary build directory
+  ansible.builtin.tempfile:
+    state: directory
+  register: tmpdir
+
+- name: Download Nomad Podman driver
+  ansible.builtin.get_url:
+    url: https://releases.hashicorp.com/nomad-driver-podman/0.5.2/nomad-driver-podman_0.5.2_linux_amd64.zip
+    dest: "{{ tmpdir.path }}/nomad-driver-podman_0.5.2_linux_amd64.zip"
+    mode: "0644"
+
+- name: Unzip Nomad Podman driver
+  ansible.builtin.unarchive:
+    src: "{{ tmpdir.path }}/nomad-driver-podman_0.5.2_linux_amd64.zip"
+    dest: "{{ tmpdir.path }}"
+    mode: "0755"
+    remote_src: true
+
+- name: Ensure plugins directory exists and has proper ownership
+  ansible.builtin.file:
+    path: "{{ datadirs['nomad-agent-root'] }}/plugins"
+    state: directory
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    follow: false
+
+- name: Copy driver to nomad plugins dir
+  ansible.builtin.copy:
+    src: "{{ tmpdir.path }}/nomad-driver-podman"
+    dest: "{{ datadirs['nomad-agent-root'] }}/plugins"
+    remote_src: true
+    owner: "{{ nomad_root_user }}"
+    group: "{{ nomad_root_group }}"
+    mode: "0755"
+
+- name: Remove temp folder
+  ansible.builtin.file:
+    path: "{{ tmpdir.path }}"
+    state: absent
+  when: tmpdir.path is defined

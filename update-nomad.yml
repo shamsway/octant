@@ -1,0 +1,26 @@
+---
+- name: Update {{ service_name }} config
+  ansible.builtin.template:
+    src: "roles/{{ service_name }}/templates/{{ service_name }}.hcl.j2"
+    dest: "{{ configdirs[service_name] }}/{{ service_name }}.hcl"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+  vars:
+    role_name: "{{ service_name }}"
+
+- name: Restart {{ service_name }} services
+  become: true
+  become_user: root
+  block:
+    - name: Restart {{ service_name }} service
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: restarted
+      changed_when: false
+
+    - name: Wait for {{ inventory_hostname }} {{ service_name }} to start
+      ansible.builtin.wait_for:
+        port: "{{ port }}"
+        timeout: 60
+      changed_when: false

@@ -1,0 +1,54 @@
+---
+# - name: Stop all Consul Servers and Agents
+#   ansible.builtin.import_tasks: 
+#     file: stop-consul.yml
+
+- name: Clear Consul Data Directories
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Prompt for confirmation
+      pause:
+        prompt: "Are you sure you want to delete all Consul data directories? (yes/no)"
+      register: confirmation
+    - name: Delete all files in {{ datadirs['consul-agent'] }}
+      ansible.builtin.file:
+        path: "{{ datadirs['consul-agent'] }}"
+        state: "{{ item }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0755"
+      with_items:
+        - absent
+        - directory
+      when: confirmation.user_input | lower == 'yes'
+
+    - name: Delete all files in {{ datadirs['consul-agent-root'] }}
+      ansible.builtin.file:
+        path: "{{ datadirs['consul-agent-root'] }}"
+        state: "{{ item }}"
+        owner: root
+        group: root
+        mode: "0755"        
+      with_items:
+        - absent
+        - directory
+      when: confirmation.user_input | lower == 'yes'
+
+    - name: Delete all files in {{ datadirs['consul-server'] }}
+      ansible.builtin.file:
+        path: "{{ datadirs['consul-server'] }}"
+        state: "{{ item }}"
+        owner: root
+        group: root
+        mode: "0755"            
+      with_items:
+        - absent
+        - directory
+      when: confirmation.user_input | lower == 'yes'

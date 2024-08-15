@@ -1,0 +1,5 @@
+PyYAML
+jinja2
+streamlit
+anthropic
+ollama

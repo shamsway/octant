@@ -1,0 +1,80 @@
+---
+- name: Check if {{ user }} home folder exists
+  ansible.builtin.file:
+    path: "{{ datadir }}/home"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Ensure {{ user }} is a member of systemd-journal group
+  ansible.builtin.user:
+    name: "{{ user }}"
+    groups: systemd-journal
+    append: true
+
+- name: Create user systemd configuration directory
+  ansible.builtin.file:
+    path: "{{ datadir }}/home/.config/systemd/user/"
+    state: directory
+    mode: "0700"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Add polkit policy for machinectl
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/polkit-1/rules.d/60-machinectl-fast-user-auth.rules
+    content: |
+      polkit.addRule(function(action, subject) {
+          if(action.id == "org.freedesktop.machine1.host-shell" && subject.isInGroup("{{ group }}")) {
+              return polkit.Result.YES;
+          }
+      });
+    owner: root
+    group: root
+    mode: "0644"
+  register: polkit_rule
+
+- name: Restart polkit service
+  ansible.builtin.service:
+    name: polkit
+    state: restarted
+  when: polkit_rule.changed
+
+- name: Install {{ role_name }}
+  ansible.builtin.include_role:
+    name: install-hashi
+  vars:
+    name: nomad-agent
+    package: nomad
+
+- name: Ensure {{ role-name }}.d directory ownership
+  ansible.builtin.file:
+    path: "{{ configdirs[role_name] }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    recurse: true
+
+- name: Include podman-rootless role
+  include_role:
+    name: podman-rootless
+
+- name: Create {{ role_name }} config
+  ansible.builtin.template:
+    src: "{{ role_name }}.hcl.j2"
+    dest: "{{ configdirs[role_name] }}/{{ role_name }}.hcl"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+
+- name: Start {{ role_name }}
+  ansible.builtin.systemd:
+    name:  "{{ role_name }}"
+    state: started
+
+- name: Wait for {{ role_name }} to start
+  ansible.builtin.wait_for:
+    port: "{{ nomad.ports.agent_http }}"
+    timeout: 60
+  changed_when: false

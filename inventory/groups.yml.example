@@ -1,0 +1,141 @@
+---
+servers:
+  hosts:
+    jerry.octant.net:
+      server: true
+      dnsserver: true
+      region: home
+      tailscale_advertisements: 192.168.1.0/24,192.168.2.0/24
+    bobby.octant.net:
+      server: true
+      dnsserver: true
+      region: home
+    billy.octant.net:
+      server: true
+      dnsserver: true
+      region: home
+    robert.octant.net:
+      server: true
+      dnsserver: false
+      docker: true
+      region: home      
+    phil.octant.net:
+      server: true
+      dnsserver: false
+      region: gcp
+      tailscale_advertisements: 192.168.10.0/24,35.199.192.0/19
+    pigpen.octant.net:
+      region: oci
+    tom.octant.net:
+      region: oci
+  vars:
+    reboot: false # Set to true to reboot hosts after running the Ansible requirements role.
+    volumes:
+      - name: traefik-data
+        path: /mnt/services/traefik/data
+        backup: true
+      - name: traefik-certs
+        path: /mnt/services/traefik/certs
+        backup: true        
+      - name: traefik-config
+        path: /mnt/services/traefik/config
+        backup: true                  
+      - name: postgres-data
+        path: /mnt/services/postgres
+        backup: true        
+      - name: redis-data
+        path: /mnt/services/redis
+        backup: false        
+      - name: influxdb-config
+        path: /mnt/services/influxdb/config
+        backup: true        
+      - name: influxdb-data
+        path: /mnt/services/influxdb/data
+        backup: false
+      - name: grafana-config
+        path: /mnt/services/grafana/config
+        backup: true        
+      - name: grafana-data
+        path: /mnt/services/grafana/data
+        backup: false
+      - name: homeassistant-data
+        path: /mnt/services/homeassistant
+        backup: true
+      - name: loki-data
+        path: /mnt/services/loki
+        backup: false
+      - name: nginx-data
+        path: /mnt/services/nginx/html
+        backup: true        
+      - name: prometheus-data
+        path: /mnt/services/prometheus
+        backup: false                     
+      - name: backups
+        path: /mnt/services/backups
+        backup: true
+      - name: open-webui
+        path: /mnt/services/open-webui
+        backup: true
+      - name: litellm
+        path: /mnt/services/litellm
+        backup: true
+      - name: unifi-config
+        path: /mnt/services/unifi/config
+        backup: true
+      - name: unifi-data
+        path: /mnt/services/unifi/data
+        backup: true
+      - name: 1password-config
+        path: /mnt/services/1password/config
+        backup: true
+      - name: 1password-data
+        path: /mnt/services/1password/data
+        backup: true        
+      - name: weaviate-config
+        path: /mnt/services/weviate/config
+        backup: true
+      - name: weaviate-data
+        path: /mnt/services/weviate/data
+        backup: false
+      - name: rss-config
+        path: /mnt/services/rss-config
+        backup: true
+      - name: jaegar-config
+        path: /mnt/services/jaegar/config
+        backup: true
+      - name: librechat-config
+        path: /mnt/services/librechat/config
+        backup: true
+      - name: open-webui-config
+        path: /mnt/services/open-webui/config
+        backup: true
+      - name: memgpt-config
+        path: /mnt/services/memgpt/config
+        backup: true
+      - name: langfuse-config
+        path: /mnt/services/langfuse/config
+        backup: true
+      - name: langsmith-config
+        path: /mnt/services/langsmith/config
+        backup: true
+      - name: gpt4all-config
+        path: /mnt/services/gpt4all/config
+        backup: true
+      - name: affine
+        path: /mnt/services/affine/config
+        backup: true
+      - name: librenms-config
+        path: /mnt/services/librenms/config
+        backup: true
+      - name: nautobot-config
+        path: /mnt/services/nautobot/config
+        backup: true
+      - name: n8n-config
+        path: /mnt/services/n8n/config
+        backup: true
+      - name: pgweb-config
+        path: /mnt/services/pgweb/config
+        backup: true
+      - name: librenms-data
+        path: /mnt/services/librenms/data
+        backup: false

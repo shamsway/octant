@@ -1,0 +1,31 @@
+---
+- name: Apply updates to Consul Servers and Agents
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Update consul-server configs
+      ansible.builtin.include_tasks: 
+        file: update-consul.yml
+      vars:
+        port: "{{ consul.ports.http }}"
+        service_name: "consul-server"
+
+    # - name: Update consul-agent configs
+    #   ansible.builtin.include_tasks: 
+    #     file: update-consul.yml
+    #   vars:
+    #     port: "{{ consul.ports.agent_http }}"
+    #     service_name: "consul-agent"
+
+    # - name: Update consul-agent-root configs
+    #   ansible.builtin.include_tasks: 
+    #     file: update-consul.yml
+    #   vars:
+    #     port: "{{ consul.ports.root_agent_http }}"
+    #     service_name: "consul-agent-root"        

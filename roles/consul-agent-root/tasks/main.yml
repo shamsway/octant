@@ -1,0 +1,57 @@
+---
+- name: Check if {{ user }} home folder exists
+  ansible.builtin.file:
+    path: "{{ datadir }}/home"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Ensure {{ user }} is a member of systemd-journal group
+  ansible.builtin.user:
+    name: "{{ user }}"
+    groups: systemd-journal
+    append: true
+
+- name: Create user systemd configuration directory
+  ansible.builtin.file:
+    path: "{{ datadir }}/home/.config/systemd/user/"
+    state: directory
+    mode: "0700"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+  
+- name: Install Consul Agent (root)
+  ansible.builtin.include_role:
+    name: install-hashi
+  vars:
+    name: consul-agent-root
+    package: consul
+    user: root
+    group: root    
+
+- name: Ensure consul.d directory ownership
+  ansible.builtin.file:
+    path: "{{ configdirs[role_name] }}"
+    state: directory
+    owner: root
+    group: root
+    recurse: true
+
+- name: Create {{ role_name }} config
+  ansible.builtin.template:
+    src: "{{ role_name }}.hcl.j2"
+    dest: "{{ configdirs[role_name] }}/{{ role_name }}.hcl"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Restart consul
+  ansible.builtin.systemd:
+    name: "{{ role_name }}"
+    state: restarted
+
+- name: Wait for {{ role_name }} to start
+  ansible.builtin.wait_for:
+    port: "{{ consul.ports.root_agent_http }}"
+    timeout: 60
+  changed_when: false

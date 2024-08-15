@@ -1,0 +1,28 @@
+---
+- name: Ensure consul-server is in a running state
+  service:
+    name: consul-server
+    state: started
+  register: consulServiceDetails
+  until: consulServiceDetails.status.ActiveState == "active"
+  retries: 5
+  delay: 10
+
+- name: Generate Consul gossip key
+  ansible.builtin.command: consul keygen
+  register: consul_gossip_key_output
+
+- name: Set Consul gossip key fact
+  ansible.builtin.set_fact:
+    consul_gossip_key: "{{ consul_gossip_key_output.stdout }}"
+
+- name: Save Consul values to .secrets.yml
+  ansible.builtin.lineinfile:
+    path: "{{ playbook_dir }}/.secrets.yml"
+    regexp: '^{{ item.name }}:'
+    line: "{{ item.name }}: {{ item.value }}"
+    create: true
+  delegate_to: localhost
+  become: false
+  loop:
+    - { name: consul_gossip_key, value: "{{ consul_gossip_key }}" }

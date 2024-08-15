@@ -1,0 +1,112 @@
+---
+bindir: /usr/bin
+configdir: /opt/homelab/config
+datadir: /opt/homelab/data
+
+configdirs:
+  consul-server: "/opt/homelab/config/consul-server.d"
+  nomad-server: "/opt/homelab/config/nomad-server.d"
+  consul-agent: "/opt/homelab/config/consul-agent.d"
+  nomad-agent: "/opt/homelab/config/nomad-agent.d"
+  consul-agent-root: "/opt/homelab/config/consul-agent-root.d"
+  nomad-agent-root: "/opt/homelab/config/nomad-agent-root.d"
+  tls: "/mnt/services/octant/tls"
+
+datadirs:
+  consul-server: "/opt/homelab/data/consul-server"
+  nomad-server: "/opt/homelab/data/nomad-server"
+  consul-agent: "/opt/homelab/data/consul-agent"
+  nomad-agent: "/opt/homelab/data/nomad-agent"
+  consul-agent-root: "/opt/homelab/data/consul-agent-root"
+  nomad-agent-root: "/opt/homelab/data/nomad-agent-root"
+
+user: hashi
+group: hashi
+uid: 2000
+gid: 2000
+#gid: 100
+
+# Replace these values to match your environment
+tld: net
+domain: octant
+datacenter: octant
+snmp_community: octant
+admin_user: admin
+admin_email: admin@change.me
+location: "Home Lab Location"
+
+external_dns_resolver1: 1.1.1.1
+external_dns_resolver2: 8.8.8.8
+
+# Pick two of your home lab servers to serve as DNS resolvers
+dns1: 192.168.1.6
+dns2: 192.168.1.7
+
+internal_subnets:
+  - 192.168.1.0/24
+  - 192.168.2.0/24
+
+user_public_key: /path/to/your/id_rsa.pub
+#ansible_ssh_pipelining: false
+
+# Replace with the URL for your S3 (or compatible) bucket for Restick backups
+restic_repository: "s3:s3.change.me/octant-backup-bucket"
+
+consul:
+  # Check this blog post before enable this variable
+  # https://www.hashicorp.com/blog/protecting-consul-from-rce-risk-in-specific-configurations
+  enable_script_check: false
+  ca_enabled: true
+  tls_enabled: true
+  cname: consul.octant.net
+  # Services #
+  # agent_services: false
+  # service_sanity_healthcheck: true # Perform healthcheck on services priot to registration
+  ports:
+    http: 8500
+    https: 8501
+    dns: 8600
+    grpc: 8502
+    grpc_tls: 8503
+    agent_http: 9500
+    agent_https: 9501
+    agent_dns: 9600
+    agent_grpc: 9502
+    agent_grpc_tls: 9503
+    agent_serf_lan: 9301
+    agent_serf_wan: 9302
+    root_agent_http: 10500
+    root_agent_https: 10501
+    root_agent_dns: 10600
+    root_agent_grpc: 10502
+    root_agent_grpc_tls: 10503
+    root_agent_serf_lan: 10301
+    root_agent_serf_wan: 10302    
+
+  port_list:
+    - 8500/tcp
+    - 8600/tcp
+    - 8502/tcp
+
+# Only Podman is enabled by default.
+podman: true
+docker: false
+
+nomad:
+  tls_enabled: true
+  ports:
+    http: 4646
+    rpc: 4647
+    gossip: 4648
+    agent_http: 5646
+    agent_rpc: 5647
+    agent_gossip: 5648
+    root_agent_http: 6646
+    root_agent_rpc: 6647
+    root_agent_gossip: 6648 
+        
+  port_list:
+    - 4646/tcp
+    - 4647/tcp
+    - 4648/tcp
+    - 4648/udp

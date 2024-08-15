@@ -1,0 +1,73 @@
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
+[metrics]
+  [metrics.prometheus]
+    entrypoint = "metrics"
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+	  to = "websecure"
+      scheme = "https"
+  [entryPoints.http]
+    address = ":8080"      
+  [entryPoints.traefik]
+    address = ":9002"
+  [entryPoints.websecure]
+    address = ":443"
+  [entryPoints.metrics]
+    address = ":8082"
+[http]
+  [http.routers]
+    [http.routers.octant]
+      entryPoints = ["websecure"]
+      rule = "Host(`*.octant.net`)"
+      service = "octant.net"
+      [http.routers.octant.tls]
+        certResolver = "cloudflare"
+    [http.routers.consul]
+      entryPoints = ["http", "websecure"]
+      rule = "Host(`*.consul`)"
+      service = "consul-service"
+
+[accessLog]
+  format = "json"
+  filePath = "/traefik-data/traefik-access.log"
+[http.middlewares]
+  [http.middlewares.https-redirect.redirectscheme]
+    scheme = "https"
+[certificatesResolvers.cloudflare.acme]
+  email = "[changeme]"
+  storage = "/acme/acme.json"
+  [certificatesResolvers.cloudflare.acme.dnsChallenge]
+    provider = "cloudflare"
+    delayBeforeCheck = 30
+    resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
+[log]
+  level = "INFO"
+  #level = "DEBUG"
+  filePath = "/traefik-data/traefik.log"
+[api]
+  dashboard = true
+  insecure = true
+[ping]
+[providers]
+  [providers.file]
+    filename = "/traefik-config/dynamic.toml"  
+[providers.consulcatalog]
+  exposedByDefault = false
+  prefix = "traefik"
+  defaultRule = "Host(`{{ .Name }}.octant.net`) || Host(`{{ .Name }}.service.consul`)"
+  connectAware = true
+  connectByDefault = true        
+  [providers.consulcatalog.endpoint]
+    address = "consul.octant.net:8501"
+    scheme = "https"
+    datacenter = "octant"
+    endpointWaitTime = "15s"
+    [tls]
+      insecureskipverify = true
+      ca = "/acme/consul-agent-ca.pem"
+      certFile = "/acme/octant-server-traefik-1.pem"
+      keyFile  = "/acme/octant-server-traefik-1-key.pem"
