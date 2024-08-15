@@ -3,7 +3,7 @@
 # Example command: ./deply.sh [rootpassword] ~/.ssh/id_rsa.pub [IP] [hostname]
 # Check if all required arguments are provided
 if [ "$#" -ne 4 ]; then
-    echo "Usage: $0 <root_password> <ssh_key_file> <ip_address> <hostname>"
+    echo "Usage: $0 <root_password> <ssh_key_file> <ip_address> <hostname> <vmware username> <vmware password>"
     exit 1
 fi
 
@@ -12,6 +12,8 @@ root_password="$1"
 ssh_key_file="$2"
 ip_address="$3"
 hostname="$4"
+username="$5"
+password="$6"
 
 # Read SSH public key from file
 ssh_key=$(cat "$ssh_key_file")
@@ -64,4 +66,4 @@ user_data_base64=$(echo "$user_data" | base64)
 echo "$user_data_base64" > "user-data-base64.txt"
 
 # Print the ovftool command with the encoded user-data
-echo "ovftool --noSSLVerify --overwrite --allowExtraConfig --diskMode=thin --name=\"$hostname\" --deploymentOption=\"2CPU-2GB\" --extraConfig:guestinfo.userdata=\"\$(cat user-data-base64.txt)\" --extraConfig:guestinfo.userdata.encoding=\"base64\" octantnode.ova 'vi://matt:FuckHock1!@192.168.252.5:8697'"
+echo "ovftool --noSSLVerify --overwrite --allowExtraConfig --diskMode=thin --name=\"$hostname\" --deploymentOption=\"2CPU-2GB\" --extraConfig:guestinfo.userdata=\"\$(cat user-data-base64.txt)\" --extraConfig:guestinfo.userdata.encoding=\"base64\" octantnode.ova 'vi://$username:$password@192.168.252.5:8697'"
