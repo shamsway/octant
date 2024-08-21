@@ -1,0 +1,20 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Configure network interface
+      template:
+        src: eth0.conf.j2
+        dest: /etc/network/interfaces.d/custom
+      vars:
+        ip: 192.168.252.7
+        cidr: 24
+        gateway: 192.168.252.1
+
+    - name: Configure DNS
+      # Use the appropriate module for your OS to configure DNS
+      # Example for Debian/Ubuntu using the 'lineinfile' module
+      lineinfile:
+        path: /etc/resolv.conf
+        line: "nameserver 192.168.252.1"

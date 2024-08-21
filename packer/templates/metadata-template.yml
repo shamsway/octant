@@ -1,0 +1,14 @@
+instance-id: ${instance_id}
+local-hostname: ${hostname}
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: false
+      set-name: eth0
+      addresses:
+        - ${ip_address}/${subnet_mask}
+      gateway4: ${gateway}
+      nameservers:
+        search: [${dns_search_suffixes}]
+        addresses: [${dns_resolvers}]

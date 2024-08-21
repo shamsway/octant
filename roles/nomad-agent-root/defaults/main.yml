@@ -1,0 +1,21 @@
+---
+nomad_root_user: root
+nomad_root_group: root
+nomad_root_datadir: "{{ datadir }}"
+nomad_root_configdir: "{{ configdir }}"
+nomad_root_ports:
+  http: 5646
+  rpc: 5647
+  serf: 5648
+
+consul_root_user: root
+consul_root_group: root
+consul_root_datadir: "{{ datadir }}"
+consul_root_configdir: "{{ configdir }}"
+consul_root_ports:
+  serf_lan: 9301
+  serf_wan: 9302
+  grpc: 9502
+  grpc_tls: 9503 
+  http: 9500
+  dns: 9600

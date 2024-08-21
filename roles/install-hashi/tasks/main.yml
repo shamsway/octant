@@ -1,0 +1,66 @@
+---
+- name: Set variables for {{ name }}
+  set_fact:
+    config_dir: "{{ configdirs[name] }}"
+    data_dir: "{{ datadirs[name] }}"
+  when: name in configdirs and name in datadirs
+
+- name: Using these variables
+  debug:
+    msg: "Config Directory: {{ config_dir }} Data Directory: {{ data_dir }}"
+
+- name: Delete old directory /etc/{{ name }}.d
+  ansible.builtin.file:
+    path: /etc/{{ name }}.d
+    state: absent
+
+- name: Install {{ name }}
+  ansible.builtin.package:
+    name: "{{ package }}"
+    state: latest
+    update_cache: yes
+    only_upgrade: true
+
+# Performed later in the script. Remove?
+# - name: Register systemd service
+#   ansible.builtin.systemd:
+#     name: "{{ name }}"
+#     enabled: true
+#     state: stopped
+
+- name: Ensure config and data directories exist with proper ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    recurse: true
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    follow: false
+  with_items:
+    - "{{ config_dir }}"
+    - "{{ data_dir }}"
+
+- name: Create a symbolic link from {{ config_dir }} to /etc
+  ansible.builtin.file:
+    src: "{{ config_dir }}"
+    dest: /etc/{{ name }}.d
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    state: link
+    follow: false
+    force: true
+
+- name: Install service file for {{ name }}
+  ansible.builtin.template:
+    src: "{{ name }}.service.j2"
+    dest: "/etc/systemd/system/{{ name }}.service"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+
+- name: Register {{ name }} systemd service
+  ansible.builtin.systemd:
+    name: "{{ name }}"
+    enabled: true
+    daemon_reload: true
+    state: started

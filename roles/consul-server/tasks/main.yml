@@ -1,0 +1,147 @@
+---
+- name: Check if {{ user }} home folder exists
+  ansible.builtin.file:
+    path: "{{ datadir }}/home"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Ensure {{ user }} is a member of systemd-journal group
+  ansible.builtin.user:
+    name: "{{ user }}"
+    groups: systemd-journal
+    append: true
+
+- name: Create user systemd configuration directory
+  ansible.builtin.file:
+    path: "{{ datadir }}/home/.config/systemd/user/"
+    state: directory
+    mode: "0700"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+
+- name: Verify folder presence and ownership
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0755"
+  loop: "{{ volumes }}"
+  
+# Install consul and base config
+- name: Install consul
+  ansible.builtin.include_role:
+    name: install-hashi
+  vars:
+    name: consul-server
+    package: consul
+    user: root
+    group: root
+
+# Disable the default consul service (installed by apt) and create an override to prevent it from starting
+- name: Stop and disable default consul service
+  systemd:
+    name: consul
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Create systemd override for default consul service
+  file:
+    path: /etc/systemd/system/consul.service.d
+    state: directory
+    mode: '0755'
+
+- name: Create systemd override file
+  copy:
+    content: |
+      [Unit]
+      ConditionPathExists=!/etc/consul.d/consul.hcl
+
+      [Service]
+      ExecStart=
+      ExecStart=/bin/true
+    dest: /etc/systemd/system/consul.service.d/override.conf
+    mode: '0644'
+
+# Configure consul encryption/TLS
+- name: Check for consul_gossip_key and generate if needed
+  ansible.builtin.include_role:
+    name: configure-consul
+  when: consul_gossip_key is not defined
+
+- name: Check that the CA for consul exists
+  ansible.builtin.stat:
+    path: "{{ configdirs['tls'] }}/consul-agent-ca.pem"
+  register: stat_result
+
+- name: Consul TLS client
+  ansible.builtin.shell: consul tls ca create && consul tls cert create -server -dc {{ datacenter }} && consul tls cert create -client -dc {{ datacenter }}
+  args:
+    chdir: "{{ configdirs['tls'] }}"
+  when: not stat_result.stat.exists
+
+- name: Ensure {{ role_name }} config directory ownership
+  ansible.builtin.file:
+    path: "{{ configdirs[role_name] }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    recurse: true
+
+- name: Create {{ role_name }} config
+  ansible.builtin.template:
+    src: "{{ role_name }}.hcl.j2"
+    dest: "{{ configdirs[role_name] }}/{{ role_name }}.hcl"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+
+- name: Writing shell profile for ssh user on {{ inventory_hostname.split('.')[0] }}
+  become: false
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: ^export {{ item.key }}
+    line: export {{ item.key }}={{ item.value }}
+    create: true
+  with_dict:
+    CONSUL_HTTP_ADDR: https://consul.{{ datacenter }}.{{ tld }}:{{ consul.ports.https }}
+    CONSUL_HTTP_SSL_VERIFY: "false"
+
+- name: Adding environment variables to direnv
+  ansible.builtin.lineinfile:
+    dest: ./.envrc
+    regexp: ^export {{ item.key }}
+    line: export {{ item.key }}={{ item.value }}
+    create: true
+  delegate_to: localhost
+  become: false
+  with_dict:
+    CONSUL_HTTP_ADDR: https://server.{{ datacenter }}.{{ tld }}:{{ consul.ports.https }}
+    CONSUL_HTTP_SSL_VERIFY: "false"
+
+- name: Configure dnsmasq forwarding
+  ansible.builtin.copy:
+    content: |
+      # Disable returning entries from /etc/hosts
+      no-hosts    
+      server={{ external_dns_resolver1 }}
+      server={{ external_dns_resolver2 }}
+      server=/consul/127.0.0.1#8600
+      server=/{{ domain }}.{{ tld }}/127.0.0.1#8600
+    dest: /etc/dnsmasq.d/octant.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Restart {{ role_name }}
+  ansible.builtin.systemd:
+    name: "{{ role_name }}"
+    state: restarted
+
+- name: Wait for {{ role_name }} to start
+  ansible.builtin.wait_for:
+    port: "{{ consul.ports.http }}"
+    timeout: 60
+  changed_when: false

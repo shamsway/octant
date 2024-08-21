@@ -1,0 +1,64 @@
+---
+- name: Start all Nomad Servers
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Start nomad-server
+      ansible.builtin.service:
+        name: "nomad-server"
+        state: started
+
+    - name: Wait for nomad-server to start
+      ansible.builtin.wait_for:
+        port: "{{ nomad.ports.http }}"
+        timeout: 60
+      changed_when: false
+
+- name: Start all Nomad Agents
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Start nomad-agent
+      ansible.builtin.service:
+        name: "nomad-agent"
+        state: started
+
+    - name: Wait for nomad-agent to start
+      ansible.builtin.wait_for:
+        port: "{{ nomad.ports.agent_http }}"
+        timeout: 60
+      changed_when: false
+
+- name: Start all Nomad Root Agents
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  vars_files:
+    - .secrets.yml
+  tasks:
+    - name: Start nomad-agent-root
+      ansible.builtin.service:
+        name: "nomad-agent-root"
+        state: started
+
+    - name: Wait for nomad-root-agent to start
+      ansible.builtin.wait_for:
+        port: "{{ nomad.ports.root_agent_http }}"
+        timeout: 60
+      changed_when: false        
+
