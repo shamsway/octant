@@ -27,3 +27,4 @@ volumes.csv
 *.vmdk
 /ARCHIVE/
 /.vscode/
+.worktrees/
