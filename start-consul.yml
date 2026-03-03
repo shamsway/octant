@@ -60,5 +60,4 @@
       ansible.builtin.wait_for:
         port: "{{ consul.ports.root_agent_http }}"
         timeout: 60
-      changed_when: false        
-
+      changed_when: false

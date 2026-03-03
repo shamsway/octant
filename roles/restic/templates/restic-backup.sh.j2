@@ -16,7 +16,7 @@ restic_output=$(restic backup \
   --exclude="*/vfs-images/*" \
   --exclude="*/vfs-layers/*" \
   /etc \
-  /opt/homelab \
+  /opt/octant \
   /home 2>&1)
 
 # Get the backup result and timestamp
@@ -32,7 +32,7 @@ if [ $backup_result -eq 0 ]; then
   data_added=$(echo "$restic_output" | jq -r '.data_added' | awk '{sum+=$1} END {print sum}')
   total_files_processed=$(echo "$restic_output" | jq -r '.total_files_processed' | awk '{sum+=$1} END {print sum}')
   total_bytes_processed=$(echo "$restic_output" | jq -r '.total_bytes_processed' | awk '{sum+=$1} END {print sum}')
-  snapshot_id=$(echo "$restic_output" | jq -r '.snapshot_id' | tail -1)  
+  snapshot_id=$(echo "$restic_output" | jq -r '.snapshot_id' | tail -1)
 else
   result_value="FAILED"
 fi

@@ -1,0 +1,34 @@
+---
+# Remove HAProxy from hypervisor
+#
+# Usage:
+#   make remove-haproxy
+#   ansible-playbook playbooks/02.5-remove-haproxy.yml -i inventory/hypervisors.yml
+
+- name: Remove HAProxy from hypervisor
+  hosts: hypervisors
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Stop and disable HAProxy
+      ansible.builtin.systemd:
+        name: haproxy
+        state: stopped
+        enabled: false
+      ignore_errors: true
+
+    - name: Remove HAProxy package
+      ansible.builtin.apt:
+        name: haproxy
+        state: absent
+        purge: true
+
+    - name: Remove HAProxy configuration directory
+      ansible.builtin.file:
+        path: /etc/haproxy
+        state: absent
+
+    - name: Display removal status
+      ansible.builtin.debug:
+        msg: "HAProxy removed from hypervisor. Ports 443, 4646, 8500 are no longer proxied."

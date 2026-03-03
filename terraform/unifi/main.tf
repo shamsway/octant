@@ -12,7 +12,7 @@ data "template_file" "unifi_job_template" {
     domain = var.domain
     certresolver = var.certresolver
     servicename = var.servicename
-    dns = jsonencode(var.dns)    
+    dns = jsonencode(var.dns)
   }
 }
 

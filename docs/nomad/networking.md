@@ -173,13 +173,13 @@ job "my-job" {
       config {
         image = "my-image1"
       }
-      
+
       network {
         port "http" {
           to = 8080
         }
       }
-      
+
       service {
         name = "task1"
         tags = [
@@ -189,19 +189,19 @@ job "my-job" {
         ]
       }
     }
-    
+
     task "task2" {
       driver = "docker"
       config {
         image = "my-image2"
       }
-      
+
       network {
         port "http" {
           to = 9090
         }
       }
-      
+
       service {
         name = "task2"
         tags = [
@@ -227,7 +227,7 @@ By following this approach and providing the appropriate Traefik tags for each t
 
 ## Prompt
 
-Assume this scenario in my home lab. I need your help figuring out how to do some advanced networking use cases with containers. 
+Assume this scenario in my home lab. I need your help figuring out how to do some advanced networking use cases with containers.
 
 - nomad servers running across three hosts
 - 2 nomad agents per server, 1 running as root, 1 running rootless
@@ -248,7 +248,7 @@ I want to run a container named "gluetun" that provides wireguard VPN connectivi
 - https://www.hashicorp.com/blog/consul-connect-native-tasks-in-hashicorp-nomad-0-12
 - https://www.mattmoriarity.com/2021-02-21-scraping-prometheus-metrics-with-nomad-and-consul-connect/
 - https://andydote.co.uk/2020/05/04/service-mesh-consul-connect/
-- Consul Connect with Traefik: 
+- Consul Connect with Traefik:
   - https://storiesfromtheherd.com/traefik-in-nomad-using-consul-and-tls-5be0007794ee (super long)
   - https://gist.github.com/apollo13/857ae4c5e18de619815c2628212449e1
 - Docs
@@ -280,4 +280,4 @@ Tutorials: https://developer.hashicorp.com/tutorials/library?query=connect&produ
 - https://medium.com/@arunlogo.kct/practical-hashicorp-nomad-and-consul-ci-cd-pipeline-to-deploy-the-api-and-webapp-part-2-c07117bbb27d
 - https://medium.com/@jawaharsbs/practical-hashicorp-nomad-and-consul-monitoring-autoscaling-using-prometheus-grafana-part-3-8e032fbf1357
 - https://srivastavaankita080.medium.com/practical-hashicorp-nomad-and-consul-part-4-consul-kv-store-ef837e0e4ffc
-- 
+-

@@ -35,6 +35,6 @@ variable "servicename" {
 }
 
 variable "dns" {
-  type = list(string)
-  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+  type    = list(string)
+  default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }

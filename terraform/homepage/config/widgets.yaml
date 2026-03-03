@@ -1,0 +1,10 @@
+---
+- search:
+    provider: duckduckgo
+    target: _blank
+
+- resources:
+    label: Cluster
+    cpu: true
+    memory: true
+    disk: /

@@ -20,7 +20,7 @@ variable "servicename" {
 
 variable "dns" {
   type = list(string)
-  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+  default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }
 
 variable "image" {
@@ -46,7 +46,7 @@ job "mqtt" {
       }
       dns {
         servers = var.dns
-      }      
+      }
     }
 
     service {
@@ -57,7 +57,7 @@ job "mqtt" {
       connect {
         native = true
       }
-            
+
       check {
         name     = "alive"
         type     = "tcp"
@@ -82,7 +82,7 @@ job "mqtt" {
               "tag" = "${var.servicename}"
             }
           ]
-        }         
+        }
       }
 
       resources {

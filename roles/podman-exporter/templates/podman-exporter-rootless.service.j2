@@ -1,0 +1,17 @@
+[Unit]
+Description=Prometheus Podman Exporter (rootless)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ user }}
+Group={{ group }}
+Environment=XDG_RUNTIME_DIR=/run/user/{{ uid }}
+ExecStart=/usr/bin/podman run --name podman-exporter-rootless --replace --userns=keep-id --security-opt label=disable -p {{ podman_exporter_rootless_port }}:{{ podman_exporter_container_port }} -e CONTAINER_HOST=unix:///run/podman/podman.sock -e HOME=/tmp -v /run/user/{{ uid }}/podman/podman.sock:/run/podman/podman.sock:ro {{ podman_exporter_image }}
+ExecStop=/usr/bin/podman stop -t 10 podman-exporter-rootless
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

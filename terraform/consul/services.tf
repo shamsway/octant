@@ -2,12 +2,12 @@
 
 resource "consul_node" "ollama_node" {
   name    = "ollama"
-  address = "192.168.1.10"
+  address = "192.168.122.10"  # Update with the IP of your Ollama host
 
   meta = {
     "external-node"  = "true"
     "external-probe" = "true"
-  }  
+  }
 }
 
 resource "consul_service" "ollama_service" {

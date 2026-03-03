@@ -11,9 +11,9 @@
           - nomad
         state: absent
 
-    - name: Remove contents of /opt/homelab
+    - name: Remove contents of /opt/octant
       ansible.builtin.file:
-        path: /opt/homelab
+        path: /opt/octant
         state: absent
 
 - hosts: localhost

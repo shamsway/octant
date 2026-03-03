@@ -1,0 +1,101 @@
+---
+# Teardown Octant Cluster
+# Destroys all VMs and cleans up resources for fresh rebuild
+#
+# Usage:
+#   ansible-playbook playbooks/99-teardown.yml -i inventory/hypervisors.yml
+#
+# WARNING: This destroys all VMs and data.
+
+- name: Confirm teardown
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Confirm cluster destruction
+      ansible.builtin.pause:
+        prompt: "WARNING: This will destroy all Octant VMs and data. Press Enter to continue or Ctrl+C to abort."
+      when: not (auto_approve | default(false) | bool)
+
+- name: Destroy Octant VMs
+  hosts: hypervisors
+  gather_facts: true
+  become: true
+
+  vars:
+    libvirt_images_path: "{{ hostvars[inventory_hostname]['libvirt_images_path'] | default('/var/lib/libvirt/images') }}"
+    data_disk_pool_path: "{{ hostvars[inventory_hostname]['data_disk_pool_path'] | default(libvirt_images_path) }}"
+    server_list: "{{ groups['servers'] | default([]) }}"
+    preserve_base_image: true
+
+  tasks:
+    - name: Get list of running VMs
+      community.libvirt.virt:
+        command: list_vms
+      register: existing_vms
+
+    - name: Destroy VM {{ vm_host }}
+      ansible.builtin.shell: virsh destroy {{ vm_host }}
+      when: vm_host in existing_vms.list_vms
+      ignore_errors: true
+      changed_when: true
+      loop: "{{ server_list }}"
+      loop_control:
+        loop_var: vm_host
+
+    - name: Undefine VM {{ vm_host }}
+      ansible.builtin.shell: virsh undefine {{ vm_host }}
+      when: vm_host in existing_vms.list_vms
+      ignore_errors: true
+      changed_when: true
+      loop: "{{ server_list }}"
+      loop_control:
+        loop_var: vm_host
+
+    - name: Remove VM disk files
+      ansible.builtin.file:
+        path: "{{ file_path }}"
+        state: absent
+      loop: >-
+        {{
+          server_list | map('regex_replace', '^(.*)$',
+            libvirt_images_path + '/\1.qcow2') | list
+          + server_list | map('regex_replace', '^(.*)$',
+            data_disk_pool_path + '/\1-data.img') | list
+          + server_list | map('regex_replace', '^(.*)$',
+            libvirt_images_path + '/\1-cloud-init.iso') | list
+          + server_list | map('regex_replace', '^(.*)$',
+            libvirt_images_path + '/\1-domain.xml') | list
+          + server_list | map('regex_replace', '^(.*)$',
+            libvirt_images_path + '/cloud-init/\1-user-data') | list
+          + server_list | map('regex_replace', '^(.*)$',
+            libvirt_images_path + '/cloud-init/\1-meta-data') | list
+        }}
+      loop_control:
+        loop_var: file_path
+
+    - name: Remove DHCP reservation for {{ vm_host }}
+      ansible.builtin.shell: |
+        virsh net-dumpxml {{ hostvars[inventory_hostname]['libvirt_network'] | default('default') }} | grep -q '{{ hostvars[vm_host]["vm_mac"] }}' || exit 0
+        virsh net-update {{ hostvars[inventory_hostname]['libvirt_network'] | default('default') }} delete ip-dhcp-host \
+          "<host mac='{{ hostvars[vm_host]["vm_mac"] }}' name='{{ vm_host }}' ip='{{ hostvars[vm_host]["vm_ip"] }}'/>" \
+          --live --config
+      when: hostvars[vm_host]['vm_mac'] is defined and hostvars[vm_host]['vm_ip'] is defined
+      ignore_errors: true
+      changed_when: true
+      loop: "{{ server_list }}"
+      loop_control:
+        loop_var: vm_host
+
+    - name: Remove provisioned VMs inventory
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../inventory/provisioned_vms.yml"
+        state: absent
+
+    - name: Teardown complete
+      ansible.builtin.debug:
+        msg: |
+          === OCTANT TEARDOWN COMPLETE ===
+          Destroyed VMs: {{ server_list | join(', ') }}
+          Base image: {{ 'PRESERVED' if preserve_base_image else 'REMOVED' }}
+          To rebuild: make deploy-vm
+          ================================

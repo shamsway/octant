@@ -1,0 +1,31 @@
+---
+- name: Copy ceph SSH public key to additional hosts
+  ansible.posix.authorized_key:
+    user: root
+    key: "{{ ceph_pub_key.stdout }}"
+    state: present
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['servers'] | difference([ceph_first_mon]) }}"
+
+- name: Add hosts to Ceph cluster
+  ansible.builtin.command:
+    cmd: >
+      ceph orch host add {{ item }}
+      {{ hostvars[item].ansible_host | default(hostvars[item].ansible_default_ipv4.address) }}
+  loop: "{{ groups['servers'] | difference([ceph_first_mon]) }}"
+  register: ceph_add_host
+  changed_when: "'Added host' in ceph_add_host.stdout"
+
+- name: Apply monitor placement across all servers
+  ansible.builtin.command:
+    cmd: "ceph orch apply mon --placement=\"{{ groups['servers'] | join(',') }}\""
+  register: ceph_mon_placement
+  changed_when: false  # Declarative state operation
+
+- name: Wait for all monitors to be quorate
+  ansible.builtin.command: ceph mon stat
+  register: ceph_mon_stat
+  until: ceph_mon_stat.stdout is search((groups['servers'] | length) | string + ' mons')
+  retries: 30
+  delay: 10
+  changed_when: false

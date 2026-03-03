@@ -1,0 +1,17 @@
+{
+  "service": {
+    "name": "podman-exporter-rootless",
+    "id": "podman-exporter-rootless",
+    "tags": ["metrics", "podman", "rootless"],
+    "port": {{ podman_exporter_rootless_port }},
+    "checks": [
+      {
+        "id": "podman-exporter-rootless-metrics",
+        "name": "Podman Exporter (rootless) metrics",
+        "http": "http://127.0.0.1:{{ podman_exporter_rootless_port }}/metrics",
+        "interval": "30s",
+        "timeout": "5s"
+      }
+    ]
+  }
+}

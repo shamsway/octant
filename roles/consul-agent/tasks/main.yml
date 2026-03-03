@@ -19,7 +19,7 @@
     mode: "0700"
     owner: "{{ user }}"
     group: "{{ group }}"
-  
+
 - name: Install {{ role_name }}
   ansible.builtin.include_role:
     name: install-hashi
@@ -38,14 +38,14 @@
 # Are tailscale IP plays still necessary?
 
 - name: Get Tailscale IP
-  when: tailscale_ip is not defined
+  when: tailscale_ip is not defined and tailscale_enabled | default(false)
   block:
   - name: Get Tailscale IP address
     ansible.builtin.command:
       cmd: tailscale ip -4
     register: tailscale_ip_output
     changed_when: false
-    
+
   - name: Set Tailscale IP address as a variable
     ansible.builtin.set_fact:
       tailscale_ip: "{{ tailscale_ip_output.stdout }}"

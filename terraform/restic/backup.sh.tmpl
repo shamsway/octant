@@ -1,45 +1,77 @@
 #!/bin/bash
+set -e
 
 echo "Repo: $RESTIC_REPOSITORY"
+echo "Hostname: $HOSTNAME"
 
-# Check if repo exists
-restic snapshots --repo "$RESTIC_REPOSITORY" --host $HOSTNAME
-repo_check=$?
-
-if [ $repo_check -eq 0 ]; then
-    echo "Repository exists"
-else
+# Check if repo exists, init if needed
+if ! restic cat config >/dev/null 2>&1; then
     echo "No repository found, running restic init"
-    restic --repo "$RESTIC_REPOSITORY" init
+    restic init || { echo "ERROR: Failed to initialize repository"; exit 1; }
 fi
 
-# Prune backups older than 180 days
-restic forget --repo "$RESTIC_REPOSITORY" --host $HOSTNAME --prune --keep-daily 180
+# --- Consul & Nomad Snapshots ---
+SNAP_DIR="/mnt/services/backups/snapshots"
+mkdir -p "$SNAP_DIR"
+timestamp=$(date +%Y%m%d_%H%M%S)
 
-# Run the Restic backup command
-restic_output=$(restic backup \
---repo "$RESTIC_REPOSITORY" --host $HOSTNAME --exclude="*.ts *.mp4" --json \
+echo "Creating Consul snapshot..."
+if consul snapshot save "$SNAP_DIR/consul_$timestamp.snap"; then
+    echo "Consul snapshot saved"
+    # Keep only last 7 snapshots
+    ls -t "$SNAP_DIR"/consul_*.snap 2>/dev/null | tail -n +8 | xargs -r rm
+else
+    echo "WARNING: Consul snapshot failed (continuing with backup)"
+fi
+
+echo "Creating Nomad snapshot..."
+if nomad operator snapshot save "$SNAP_DIR/nomad_$timestamp.snap"; then
+    echo "Nomad snapshot saved"
+    ls -t "$SNAP_DIR"/nomad_*.snap 2>/dev/null | tail -n +8 | xargs -r rm
+else
+    echo "WARNING: Nomad snapshot failed (continuing with backup)"
+fi
+
+# --- Build backup paths, skip non-existent ---
+backup_paths=()
 %{ for path in jsondecode(backup_volumes) ~}
-"${path}" \
+if [ -e "${path}" ]; then
+    backup_paths+=("${path}")
+else
+    echo "Skipping non-existent path: ${path}"
+fi
 %{ endfor ~}
-2>&1)
 
-# Get the backup result and timestamp
+if [ $${#backup_paths[@]} -eq 0 ]; then
+    echo "ERROR: No valid backup paths found"
+    exit 1
+fi
+
+echo "Backing up $${#backup_paths[@]} paths..."
+
+# --- Run restic backup ---
+restic_output=$(restic backup \
+    --repo "$RESTIC_REPOSITORY" --host $HOSTNAME \
+    --exclude="*.ts *.mp4" --json \
+    "$${backup_paths[@]}" 2>&1)
+
 backup_result=$?
 backup_timestamp=$(date +"%Y-%m-%d %H:%M:%S")
 
-# Set the result value based on the exit code
 if [ $backup_result -eq 0 ]; then
-  result_value="SUCCESSFUL"
-  # Extract relevant information from the JSON output
-  files_new=$(echo "$restic_output" | jq -r '.files_new' | awk '{sum+=$1} END {print sum}')
-  files_changed=$(echo "$restic_output" | jq -r '.files_changed' | awk '{sum+=$1} END {print sum}')
-  data_added=$(echo "$restic_output" | jq -r '.data_added' | awk '{sum+=$1} END {print sum}')
-  total_files_processed=$(echo "$restic_output" | jq -r '.total_files_processed' | awk '{sum+=$1} END {print sum}')
-  total_bytes_processed=$(echo "$restic_output" | jq -r '.total_bytes_processed' | awk '{sum+=$1} END {print sum}')
-  snapshot_id=$(echo "$restic_output" | jq -r '.snapshot_id' | tail -1)  
-  # Create a JSON object with the backup result and timestamp
-  json_data=$(cat <<EOF
+    result_value="SUCCESSFUL"
+    files_new=$(echo "$restic_output" | jq -r '.files_new' | awk '{sum+=$1} END {print sum}')
+    files_changed=$(echo "$restic_output" | jq -r '.files_changed' | awk '{sum+=$1} END {print sum}')
+    data_added=$(echo "$restic_output" | jq -r '.data_added' | awk '{sum+=$1} END {print sum}')
+    total_files_processed=$(echo "$restic_output" | jq -r '.total_files_processed' | awk '{sum+=$1} END {print sum}')
+    total_bytes_processed=$(echo "$restic_output" | jq -r '.total_bytes_processed' | awk '{sum+=$1} END {print sum}')
+    snapshot_id=$(echo "$restic_output" | jq -r '.snapshot_id' | tail -1)
+
+    # Prune old backups
+    echo "Pruning old backups..."
+    restic forget --repo "$RESTIC_REPOSITORY" --host $HOSTNAME --prune --keep-daily 180
+
+    json_data=$(cat <<EOF
 {
   "result": "$result_value",
   "timestamp": "$backup_timestamp",
@@ -48,26 +80,28 @@ if [ $backup_result -eq 0 ]; then
   "data_added": $data_added,
   "total_files_processed": $total_files_processed,
   "total_bytes_processed": $total_bytes_processed,
-  "snapshot_id": "$snapshot_id"
+  "snapshot_id": "$snapshot_id",
+  "consul_snapshot": "included",
+  "nomad_snapshot": "included",
+  "paths_processed": $${#backup_paths[@]}
 }
 EOF
-  )
-
-  # Store the JSON data in Consul's KV store
-  curl -X PUT -d "$json_data" -H "Content-Type: application/json" "http://consul.service.consul:8500/v1/kv/restic/backup/nomad/$${HOSTNAME}/results"
+    )
 else
-  result_value="FAILED"
-  json_data=$(cat <<EOF
+    result_value="FAILED"
+    json_data=$(cat <<EOF
 {
   "result": "$result_value",
   "timestamp": "$backup_timestamp"
 }
 EOF
-  )
-  # Store the JSON data in Consul's KV store
-  curl -X PUT -d "$json_data" -H "Content-Type: application/json" "http://consul.service.consul:8500/v1/kv/restic/backup/nomad/$${HOSTNAME}/results"    
+    )
 fi
 
-# Print the Restic output
+# Store results in Consul KV
+curl -s -f -X PUT -d "$json_data" -H "Content-Type: application/json" \
+    "http://consul.service.consul:8500/v1/kv/restic/backup/nomad/$${HOSTNAME}/results" || \
+    echo "WARNING: Failed to store results in Consul KV"
+
 echo "$json_data"
 echo "$restic_output"

@@ -1,0 +1,47 @@
+// ─── Loki: Journald Log Collection ────────────────────────────────────────────
+// Collects systemd journal logs and ships to Loki
+// host label injected via Consul template since loki.source.journal
+// does not forward __journal__* metadata to downstream loki.relabel components.
+
+loki.source.journal "systemd" {
+  path    = "/var/log/journal"
+  max_age = "12h"
+  labels  = {
+    job  = "journal",
+    host = "{{ with node }}{{ .Node.Node }}{{ end }}",
+  }
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki.service.consul:3100/loki/api/v1/push"
+  }
+}
+
+// ─── Prometheus: Alloy Self-Metrics ───────────────────────────────────────────
+// Exports Alloy's own operational metrics to Prometheus
+
+prometheus.exporter.self "default" {}
+
+prometheus.scrape "alloy_self" {
+  targets         = prometheus.exporter.self.default.targets
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "60s"
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus.service.consul:9091/api/v1/write"
+  }
+
+  external_labels = {
+    cluster = "octant",
+  }
+}
+
+// ─── Traces ───────────────────────────────────────────────────────────────────
+// Applications send OTLP traces directly to Tempo (tempo.service.consul:4317).
+// Alloy does not proxy traces — Tempo is the OTLP receiver.
+// Alloy and Tempo both bind port 4317; adding an OTLP receiver here would
+// conflict with Tempo on whichever node Tempo is scheduled.

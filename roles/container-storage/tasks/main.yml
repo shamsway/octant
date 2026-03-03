@@ -1,0 +1,71 @@
+---
+# Format, mount, and prepare the dedicated container storage disk
+# Must run before podman-rootless and podman-root roles
+
+- name: Install xfsprogs for mkfs.xfs
+  ansible.builtin.package:
+    name: xfsprogs
+    state: present
+
+- name: Verify container storage device exists
+  ansible.builtin.stat:
+    path: "{{ container_storage_device }}"
+  register: container_device_stat
+
+- name: Fail if container storage device is missing
+  ansible.builtin.fail:
+    msg: >
+      Container storage device {{ container_storage_device }} not found.
+      Ensure the VM was provisioned with vm_create_container_disk=true.
+      Re-run playbooks/01-provision-vms.yml to create the disk and redefine the VM domain.
+  when: not container_device_stat.stat.exists
+
+- name: Check if {{ container_storage_device }} is already formatted
+  ansible.builtin.command:
+    cmd: "blkid -o value -s TYPE {{ container_storage_device }}"
+  register: blkid_result
+  changed_when: false
+  failed_when: false
+
+- name: Format {{ container_storage_device }} as XFS (ftype=1) for overlay support
+  ansible.builtin.command:
+    cmd: "mkfs.xfs {{ container_storage_mkfs_opts }} {{ container_storage_device }}"
+  when: blkid_result.stdout | trim != container_storage_fstype
+
+- name: Get UUID of {{ container_storage_device }}
+  ansible.builtin.command:
+    cmd: "blkid -o value -s UUID {{ container_storage_device }}"
+  register: device_uuid
+  changed_when: false
+
+- name: Create container storage mount point
+  ansible.builtin.file:
+    path: "{{ container_storage_mount }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Mount container storage disk and add to fstab
+  ansible.posix.mount:
+    path: "{{ container_storage_mount }}"
+    src: "UUID={{ device_uuid.stdout | trim }}"
+    fstype: "{{ container_storage_fstype }}"
+    opts: "{{ container_storage_mount_opts }}"
+    state: mounted
+
+- name: Create rootful container storage directory
+  ansible.builtin.file:
+    path: "{{ container_storage_rootful_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0710'
+
+- name: Create rootless container storage directory for {{ user }}
+  ansible.builtin.file:
+    path: "{{ container_storage_rootless_path }}"
+    state: directory
+    owner: "{{ uid }}"
+    group: "{{ gid }}"
+    mode: '0700'

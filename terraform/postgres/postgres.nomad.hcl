@@ -27,7 +27,7 @@ job "postgres" {
 
       dns {
         servers = ${dns}
-      }            
+      }
     }
 
     volume "postgres-data" {
@@ -39,7 +39,7 @@ job "postgres" {
     service {
       name = "${servicename}"
       provider = "consul"
-      task = "postgres"      
+      task = "postgres"
       port = "postgres"
 
       connect {
@@ -71,7 +71,7 @@ job "postgres" {
               "tag" = "${servicename}"
             }
           ]
-        } 
+        }
       }
 
       volume_mount {
@@ -98,6 +98,6 @@ EOT
         cpu    = 100
         memory = 256
       }
-    }  
+    }
   }
 }

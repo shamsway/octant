@@ -1,6 +1,6 @@
 ---
 - name: Stop all Nomad Servers and Agents
-  ansible.builtin.include_tasks: 
+  ansible.builtin.include_tasks:
     file: stop-nomad.yml
 
 - name: Clear Consul Data Directories
@@ -35,4 +35,3 @@
         - absent
         - directory
       when: confirmation.user_input | lower == 'yes'
-

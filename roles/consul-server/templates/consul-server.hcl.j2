@@ -15,7 +15,7 @@ connect {
 }
 
 server = true
-bind_addr = "{{ ansible_eth0.ipv4.address if region == "home" else tailscale_ip }}"
+bind_addr = "{{ ansible_default_ipv4.address if region == "home" else tailscale_ip }}"
 client_addr = "0.0.0.0"
 datacenter = "{{ datacenter }}"
 data_dir = "{{ datadirs[role_name] }}"

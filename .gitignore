@@ -6,6 +6,7 @@
 **/.env
 **/venv
 **/.venv
+*.pyc
 packer/output-octantnode
 packer/output-octantnode/*
 packer/packer_cache/
@@ -28,3 +29,24 @@ volumes.csv
 /ARCHIVE/
 /.vscode/
 .worktrees/
+docs/sphinx/
+docs/index.html
+docs/prompts/
+local/
+lab-state.*
+inventory/group_vars/all.yml
+inventory/provisioned_vms.yml
+
+# Terraform variable overrides
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+
+# Python
+__pycache__/
+
+# direnv
+.direnv/
+
+# Logs
+*.log

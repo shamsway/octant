@@ -1,0 +1,75 @@
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    maxconn 4096
+    daemon
+
+defaults
+    log     global
+    mode    tcp
+    option  tcplog
+    option  dontlognull
+    timeout connect 5s
+    timeout client  30s
+    timeout server  30s
+    retries 3
+
+# --- Traefik HTTPS (TCP passthrough) ---
+frontend traefik_https_front
+    bind *:443
+    default_backend traefik_https_back
+
+backend traefik_https_back
+    balance roundrobin
+    option tcp-check
+{% for host in groups['servers'] %}
+    server {{ host }} {{ hostvars[host].vm_ip }}:443 check inter 5s fall 3 rise 2
+{% endfor %}
+
+# --- Nomad API ---
+frontend nomad_api_front
+    bind *:4646
+    default_backend nomad_api_back
+
+backend nomad_api_back
+    balance roundrobin
+    option tcp-check
+{% for host in groups['servers'] %}
+    server {{ host }} {{ hostvars[host].vm_ip }}:{{ nomad.ports.http }} check inter 5s fall 3 rise 2
+{% endfor %}
+
+# --- Consul API ---
+frontend consul_api_front
+    bind *:8500
+    default_backend consul_api_back
+
+backend consul_api_back
+    balance roundrobin
+    option tcp-check
+{% for host in groups['servers'] %}
+    server {{ host }} {{ hostvars[host].vm_ip }}:{{ consul.ports.http }} check inter 5s fall 3 rise 2
+{% endfor %}
+
+# --- Traefik Dashboard ---
+frontend traefik_dashboard_front
+    bind *:9002
+    default_backend traefik_dashboard_back
+
+backend traefik_dashboard_back
+    balance roundrobin
+    option tcp-check
+{% for host in groups['servers'] %}
+    server {{ host }} {{ hostvars[host].vm_ip }}:9002 check inter 5s fall 3 rise 2
+{% endfor %}
+
+# --- Stats (localhost only) ---
+frontend stats_front
+    bind 127.0.0.1:8404
+    mode http
+    default_backend stats_back
+
+backend stats_back
+    mode http
+    stats enable
+    stats uri /
+    stats refresh 10s

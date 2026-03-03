@@ -1,11 +1,11 @@
 job "open-webui" {
-  region = "${region}"
+  region      = "${region}"
   datacenters = ["${datacenter}"]
-  type = "service"
-  
+  type        = "service"
+
   constraint {
     attribute = "$${meta.rootless}"
-    value = "true"
+    value     = "true"
   }
 
   group "open-webui" {
@@ -13,15 +13,17 @@ job "open-webui" {
       port "http" {
         to = 8080
       }
+
       dns {
         servers = ${dns}
-      }      
+      }
     }
 
     service {
-      name = "${servicename}"
+      name     = "${servicename}"
       provider = "consul"
-      port = "http"
+      port     = "http"
+
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
@@ -46,13 +48,15 @@ job "open-webui" {
 
     task "open-webui" {
       driver = "podman"
- 
+
       config {
-        image = "${image}"
-        force_pull = true
+        image              = "${image}"
+        ports              = ["http"]
+        force_pull         = true
         image_pull_timeout = "15m"
-        ports = ["http"]
-        volumes = ["/mnt/services/open-webui/data:/app/backend/data","/mnt/services/litellm/config.yaml:/app/backend/data/litellm/config.yaml"]
+        volumes = [
+          "/mnt/services/open-webui/data:/app/backend/data",
+        ]
         logging = {
           driver = "journald"
           options = [
@@ -60,28 +64,28 @@ job "open-webui" {
               "tag" = "${servicename}"
             }
           ]
-        }        
+        }
       }
- 
+
       env {
-        OLLAMA_BASE_URL="${ollama_url}"
-        WEBUI_AUTH="${webui_auth}"
-        WEBUI_NAME="${webui_name}"
-        WEBUI_URL="${webui_url}"
+        OLLAMA_BASE_URL = "${ollama_url}"
+        WEBUI_AUTH      = "${webui_auth}"
+        WEBUI_NAME      = "${webui_name}"
+        WEBUI_URL       = "${webui_url}"
       }
 
       template {
-        destination = "secrets/env.txt"
-        env = true
-        data = <<EOH
+        destination = "$${NOMAD_SECRETS_DIR}/env.txt"
+        env         = true
+        data        = <<EOT
 {{- range service "litellm" }}OPENAI_API_BASE_URL="http://{{ .Address }}:{{ .Port }}"{{ end }}
 {{ with nomadVar "nomad/jobs/open-webui" }}OPENAI_API_KEY="{{ .litellm_key }}"{{ end -}}
-EOH
+EOT
       }
 
       resources {
         memory = 1024
-      }      
+      }
     }
   }
 }

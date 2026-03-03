@@ -1,0 +1,21 @@
+# Example: Arize Phoenix observability integration
+#
+# Sends OpenTelemetry traces from LiteLLM to a self-hosted Phoenix instance.
+# Phoenix accepts OTLP traces on port 6006 (HTTP) at /v1/traces.
+#
+# Usage:
+#   1. Merge the litellm_settings and environment_variables sections below
+#      into your config.yaml.
+#   2. Redeploy:  terraform destroy -auto-approve && terraform apply -auto-approve
+#   3. Send a request through LiteLLM and verify traces appear in the Phoenix UI.
+#
+# Phoenix UI: http://phoenix.service.consul:<port>  (or via Traefik)
+# Docs: https://docs.litellm.ai/docs/observability/phoenix_integration
+
+# Add to litellm_settings:
+litellm_settings:
+  callbacks: ["arize_phoenix"]
+
+# The PHOENIX_COLLECTOR_HTTP_ENDPOINT env var is set automatically by
+# the Nomad job template using Consul service discovery, so no manual
+# endpoint configuration is needed. See litellm.nomad.hcl for details.

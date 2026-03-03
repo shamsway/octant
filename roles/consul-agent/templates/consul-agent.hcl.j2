@@ -12,7 +12,7 @@ connect {
 {% if hostvars[inventory_hostname]['region'] == "home" %}
 client_addr = "0.0.0.0"
 bind_addr = "0.0.0.0"
-advertise_addr = "{{ ansible_eth0.ipv4.address }}"
+advertise_addr = "{{ ansible_default_ipv4.address }}"
 {% else %}
 {% raw %}
 client_addr = "{{ GetInterfaceIP \"tailscale0\" }}"

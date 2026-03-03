@@ -1,65 +1,31 @@
-variable "datacenter" {
-  type = string
-  default = "octant"
-}
-
-variable "domain" {
-  type = string
-  default = "octant.net"
-}
-
-variable "certresolver" {
-  type = string
-  default = "cloudflare"
-}
-
-variable "servicename" {
-  type = string
-  default = "prometheus"
-}
-
-variable "dns" {
-  type = list(string)
-  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
-}
-
-variable "image" {
-  type = string
-  default = "docker.io/prom/prometheus:v2.51.1"
-}
-
 job "prometheus" {
-  region      = "home"
-  datacenters = ["${var.datacenter}"]
+  region      = "${region}"
+  datacenters = ["${datacenter}"]
   type        = "service"
 
   constraint {
-    attribute = "${meta.rootless}"
-    value = "true"
+    attribute = "$${meta.rootless}"
+    value     = "true"
   }
 
   group "prometheus" {
     network {
       port "http" {
-        static = "9091"
+        static = 9091
+        to     = 9091
       }
 
       dns {
-        servers = var.dns
-      }      
+        servers = ${dns}
+      }
     }
-
-    volume "prometheus-data" {
-      type      = "host"
-      read_only = false
-      source    = "prometheus-data"
-    }
-
 
     service {
-      name = var.servicename
-      port = "http"
+      name     = "${servicename}"
+      task     = "prometheus"
+      port     = "http"
       provider = "consul"
+
       connect {
         native = true
       }
@@ -67,45 +33,51 @@ job "prometheus" {
       tags = [
         "traefik.enable=true",
         "traefik.consulcatalog.connect=false",
-        "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
-        "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
-        "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
-        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",     
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
+        "traefik.http.routers.${servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       check {
         type     = "http"
         path     = "/-/healthy"
         name     = "http"
-        interval = "5s"
-        timeout  = "2s"
+        interval = "30s"
+        timeout  = "5s"
+      }
+
+      check_restart {
+        limit           = 3
+        grace           = "60s"
+        ignore_warnings = false
       }
     }
 
     task "prometheus" {
       driver = "podman"
-      user = "2000:100"
-
-      volume_mount {
-        volume      = "prometheus-data"
-        destination = "/opt/prometheus"
-        read_only   = false
-      }
+      user   = "2000:100"
 
       config {
-        image = var.image
+        image  = "${image}"
         userns = "keep-id"
         logging = {
           driver = "journald"
           options = [
             {
-              "tag" = "${var.servicename}"
+              "tag" = "${servicename}"
             }
           ]
-        } 
-        args = ["--storage.tsdb.path", "/opt/prometheus", "--web.listen-address", "0.0.0.0:9091", "--storage.tsdb.retention.time", "365d"]
+        }
+        args = [
+          "--storage.tsdb.path", "/opt/prometheus",
+          "--web.listen-address", "0.0.0.0:9091",
+          "--storage.tsdb.retention.time", "45d",
+          "--web.enable-remote-write-receiver",
+        ]
         ports = ["http"]
         volumes = [
+          "/mnt/services/prometheus:/opt/prometheus",
           "local/alerts.yml:/prometheus/alerts.yml",
           "local/prometheus.yml:/prometheus/prometheus.yml",
         ]
@@ -115,11 +87,19 @@ job "prometheus" {
       template {
         data = <<EOH
 global:
-  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-  evaluation_interval: 60s # Evaluate rules every 15 seconds. The default is every 1 minute.
-  # scrape_timeout is set to the global default (10s).
+  scrape_interval:     15s
+  evaluation_interval: 60s
+  external_labels:
+    cluster: octant
+    environment: home
 
-# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+alerting:
+  alertmanagers:
+    - consul_sd_configs:
+        - server: 'consul.service.consul:8500'
+          services: ['alertmanager']
+          scheme: http
+
 rule_files:
   - "alerts.yml"
 
@@ -128,37 +108,18 @@ scrape_configs:
     static_configs:
       - targets: ['127.0.0.1:9091']
 
+  - job_name: 'hypervisor-host'
+    static_configs:
+      - targets: ['192.168.122.1:9100']
+
+  - job_name: 'and-gpu-metrics'
+    static_configs:
+      - targets: ['192.168.122.1:5050']
+
   - job_name: 'traefik'
     metrics_path: /metrics
     static_configs:
       - targets: {{ range service "traefik-metrics" -}}['traefik.service.consul:{{ .Port }}']{{- end }}
-
-  # - job_name: 'nomad-jobs'
-  #   metrics_path: /metrics
-  #   consul_sd_configs:
-  #     - server: 'consul.service.consul:8500'
-  #       tags: ['metrics']
-  #       scheme: http
-  #   relabel_configs:
-  #     - source_labels: ['__meta_consul_dc']
-  #       target_label: 'dc'
-  #     - source_labels: ['__meta_consul_service']
-  #       target_label: 'job'
-  #     - source_labels: ['__meta_consul_node']
-  #       target_label: 'host'
-  #     - source_labels: ['__meta_consul_tags']
-  #       target_label: 'tags'
-  #     - source_labels: ['__meta_consul_tags']
-  #       regex: '.*job-(.+?)(,.*)?'
-  #       replacement: '${1}'
-  #       target_label: 'job_name'
-  #     - source_labels: ['__meta_consul_address']
-  #       target_label: '__address__'
-  #       replacement: '${1}:'
-  #     - source_labels: ['__address__', '__meta_consul_service_port']
-  #       target_label: '__address__'
-  #       regex: '(.+)(?::\d+);(\d+)'
-  #       replacement: '${1}:${2}'
 
   - job_name: 'consul'
     metrics_path: /v1/agent/metrics
@@ -217,6 +178,49 @@ scrape_configs:
         target_label:  'job'
       - source_labels: ['__meta_consul_node']
         target_label:  'host'
+
+  - job_name: 'alloy'
+    consul_sd_configs:
+      - server: 'consul.service.consul:8500'
+        services: ['alloy']
+        scheme: http
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: ['__meta_consul_node']
+        target_label: host
+
+  - job_name: 'tempo'
+    consul_sd_configs:
+      - server: 'consul.service.consul:8500'
+        services: ['tempo']
+        scheme: http
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: ['__meta_consul_node']
+        target_label: host
+
+  - job_name: 'alertmanager'
+    consul_sd_configs:
+      - server: 'consul.service.consul:8500'
+        services: ['alertmanager']
+        scheme: http
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: ['__meta_consul_node']
+        target_label: host
+
+  - job_name: 'consul-metrics'
+    consul_sd_configs:
+      - server: 'consul.service.consul:8500'
+        tags: ['metrics']
+        scheme: http
+    relabel_configs:
+      - source_labels: ['__meta_consul_service']
+        target_label: job
+      - source_labels: ['__meta_consul_node']
+        target_label: host
+      - source_labels: ['__meta_consul_tags']
+        target_label: consul_tags
 EOH
 
         destination   = "local/prometheus.yml"
@@ -226,11 +230,11 @@ EOH
       }
 
       template {
-        change_mode = "noop"
-        destination = "local/alerts.yml"
-        left_delimiter = "[["
+        change_mode     = "noop"
+        destination     = "local/alerts.yml"
+        left_delimiter  = "[["
         right_delimiter = "]]"
-        data = <<EOH
+        data            = <<EOH
 ---
 groups:
 - name: prometheus_alerts
@@ -242,7 +246,7 @@ groups:
       severity: page
     annotations:
       description: "Traefik is down."
-  # Alert for any instance that is unreachable for >5 minutes.
+
   - alert: InstanceDown
     expr: up == 0
     for: 5m
@@ -251,22 +255,84 @@ groups:
     annotations:
       summary: "Instance {{ $labels.instance }} down"
       description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
-  # Alert for any device that is over 80% capacity  
+
   - alert: DiskUsage
-    expr: avg(disk_used_percent) by (host, device) > 80
+    expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs"} / node_filesystem_size_bytes) * 100 > 80
     for: 5m
     labels:
       severity: page
     annotations:
-      summary: "Host {{ $labels.host }} disk {{ $labels.device }} usage alert"
-      description: "{{ $labels.host }} is using over 80% of its device: {{ $labels.device }}"
+      summary: "Host {{ $labels.instance }} disk {{ $labels.mountpoint }} usage alert"
+      description: "{{ $labels.instance }} filesystem {{ $labels.mountpoint }} is over 80% full."
 
+  - alert: NodeExporterDown
+    expr: absent(up{job="node-exporter"} == 1)
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Node exporter missing"
+      description: "No node-exporter targets are reachable. Host metrics unavailable."
+
+  - alert: LokiDown
+    expr: absent(up{job="loki"} == 1)
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Loki is down"
+      description: "No Loki targets are reachable. Log ingestion and querying unavailable."
+
+  - alert: TempoDown
+    expr: absent(up{job="tempo"} == 1)
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Tempo is down"
+      description: "No Tempo targets are reachable. Trace ingestion and querying unavailable."
+
+  - alert: AlertmanagerDown
+    expr: absent(up{job="alertmanager"} == 1)
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Alertmanager is down"
+      description: "No Alertmanager targets are reachable. Alert routing unavailable."
+
+  - alert: AlloyDown
+    expr: absent(up{job="alloy"} == 1)
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Alloy is down"
+      description: "No Alloy targets are reachable. Log and metric collection may be interrupted."
+
+  - alert: HighMemoryPressure
+    expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "High memory pressure on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} is using more than 90% of RAM ({{ $value | printf \"%.0f\" }}% used)."
+
+  - alert: HighCpuUsage
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+    for: 10m
+    labels:
+      severity: page
+    annotations:
+      summary: "High CPU usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} CPU usage has been above 90% for more than 10 minutes ({{ $value | printf \"%.0f\" }}% used)."
 EOH
       }
 
       resources {
         cpu    = 100
-        memory = 256
+        memory = 512
       }
     }
   }

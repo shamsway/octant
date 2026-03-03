@@ -1,7 +1,9 @@
 ---
-- name: Install Restic
+- name: Install Restic and cron
   apt:
-    name: restic
+    name:
+      - restic
+      - cron
     state: present
 
 - name: Create Restic environment file
@@ -26,7 +28,7 @@
     dest: /usr/local/bin/restic-backup.sh
     owner: root
     group: root
-    mode: '0755'   
+    mode: '0755'
 
 - name: Schedule Restic backup cron job
   cron:
@@ -35,4 +37,4 @@
     cron_file: restic_backup
     minute: "0"
     hour: "3"
-    job: "/usr/local/bin/restic-backup.sh"        
+    job: "/usr/local/bin/restic-backup.sh"

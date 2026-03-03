@@ -23,7 +23,7 @@
         group: root
         mode: "0644"
       vars:
-        role_name: nomad-agent-root        
+        role_name: nomad-agent-root
 
     - name: Restart nomad-agent-root services
       become: true

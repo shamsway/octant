@@ -1,0 +1,17 @@
+{
+  "service": {
+    "name": "podman-exporter-rootful",
+    "id": "podman-exporter-rootful",
+    "tags": ["metrics", "podman", "rootful"],
+    "port": {{ podman_exporter_rootful_port }},
+    "checks": [
+      {
+        "id": "podman-exporter-rootful-metrics",
+        "name": "Podman Exporter (rootful) metrics",
+        "http": "http://127.0.0.1:{{ podman_exporter_rootful_port }}/metrics",
+        "interval": "30s",
+        "timeout": "5s"
+      }
+    ]
+  }
+}

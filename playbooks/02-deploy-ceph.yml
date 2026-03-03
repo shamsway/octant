@@ -1,0 +1,52 @@
+---
+# Deploy Ceph Distributed Storage
+# Bootstraps cephadm cluster, adds OSDs, creates CephFS, mounts on all nodes
+#
+# Usage:
+#   ansible-playbook playbooks/02-deploy-ceph.yml -i inventory/provisioned_vms.yml
+#
+# Prerequisites:
+#   - VMs provisioned with playbooks/01-provision-vms.yml
+#   - octant.yml has been run (base packages installed)
+#   - Each VM has a secondary disk at /dev/vdb
+
+- name: Prepare nodes for Ceph deployment
+  hosts: servers
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Fix /etc/hosts so hostname -f returns the actual hostname
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1'
+        line: "127.0.0.1 {{ inventory_hostname }} localhost localhost.localdomain"
+
+    - name: Add peer host entries to /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: ".*{{ item }}$"
+        line: "{{ hostvars[item].ansible_host | default(hostvars[item].ansible_default_ipv4.address) }} {{ item }}"
+      loop: "{{ groups['servers'] | difference([inventory_hostname]) }}"
+
+    - name: Enable root SSH login for cephadm
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+      notify: restart sshd
+
+  handlers:
+    - name: restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+- name: Deploy Ceph Storage Cluster
+  hosts: servers
+  gather_facts: true
+  become: true
+  roles:
+    - role: ceph
+
+- name: Deploy service volumes on CephFS
+  ansible.builtin.import_playbook: 05-deploy-volumes.yml

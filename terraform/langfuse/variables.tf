@@ -1,24 +1,19 @@
-variable "OP_API_TOKEN" {
-  description = "Auth token for 1password connect vault"
-  type = string
-}
-
-variable "op_api_url" {
-  description = "URL for 1password connect vault"
-  type = string
-  default = "https://opapi.octant.net"
+variable "op_vault_name" {
+  description = "1Password vault name"
+  type        = string
+  default     = "Octant"
 }
 
 variable "nomad" {
   description = "Nomad server address"
   type = string
-  default = "nomad.octant.net"
+  default = "localhost"
 }
 
 variable "consul" {
   description = "Consul server address"
   type = string
-  default = "consul.octant.net"
+  default = "localhost"
 }
 
 variable "region" {
@@ -53,7 +48,7 @@ variable "servicename" {
 
 variable "dns" {
   type = list(string)
-  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+  default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }
 
 variable "db_server" {
@@ -72,13 +67,15 @@ variable "nextauth_url" {
 }
 
 variable "nextauth_secret" {
-  type    = string
-  default = "mysecret"
+  description = "NextAuth secret - override with a secure random value"
+  type        = string
+  default     = "changeme"
 }
 
 variable "salt" {
-  type    = string
-  default = "mysalt"
+  description = "Encryption salt - override with a secure random value"
+  type        = string
+  default     = "changeme"
 }
 
 variable "telemetry_enabled" {

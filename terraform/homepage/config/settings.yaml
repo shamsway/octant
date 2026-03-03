@@ -1,0 +1,26 @@
+---
+title: Octant Lab
+favicon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/server.png
+
+theme: dark
+color: slate
+
+layout:
+  Infrastructure:
+    style: column
+    columns: 4
+  Monitoring:
+    style: column
+    columns: 5
+  Observability:
+    style: column
+    columns: 3
+  Databases:
+    style: column
+    columns: 4
+  Apps:
+    style: column
+    columns: 3
+  AI & LLM:
+    style: column
+    columns: 2

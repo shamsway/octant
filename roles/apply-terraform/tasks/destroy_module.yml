@@ -1,0 +1,68 @@
+---
+- name: Set module path for {{ terraform_module }}
+  ansible.builtin.set_fact:
+    module_path: "{{ terraform_base_path }}/{{ terraform_module }}"
+    module_env_patterns: "{{ terraform_module_env_patterns.get(terraform_module, []) }}"
+
+- name: Extract environment variables for {{ terraform_module }}
+  ansible.builtin.set_fact:
+    module_env_vars: >-
+      {%- set mod_vars = {} -%}
+      {%- for pattern in module_env_patterns -%}
+        {%- for key, value in terraform_env_vars.items() -%}
+          {%- if key == pattern.lower() -%}
+            {%- set _ = mod_vars.update({key: value}) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ mod_vars }}
+
+- name: Apply variable transformations for {{ terraform_module }}
+  ansible.builtin.set_fact:
+    transformed_env_vars: >-
+      {%- set transformed = module_env_vars.copy() -%}
+      {%- if terraform_module in terraform_variable_transformations -%}
+        {%- for transform_key, transform_value in terraform_variable_transformations[terraform_module].items() -%}
+          {%- if transform_key in module_env_vars -%}
+            {%- set _ = transformed.update({transform_value: transformed.pop(transform_key)}) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {{ transformed }}
+
+- name: Build terraform variables for {{ terraform_module }}
+  ansible.builtin.set_fact:
+    tf_variables: >-
+      {{ transformed_env_vars | combine({
+        'nomad': cluster_address,
+        'consul': cluster_address,
+        'domain': service_domain | default('octant.local'),
+        'certresolver': service_certresolver | default(''),
+      }) | combine(
+        {'admin_email': admin_email | default('')} if terraform_module == 'traefik' else {}
+      ) }}
+
+- name: Destroy Terraform resources for {{ terraform_module }}
+  community.general.terraform:
+    project_path: "{{ module_path }}"
+    state: absent
+    force_init: true
+    variables: "{{ tf_variables }}"
+  register: terraform_destroy_result
+  environment: >-
+    {{ transformed_env_vars | combine({
+      'NOMAD_ADDR': 'http://' + cluster_address + ':4646',
+      'NOMAD_CACERT': '',
+      'NOMAD_CLIENT_CERT': '',
+      'NOMAD_CLIENT_KEY': '',
+      'CONSUL_HTTP_ADDR': 'http://' + cluster_address + ':8500',
+      'CONSUL_HTTP_SSL_VERIFY': '',
+      'CONSUL_CACERT': '',
+      'CONSUL_CLIENT_CERT': '',
+      'CONSUL_CLIENT_KEY': '',
+    }) }}
+
+- name: Display {{ terraform_module }} Terraform destroy results
+  ansible.builtin.debug:
+    var: terraform_destroy_result
+  when: debug_terraform | default(false) or display_results | default(false)

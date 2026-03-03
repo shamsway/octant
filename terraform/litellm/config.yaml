@@ -1,0 +1,40 @@
+model_list:
+  # Local models (OpenAI-compatible endpoint on hypervisor)
+  # See config.local-models.yaml.example for more options
+  - model_name: local/glm-5-fp8
+    litellm_params:
+      model: openai/glm-5-fp8
+      api_base: http://192.168.122.1:8000/v1
+      api_key: "no-key-required"
+
+  # OpenAI models
+  - model_name: openai/gpt-4o
+    litellm_params:
+      model: gpt-4o
+  - model_name: openai/gpt-4o-mini
+    litellm_params:
+      model: gpt-4o-mini
+  - model_name: openai/gpt-4-turbo
+    litellm_params:
+      model: gpt-4-turbo
+  - model_name: openai/gpt-3.5-turbo
+    litellm_params:
+      model: gpt-3.5-turbo
+  - model_name: openai-dall-e-3
+    litellm_params:
+      model: dall-e-3
+  # Add additional providers by creating API key items in 1Password
+  # and uncommenting the relevant sections in main.tf and the Nomad job template.
+  # See config.yaml.example for a full multi-provider configuration.
+
+litellm_settings:
+  callbacks: ["arize_phoenix"]
+  drop_params: True
+  max_budget: 100
+  budget_duration: 30d
+  num_retries: 5
+  request_timeout: 600
+
+general_settings:
+  proxy_budget_rescheduler_min_time: 30
+  proxy_budget_rescheduler_max_time: 60

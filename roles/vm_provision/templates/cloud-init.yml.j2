@@ -1,0 +1,74 @@
+#cloud-config
+# Cloud-init configuration for Octant VM provisioning
+
+hostname: {{ vm_name }}
+
+users:
+  - name: {{ ssh_user }}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, sudo
+    home: /home/{{ ssh_user }}
+    shell: /bin/bash
+    lock_passwd: false
+    ssh_authorized_keys:
+{% for key_path in ssh_key_paths %}
+{% set key_content = lookup('file', key_path, errors='ignore') %}
+{% if key_content %}
+      - {{ key_content }}
+{% endif %}
+{% endfor %}
+
+# Enable password auth as fallback
+ssh_pwauth: true
+chpasswd:
+  list: |
+    {{ ssh_user }}:{{ ssh_default_password }}
+  expire: false
+
+# Package management
+package_update: true
+package_upgrade: false
+
+packages:
+{% for pkg in cloud_init_packages %}
+  - {{ pkg }}
+{% endfor %}
+
+# Configure DNS and network
+write_files:
+  - path: /etc/systemd/resolved.conf.d/dns.conf
+    content: |
+      [Resolve]
+      DNS=1.1.1.1 8.8.8.8
+      FallbackDNS=8.8.4.4 1.0.0.1
+      DNSSEC=no
+      DNSOverTLS=no
+
+  - path: /etc/netplan/99-custom-dns.yaml
+    permissions: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          enp1s0:
+            dhcp4: true
+            dhcp6: false
+            dhcp4-overrides:
+              use-dns: false
+              route-metric: 100
+            nameservers:
+              addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
+
+runcmd:
+  # Configure DNS
+  - systemctl restart systemd-resolved
+  - netplan apply || true
+  # Enable and start guest agent
+  - systemctl enable qemu-guest-agent
+  - systemctl start qemu-guest-agent
+  # Signal completion
+  - touch /var/lib/cloud/instance/octant-ready
+
+timezone: {{ time_zone | default('UTC') }}
+
+final_message: "Cloud-init completed after $UPTIME seconds. VM ready for Ansible provisioning."

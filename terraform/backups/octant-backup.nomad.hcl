@@ -24,7 +24,7 @@ job "octant-backup" {
     env {
       POSTGRES_USER = "postgres"
     }
-    
+
     template {
       destination = "$${NOMAD_SECRETS_DIR}/env.txt"
       env         = true
@@ -37,7 +37,7 @@ EOT
     template {
       destination = "local/postgres_backup.sh"
       env         = false
-      perms       = "755"        
+      perms       = "755"
       data        = <<EOT
 {{ with nomadVar "nomad/jobs/postgres" }}
 timestamp=$(date +%Y%m%d_%H%M%S)
@@ -65,7 +65,7 @@ EOT
     template {
       destination = "local/library_backup.sh"
       env         = false
-      perms       = "755"        
+      perms       = "755"
       data        = <<EOT
 # Create or update library TAR
 if [ -f "$LIBRARY_BACKUP" ]; then

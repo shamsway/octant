@@ -1,0 +1,43 @@
+---
+profile: basic
+
+exclude_paths:
+  - .cache/
+  - .github/
+  - .worktrees/
+  - local/
+  - terraform/
+  - packer/
+  - node_modules/
+  - docs/
+  - octant.yml
+  - playbooks/00-build-base-image.yml
+  - playbooks/99-teardown.yml
+  - roles/container-storage/
+  - roles/podman-rootless/
+  - roles/requirements/
+  - roles/tailscale/
+  - roles/vm_provision/
+  - roles/vm_storage/
+
+warn_list:
+  - yaml[line-length]
+  - name[casing]
+  - name[missing]
+  - name[template]
+
+skip_list:
+  - role-name
+  - name[template]
+  - name[play]
+  - var-naming[no-role-prefix]
+  - var-naming[no-reserved]
+  - var-naming[read-only]
+  - command-instead-of-shell
+  - yaml[commas]
+  - yaml[comments]
+  - yaml[trailing-spaces]
+  - yaml[truthy]
+  - yaml[colons]
+  - yaml[indentation]
+  - jinja[spacing]

@@ -1,0 +1,22 @@
+---
+- name: Install ceph packages on all nodes
+  ansible.builtin.include_tasks: install.yml
+
+- name: Bootstrap Ceph cluster
+  ansible.builtin.include_tasks: bootstrap.yml
+  when: inventory_hostname == ceph_first_mon
+
+- name: Add hosts to Ceph cluster
+  ansible.builtin.include_tasks: add_hosts.yml
+  when: inventory_hostname == ceph_first_mon
+
+- name: Create OSDs from data disks
+  ansible.builtin.include_tasks: create_osds.yml
+  when: inventory_hostname == ceph_first_mon
+
+- name: Create CephFS filesystem
+  ansible.builtin.include_tasks: create_fs.yml
+  when: inventory_hostname == ceph_first_mon
+
+- name: Mount CephFS on all nodes
+  ansible.builtin.include_tasks: mount.yml

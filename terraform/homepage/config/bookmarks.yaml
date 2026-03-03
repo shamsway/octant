@@ -1,0 +1,14 @@
+---
+- Management:
+    - GitHub Repo:
+        - abbr: GH
+          href: https://github.com/shamsway/octant
+    - Grafana Dashboards:
+        - abbr: GD
+          href: https://grafana.octant.local/dashboards
+    - Nomad UI:
+        - abbr: NM
+          href: https://nomad.octant.local/ui/jobs
+    - Consul UI:
+        - abbr: CS
+          href: https://consul.octant.local/ui/dc1/services

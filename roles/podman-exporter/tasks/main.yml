@@ -1,0 +1,109 @@
+---
+- name: Deploy rootless podman exporter systemd unit
+  ansible.builtin.template:
+    src: podman-exporter-rootless.service.j2
+    dest: /etc/systemd/system/podman-exporter-rootless.service
+    mode: "0644"
+  register: podman_exporter_rootless_unit
+  when: podman_exporter_enable_rootless
+
+- name: Remove rootless podman exporter systemd unit when disabled
+  ansible.builtin.file:
+    path: /etc/systemd/system/podman-exporter-rootless.service
+    state: absent
+  when: not podman_exporter_enable_rootless
+
+- name: Deploy rootful podman exporter systemd unit
+  ansible.builtin.template:
+    src: podman-exporter-rootful.service.j2
+    dest: /etc/systemd/system/podman-exporter-rootful.service
+    mode: "0644"
+  register: podman_exporter_rootful_unit
+  when: podman_exporter_enable_rootful
+
+- name: Remove rootful podman exporter systemd unit when disabled
+  ansible.builtin.file:
+    path: /etc/systemd/system/podman-exporter-rootful.service
+    state: absent
+  when: not podman_exporter_enable_rootful
+
+- name: Register rootless podman exporter service in Consul
+  ansible.builtin.template:
+    src: podman-exporter-rootless-consul.json.j2
+    dest: "{{ configdirs['consul-agent'] }}/podman-exporter-rootless.json"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+  register: podman_exporter_rootless_consul
+  when: podman_exporter_enable_rootless
+
+- name: Remove rootless podman exporter Consul service when disabled
+  ansible.builtin.file:
+    path: "{{ configdirs['consul-agent'] }}/podman-exporter-rootless.json"
+    state: absent
+  when: not podman_exporter_enable_rootless
+
+- name: Register rootful podman exporter service in Consul
+  ansible.builtin.template:
+    src: podman-exporter-rootful-consul.json.j2
+    dest: "{{ configdirs['consul-agent-root'] }}/podman-exporter-rootful.json"
+    owner: root
+    group: root
+    mode: "0644"
+  register: podman_exporter_rootful_consul
+  when: podman_exporter_enable_rootful
+
+- name: Remove rootful podman exporter Consul service when disabled
+  ansible.builtin.file:
+    path: "{{ configdirs['consul-agent-root'] }}/podman-exporter-rootful.json"
+    state: absent
+  when: not podman_exporter_enable_rootful
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: >-
+    (podman_exporter_rootless_unit is defined and podman_exporter_rootless_unit.changed)
+    or (podman_exporter_rootful_unit is defined and podman_exporter_rootful_unit.changed)
+
+- name: Ensure rootless podman exporter is enabled and running
+  ansible.builtin.systemd:
+    name: podman-exporter-rootless
+    state: started
+    enabled: true
+  when: podman_exporter_enable_rootless
+
+- name: Ensure rootless podman exporter is disabled when not enabled
+  ansible.builtin.systemd:
+    name: podman-exporter-rootless
+    state: stopped
+    enabled: false
+  failed_when: false
+  when: not podman_exporter_enable_rootless
+
+- name: Ensure rootful podman exporter is enabled and running
+  ansible.builtin.systemd:
+    name: podman-exporter-rootful
+    state: started
+    enabled: true
+  when: podman_exporter_enable_rootful
+
+- name: Ensure rootful podman exporter is disabled when not enabled
+  ansible.builtin.systemd:
+    name: podman-exporter-rootful
+    state: stopped
+    enabled: false
+  failed_when: false
+  when: not podman_exporter_enable_rootful
+
+- name: Reload consul-agent to register rootless exporter
+  ansible.builtin.command:
+    cmd: consul reload -http-addr=127.0.0.1:{{ consul.ports.agent_http }}
+  when: podman_exporter_rootless_consul is defined and podman_exporter_rootless_consul.changed
+  changed_when: true
+
+- name: Reload consul-agent-root to register rootful exporter
+  ansible.builtin.command:
+    cmd: consul reload -http-addr=127.0.0.1:{{ consul.ports.root_agent_http }}
+  when: podman_exporter_rootful_consul is defined and podman_exporter_rootful_consul.changed
+  changed_when: true

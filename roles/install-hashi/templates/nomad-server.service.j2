@@ -1,7 +1,12 @@
 [Unit]
 Description=Nomad server
-Requires=network-online.target tailscaled.service consul-server.service 
+{% if tailscale_enabled | default(false) %}
+Requires=network-online.target tailscaled.service consul-server.service
 After=network-online.target tailscaled.service consul-server.service
+{% else %}
+Requires=network-online.target consul-server.service
+After=network-online.target consul-server.service
+{% endif %}
 Wants=consul.service
 After=consul.service
 Documentation=https://www.nomadproject.io/docs/agent/options

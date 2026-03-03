@@ -1,0 +1,71 @@
+---
+- name: Check for .env file
+  ansible.builtin.stat:
+    path: "{{ terraform_env_file }}"
+  register: env_file_stat
+
+- name: Load environment variables from .env file
+  ansible.builtin.set_fact:
+    terraform_env_vars: >
+      {%- set env_vars = {} -%}
+      {%- for line in lookup('file', terraform_env_file).split('\n') -%}
+        {%- if line and not line.startswith('#') and '=' in line -%}
+          {%- set key_value = line.split('=', 1) -%}
+          {%- if key_value | length == 2 and key_value[1] | trim | trim('"') != '' -%}
+            {%- set _ = env_vars.update({key_value[0].lower(): key_value[1] | trim | trim('"')}) -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ env_vars }}
+  when: env_file_stat.stat.exists
+
+- name: Set empty terraform environment variables if .env not available
+  ansible.builtin.set_fact:
+    terraform_env_vars: {}
+  when: not env_file_stat.stat.exists
+
+- name: Report loaded environment variables
+  ansible.builtin.debug:
+    msg: "Loaded {{ terraform_env_vars | length }} environment variables from .env file"
+
+- name: Determine modules to process
+  ansible.builtin.set_fact:
+    modules_to_process: >-
+      {%- if module is defined -%}
+        {{ [module] }}
+      {%- elif modules is defined -%}
+        {{ modules }}
+      {%- else -%}
+        {{ terraform_execution_order }}
+      {%- endif -%}
+
+- name: Check which terraform modules exist
+  ansible.builtin.stat:
+    path: "{{ terraform_base_path }}/{{ item }}"
+  register: module_stat_results
+  loop: "{{ modules_to_process }}"
+  loop_control:
+    loop_var: item
+
+- name: Filter to only existing modules
+  ansible.builtin.set_fact:
+    existing_modules: >-
+      {%- set existing = [] -%}
+      {%- for result in module_stat_results.results -%}
+        {%- if result.stat.exists -%}
+          {%- set _ = existing.append(result.item) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ existing }}
+
+- name: Display modules to be processed
+  ansible.builtin.debug:
+    msg: "Processing terraform modules: {{ existing_modules }}"
+
+- name: "{{ terraform_action | default('Apply') | capitalize }} terraform configuration for {{ item }}"
+  ansible.builtin.include_tasks: "{{ (terraform_action | default('apply')) + '_module.yml' }}"
+  vars:
+    terraform_module: "{{ item }}"
+  loop: "{{ existing_modules }}"
+  loop_control:
+    loop_var: item

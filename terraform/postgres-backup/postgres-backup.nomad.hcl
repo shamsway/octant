@@ -24,7 +24,7 @@ job "postgres-backup" {
     env {
       POSTGRES_USER = "postgres"
     }
-    
+
     template {
       destination = "$${NOMAD_SECRETS_DIR}/env.txt"
       env         = true
@@ -37,7 +37,7 @@ EOT
     template {
       destination = "local/postgres_backup.sh"
       env         = false
-      perms       = "755"        
+      perms       = "755"
       data        = <<EOT
 {{ with nomadVar "nomad/jobs/postgres" }}
 timestamp=$(date +%Y%m%d_%H%M%S)

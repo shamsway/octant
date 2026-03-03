@@ -1,0 +1,8 @@
+---
+- name: Install ceph packages
+  ansible.builtin.apt:
+    name:
+      - cephadm
+      - ceph-common
+    state: present
+    update_cache: true

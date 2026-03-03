@@ -1,0 +1,53 @@
+# Example: Local OpenAI-compatible model endpoints
+#
+# Use this snippet to add locally-hosted models served by vLLM, SGLang,
+# or any other engine that exposes an OpenAI-compatible /v1 API.
+#
+# The api_base should point to the hypervisor's KVM bridge IP
+# (192.168.122.1) so that Nomad containers can reach the host.
+# Do NOT use "localhost" — containers run in their own network namespace.
+#
+# Usage:
+#   1. Copy the model entries below into your config.yaml under model_list.
+#   2. Adjust model names and api_base to match your setup.
+#   3. Redeploy:  terraform apply -auto-approve
+#
+# Discover available models:
+#   curl http://192.168.122.1:8000/v1/models
+
+model_list:
+  # ── Local models (OpenAI-compatible) ──────────────────────────────
+  #
+  # LiteLLM's "openai/" prefix tells it to use the OpenAI provider,
+  # and api_base overrides the endpoint to your local server.
+  # No API key is required for most local inference servers.
+
+  - model_name: local/glm-5-fp8
+    litellm_params:
+      model: openai/glm-5-fp8
+      api_base: http://192.168.122.1:8000/v1
+      api_key: "no-key-required"
+
+  # ── More examples ─────────────────────────────────────────────────
+  # Uncomment and adjust for additional local models.
+
+  # - model_name: local/llama-3.1-70b
+  #   litellm_params:
+  #     model: openai/llama-3.1-70b
+  #     api_base: http://192.168.122.1:8000/v1
+  #     api_key: "no-key-required"
+
+  # - model_name: local/qwen2.5-72b
+  #   litellm_params:
+  #     model: openai/qwen2.5-72b
+  #     api_base: http://192.168.122.1:8000/v1
+  #     api_key: "no-key-required"
+
+  # ── Multiple servers ──────────────────────────────────────────────
+  # If you have models on different ports or hosts, just change api_base:
+
+  # - model_name: local/codestral
+  #   litellm_params:
+  #     model: openai/codestral
+  #     api_base: http://192.168.122.1:30001/v1
+  #     api_key: "no-key-required"

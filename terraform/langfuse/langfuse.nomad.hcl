@@ -16,7 +16,7 @@ job "langfuse" {
 
       dns {
         servers = ${dns}
-      }         
+      }
     }
 
     service {
@@ -33,7 +33,7 @@ job "langfuse" {
 
       connect {
         native = true
-      }        
+      }
 
       check {
         name     = "alive"
@@ -42,8 +42,8 @@ job "langfuse" {
         interval = "60s"
         timeout  = "5s"
       }
-    }       
-    
+    }
+
     task "langfuse" {
       driver = "podman"
 
@@ -58,7 +58,7 @@ job "langfuse" {
               "tag" = "${servicename}"
             }
           ]
-        }                 
+        }
       }
 
       env {
@@ -77,7 +77,7 @@ job "langfuse" {
 DATABASE_URL="postgresql://{{ .db_username }}:{{ .db_password }}@${db_server}:5432/${db_name}"
 {{- end -}}
 EOT
-      }    
+      }
 
       resources {
         cpu    = 500

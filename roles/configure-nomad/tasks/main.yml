@@ -1,18 +1,10 @@
 ---
-- name: Ensure nomad-server is in a running state
-  service:
-    name: nomad-server
-    state: started
-  register: nomadServiceDetails
-  until: nomadServiceDetails.status.ActiveState == "active"
-  retries: 5
-  delay: 10
-
 - name: Generate Nomad gossip key
   ansible.builtin.command: openssl rand -base64 32
   register: nomad_gossip_key_output
+  run_once: true
 
-- name: Set Nomad gossip key fact
+- name: Set Nomad gossip key fact on all hosts
   ansible.builtin.set_fact:
     nomad_gossip_key: "{{ nomad_gossip_key_output.stdout }}"
 
@@ -24,6 +16,7 @@
     create: true
   delegate_to: localhost
   become: false
+  run_once: true
   loop:
     - { name: nomad_gossip_key, value: "{{ nomad_gossip_key }}" }
 
@@ -35,10 +28,32 @@
     line: export {{ item.key }}={{ item.value }}
     create: true
   with_dict:
-    NOMAD_ADDR: "https://nomad.{{ datacenter }}.{{ tld }}:{{ nomad.ports.https }}"
+    NOMAD_ADDR: "http://localhost:{{ nomad.ports.http }}"
+
+- name: Writing TLS shell profile for ssh user on {{ inventory_hostname.split('.')[0] }}
+  become: false
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: ^export {{ item.key }}
+    line: export {{ item.key }}={{ item.value }}
+    create: true
+  with_dict:
     NOMAD_CACERT: "{{ configdirs['tls'] }}/consul-agent-ca.pem"
-    NOMAD_CLIENT_CERT: "{{ configdirs['tls'] }}/{{ datacenter }}-cli-consul-0.pem"
-    NOMAD_CLIENT_KEY: "{{ configdirs['tls'] }}/{{ datacenter }}-cli-consul-0-key.pem" 
+    NOMAD_CLIENT_CERT: "{{ configdirs['tls'] }}/{{ datacenter }}-client-consul-0.pem"
+    NOMAD_CLIENT_KEY: "{{ configdirs['tls'] }}/{{ datacenter }}-client-consul-0-key.pem"
+  when: nomad.tls_enabled | default(false)
+
+- name: Remove stale Nomad TLS env vars from shell profile
+  become: false
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: ^export {{ item }}=
+    state: absent
+  loop:
+    - NOMAD_CACERT
+    - NOMAD_CLIENT_CERT
+    - NOMAD_CLIENT_KEY
+  when: not (nomad.tls_enabled | default(false))
 
 - name: Adding environment variables to direnv
   ansible.builtin.lineinfile:
@@ -48,8 +63,35 @@
     create: true
   delegate_to: localhost
   become: false
+  run_once: true
   with_dict:
-    NOMAD_ADDR: "https://nomad.{{ datacenter }}.{{ tld }}:{{ nomad.ports.https }}"
+    NOMAD_ADDR: "http://localhost:{{ nomad.ports.http }}"
+
+- name: Adding TLS environment variables to direnv
+  ansible.builtin.lineinfile:
+    dest: ./.envrc
+    regexp: ^export {{ item.key }}
+    line: export {{ item.key }}={{ item.value }}
+    create: true
+  delegate_to: localhost
+  become: false
+  run_once: true
+  with_dict:
     NOMAD_CACERT: "~/.tls/consul-agent-ca.pem"
-    NOMAD_CLIENT_CERT: "~/.tls/{{ datacenter }}-cli-consul-0.pem"
-    NOMAD_CLIENT_KEY: "~/.tls/{{ datacenter }}-cli-consul-0-key.pem" 
+    NOMAD_CLIENT_CERT: "~/.tls/{{ datacenter }}-client-consul-0.pem"
+    NOMAD_CLIENT_KEY: "~/.tls/{{ datacenter }}-client-consul-0-key.pem"
+  when: nomad.tls_enabled | default(false)
+
+- name: Remove stale Nomad TLS env vars from direnv
+  ansible.builtin.lineinfile:
+    dest: ./.envrc
+    regexp: ^export {{ item }}=
+    state: absent
+  delegate_to: localhost
+  become: false
+  run_once: true
+  loop:
+    - NOMAD_CACERT
+    - NOMAD_CLIENT_CERT
+    - NOMAD_CLIENT_KEY
+  when: not (nomad.tls_enabled | default(false))

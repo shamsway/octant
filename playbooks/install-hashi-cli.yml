@@ -1,0 +1,58 @@
+---
+# Install Nomad and Consul CLI tools on the hypervisor host
+# Adds the HashiCorp APT repository and installs CLI-only packages
+#
+# Usage:
+#   ansible-playbook playbooks/install-hashi-cli.yml -i inventory/hypervisors.yml
+#
+# This is an optional convenience playbook for administrators who want
+# Nomad and Consul CLI tools available on the hypervisor for cluster
+# management without SSH-ing into a VM.
+
+- name: Install HashiCorp CLI tools on hypervisor
+  hosts: hypervisors
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: true
+
+    - name: Add HashiCorp APT signing key
+      ansible.builtin.apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+        state: present
+
+    - name: Add HashiCorp APT repository
+      ansible.builtin.apt_repository:
+        repo: deb https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+        state: present
+
+    - name: Install Nomad and Consul CLI packages
+      ansible.builtin.apt:
+        name:
+          - nomad
+          - consul
+        state: "{% if consul_version | default('') != '' or nomad_version | default('') != '' %}present{% else %}latest{% endif %}"
+        update_cache: true
+
+    - name: Verify installations
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - nomad version
+        - consul version
+      register: version_output
+      changed_when: false
+
+    - name: Display installed versions
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      loop: "{{ version_output.results }}"
+      loop_control:
+        label: "{{ item.item }}"

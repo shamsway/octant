@@ -17,7 +17,7 @@ job "jupyter" {
 
       dns {
         servers = ${dns}
-      }         
+      }
     }
 
     service {
@@ -34,7 +34,7 @@ job "jupyter" {
 
       connect {
         native = true
-      }        
+      }
 
       check {
         name     = "alive"
@@ -43,8 +43,8 @@ job "jupyter" {
         interval = "60s"
         timeout  = "5s"
       }
-    }       
-    
+    }
+
     task "jupyter" {
       driver = "podman"
 
@@ -54,7 +54,7 @@ job "jupyter" {
         image_pull_timeout = "15m"
         args = ["start-notebook.py","--IdentityProvider.token='6476bd640f20936608a5f0b6b5f00820'","--NotebookApp.allow_origin='https://colab.research.google.com'","--NotebookApp.port_retries=0", "--NotebookApp.disable_check_xsrf=True"]
         userns = "keep-id:uid=1000,gid=100"
-        volumes = ["/mnt/services/jupyter/data:/home/jovyan/work"]        
+        volumes = ["/mnt/services/jupyter/data:/home/jovyan/work"]
         logging = {
           driver = "journald"
           options = [
@@ -62,7 +62,7 @@ job "jupyter" {
               "tag" = "${servicename}"
             }
           ]
-        }                 
+        }
       }
 
       env {

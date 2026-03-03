@@ -1,30 +1,25 @@
+variable "op_vault_name" {
+  description = "1Password vault name"
+  type        = string
+  default     = "Octant"
+}
+
 variable "inventory_vars" {
   description = "Path to Ansible inventory varibles"
   type        = string
   default     = "../../inventory/group_vars/all.yml"
 }
 
-variable "OP_API_TOKEN" {
-  description = "Auth token for 1password connect vault"
-  type = string
-}
-
-variable "op_api_url" {
-  description = "URL for 1password connect vault"
-  type = string
-  default = "https://opapi.octant.net"
-}
-
 variable "nomad" {
   description = "Nomad server address"
   type = string
-  default = "nomad.octant.net"
+  default = "localhost"
 }
 
 variable "consul" {
   description = "Consul server address"
   type = string
-  default = "consul.octant.net"
+  default = "localhost"
 }
 
 variable "datacenter" {

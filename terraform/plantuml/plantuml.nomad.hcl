@@ -16,7 +16,7 @@ job "plantuml" {
 
       dns {
         servers = ${dns}
-      }         
+      }
     }
 
     service {
@@ -33,7 +33,7 @@ job "plantuml" {
 
       connect {
         native = true
-      }        
+      }
 
       check {
         name     = "alive"
@@ -42,8 +42,8 @@ job "plantuml" {
         interval = "60s"
         timeout  = "5s"
       }
-    }       
-    
+    }
+
     task "plantuml" {
       driver = "podman"
 
@@ -58,8 +58,8 @@ job "plantuml" {
               "tag" = "${servicename}"
             }
           ]
-        }                 
-      } 
+        }
+      }
 
       resources {
         cpu    = 500

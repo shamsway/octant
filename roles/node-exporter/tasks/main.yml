@@ -1,0 +1,43 @@
+---
+- name: Install Prometheus Node Exporter
+  ansible.builtin.apt:
+    name: prometheus-node-exporter
+    state: present
+    update_cache: true
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Start and enable Node Exporter service
+  ansible.builtin.systemd:
+    name: prometheus-node-exporter
+    state: started
+    enabled: true
+
+- name: Create Consul service definition for node-exporter
+  ansible.builtin.copy:
+    content: |
+      {
+        "service": {
+          "name": "node-exporter",
+          "tags": ["metrics"],
+          "port": {{ node_exporter_port }},
+          "check": {
+            "http": "http://localhost:{{ node_exporter_port }}/metrics",
+            "interval": "30s",
+            "timeout": "5s"
+          }
+        }
+      }
+    dest: "{{ configdirs['consul-agent'] }}/node-exporter.json"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+  register: node_exporter_consul_def
+
+- name: Reload consul-agent to register node-exporter
+  ansible.builtin.command:
+    cmd: consul reload -http-addr=127.0.0.1:{{ consul.ports.agent_http }}
+  when: node_exporter_consul_def.changed
+  changed_when: true

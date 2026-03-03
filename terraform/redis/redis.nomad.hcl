@@ -17,7 +17,7 @@ job "redis" {
       }
       dns {
         servers = ${dns}
-      }      
+      }
     }
 
     service {
@@ -28,7 +28,7 @@ job "redis" {
       connect {
         native = true
       }
-              
+
       check {
         name     = "alive"
         type     = "tcp"
@@ -52,9 +52,9 @@ job "redis" {
               "tag" = "${servicename}"
             }
           ]
-        }         
+        }
       }
-      
+
       resources {
         cpu    = 500
         memory = 256

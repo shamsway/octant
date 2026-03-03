@@ -25,15 +25,13 @@ job "restic-backup" {
         RESTIC_REPOSITORY = "${restic_repository}"
         HOSTNAME = "octant-backup"
       }
-      
+
       template {
-        destination = "$${NOMAD_SECRETS_DIR}/env.txt"
+        destination = "secrets/env"
         env         = true
         data        = <<EOT
 {{ with nomadVar "nomad/jobs/restic-backup" }}
 RESTIC_PASSWORD={{ .restic_password }}
-AWS_ACCESS_KEY_ID={{ .AWS_ACCESS_KEY_ID }}
-AWS_SECRET_ACCESS_KEY={{ .AWS_SECRET_ACCESS_KEY }}
 {{ end }}
 EOT
       }

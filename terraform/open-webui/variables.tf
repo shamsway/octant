@@ -1,77 +1,72 @@
-variable "OP_API_TOKEN" {
-  description = "Auth token for 1password connect vault"
-  type = string
-}
-
-variable "op_api_url" {
-  description = "URL for 1password connect vault"
-  type = string
-  default = "https://opapi.octant.net"
+variable "op_vault_name" {
+  description = "1Password vault name"
+  type        = string
+  default     = "Octant"
 }
 
 variable "nomad" {
   description = "Nomad server address"
-  type = string
-  default = "nomad.octant.net"
+  type        = string
+  default     = "localhost"
 }
 
 variable "consul" {
   description = "Consul server address"
-  type = string
-  default = "consul.octant.net"
+  type        = string
+  default     = "localhost"
 }
 
 variable "region" {
-  type = string
+  type    = string
   default = "home"
 }
 
 variable "datacenter" {
-  type = string
+  type    = string
   default = "octant"
 }
 
 variable "image" {
-  type = string
-  default = "ghcr.io/open-webui/open-webui:v0.3.4"
+  type    = string
+  default = "ghcr.io/open-webui/open-webui:v0.5.16"
 }
 
 variable "domain" {
-  type = string
-  default = "octant.net"
+  type    = string
+  default = "octant.local"
 }
 
 variable "certresolver" {
-  type = string
-  default = "cloudflare"
+  type    = string
+  default = ""
 }
 
 variable "servicename" {
-  type = string
+  type    = string
   default = "chatllm"
 }
 
 variable "dns" {
-  type = list(string)
-  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+  type    = list(string)
+  default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }
 
 variable "ollama_url" {
-  type = string
+  type    = string
   default = "http://ollama.service.consul:11434"
 }
 
 variable "webui_url" {
-  type = string
-  default = "https://chatllm.octant.net"
+  type    = string
+  default = "http://chatllm.octant.local"
 }
 
 variable "webui_auth" {
-  type = string
+  type    = string
   default = "true"
 }
 
 variable "webui_name" {
-  type = string
+  type    = string
   default = "Octant LLM Chat"
 }

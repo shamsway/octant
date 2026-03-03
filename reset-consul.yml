@@ -1,6 +1,6 @@
 ---
 # - name: Stop all Consul Servers and Agents
-#   ansible.builtin.import_tasks: 
+#   ansible.builtin.import_tasks:
 #     file: stop-consul.yml
 
 - name: Clear Consul Data Directories
@@ -35,7 +35,7 @@
         state: "{{ item }}"
         owner: root
         group: root
-        mode: "0755"        
+        mode: "0755"
       with_items:
         - absent
         - directory
@@ -47,7 +47,7 @@
         state: "{{ item }}"
         owner: root
         group: root
-        mode: "0755"            
+        mode: "0755"
       with_items:
         - absent
         - directory

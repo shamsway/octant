@@ -1,0 +1,212 @@
+---
+servers:
+  hosts:
+    octant-01:
+      server: true
+      dnsserver: true
+      region: home
+      vm_mac: "52:54:00:00:01:01"
+      vm_ip: "192.168.122.101"
+    octant-02:
+      server: true
+      dnsserver: true
+      region: home
+      vm_mac: "52:54:00:00:01:02"
+      vm_ip: "192.168.122.102"
+    octant-03:
+      server: true
+      dnsserver: true
+      region: home
+      vm_mac: "52:54:00:00:01:03"
+      vm_ip: "192.168.122.103"
+  vars:
+    reboot: false
+    vm_ram_gb: 24
+    vm_vcpus: 8
+    vm_os_disk_size: 60G
+    vm_data_disk_size: 100G
+    vm_create_data_disk: true
+    vm_create_container_disk: true
+    vm_container_disk_size: 30G
+    volumes:
+      - name: traefik-data
+        path: /mnt/services/traefik/data
+        backup: true
+      - name: traefik-certs
+        path: /mnt/services/traefik/certs
+        backup: true
+      - name: traefik-config
+        path: /mnt/services/traefik/config
+        backup: true
+      - name: postgres-data
+        path: /mnt/services/postgres
+        backup: true
+        mode: "0700"
+      - name: redis-data
+        path: /mnt/services/redis
+        backup: false
+      - name: influxdb-config
+        path: /mnt/services/influxdb/config
+        backup: true
+      - name: influxdb-data
+        path: /mnt/services/influxdb/data
+        backup: false
+      - name: grafana-config
+        path: /mnt/services/grafana/config
+        backup: true
+      - name: grafana-data
+        path: /mnt/services/grafana/data
+        backup: false
+      - name: homeassistant-data
+        path: /mnt/services/homeassistant
+        backup: true
+      - name: loki-data
+        path: /mnt/services/loki
+        backup: false
+      - name: nginx-data
+        path: /mnt/services/nginx/html
+        backup: true
+      - name: prometheus-data
+        path: /mnt/services/prometheus
+        backup: false
+      - name: backups
+        path: /mnt/services/backups
+        backup: true
+      - name: backups-postgres
+        path: /mnt/services/backups/postgres
+        backup: false
+      - name: backups-mariadb
+        path: /mnt/services/backups/mariadb
+        backup: false
+      - name: backups-snapshots
+        path: /mnt/services/backups/snapshots
+        backup: false
+      - name: open-webui
+        path: /mnt/services/open-webui
+        backup: true
+      - name: litellm
+        path: /mnt/services/litellm
+        backup: true
+      - name: unifi-config
+        path: /mnt/services/unifi/config
+        backup: true
+      - name: unifi-data
+        path: /mnt/services/unifi/data
+        backup: true
+      - name: 1password-config
+        path: /mnt/services/1password/config
+        backup: true
+      - name: 1password-data
+        path: /mnt/services/1password/data
+        backup: true
+      - name: weaviate-config
+        path: /mnt/services/weaviate/config
+        backup: true
+      - name: weaviate-data
+        path: /mnt/services/weaviate/data
+        backup: false
+      - name: rss-config
+        path: /mnt/services/rss-config
+        backup: true
+      - name: jaegar-config
+        path: /mnt/services/jaegar/config
+        backup: true
+      - name: librechat-config
+        path: /mnt/services/librechat/config
+        backup: true
+      - name: open-webui-config
+        path: /mnt/services/open-webui/config
+        backup: true
+      - name: memgpt-config
+        path: /mnt/services/memgpt/config
+        backup: true
+      - name: langfuse-config
+        path: /mnt/services/langfuse/config
+        backup: true
+      - name: langsmith-config
+        path: /mnt/services/langsmith/config
+        backup: true
+      - name: gpt4all-config
+        path: /mnt/services/gpt4all/config
+        backup: true
+      - name: affine
+        path: /mnt/services/affine/config
+        backup: true
+      - name: librenms-config
+        path: /mnt/services/librenms/config
+        backup: true
+      - name: nautobot-config
+        path: /mnt/services/nautobot/config
+        backup: true
+      - name: n8n-config
+        path: /mnt/services/n8n/config
+        backup: true
+      - name: pgweb-config
+        path: /mnt/services/pgweb/config
+        backup: true
+      - name: librenms-data
+        path: /mnt/services/librenms/data
+        backup: false
+      - name: mariadb-data
+        path: /mnt/services/mariadb/data
+        backup: true
+      - name: mosquitto-config
+        path: /mnt/services/mosquitto/config
+        backup: true
+      - name: mosquitto-data
+        path: /mnt/services/mosquitto/data
+        backup: false
+      - name: mosquitto-log
+        path: /mnt/services/mosquitto/log
+        backup: false
+      - name: tempo-data
+        path: /mnt/services/tempo
+        backup: false
+      - name: alertmanager-data
+        path: /mnt/services/alertmanager/data
+        backup: false
+      - name: gatus-data
+        path: /mnt/services/gatus/data
+        backup: true
+      - name: uptimekuma-data
+        path: /mnt/services/uptimekuma/data
+        backup: true
+      - name: searxng-config
+        path: /mnt/services/searxng/config
+        backup: true
+      - name: searxng-data
+        path: /mnt/services/searxng/data
+        backup: false
+      - name: homepage-config
+        path: /mnt/services/homepage/config
+        backup: true
+      - name: n8n-data
+        path: /mnt/services/n8n/data
+        backup: true
+      - name: open-webui-data
+        path: /mnt/services/open-webui/data
+        backup: true
+      - name: phoenix-data
+        path: /mnt/services/phoenix/data
+        backup: true
+      - name: ntfy-config
+        path: /mnt/services/ntfy/config
+        backup: true
+      - name: ntfy-data
+        path: /mnt/services/ntfy/data
+        backup: false
+      - name: qdrant-data
+        path: /mnt/services/qdrant/data
+        backup: false
+      - name: linkding-data
+        path: /mnt/services/linkding/data
+        backup: true
+      - name: fusion-data
+        path: /mnt/services/fusion/data
+        backup: true
+      - name: gitea-data
+        path: /mnt/services/gitea/data
+        backup: true
+      - name: linkwarden-data
+        path: /mnt/services/linkwarden/data
+        backup: true

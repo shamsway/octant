@@ -1,14 +1,19 @@
   # terraform apply -auto-approve
   # terraform destroy -auto-approve
 
-job "postgres" {
-  region = "${region}"
+job "pgadmin" {
+  region      = "${region}"
   datacenters = ["${datacenter}"]
   type        = "service"
 
   constraint {
+    attribute = "$${attr.kernel.name}"
+    value     = "linux"
+  }
+
+  constraint {
     attribute = "$${meta.rootless}"
-    value = "true"
+    value     = "false"
   }
 
   group "pgadmin" {
@@ -21,23 +26,18 @@ job "postgres" {
 
       dns {
         servers = ${dns}
-      }            
-    }
-
-    volume "pgweb-config" {
-      type      = "host"
-      read_only = false
-      source    = "pgweb-config"
+      }
     }
 
     service {
-      name = "${servicename}"
+      name     = "${servicename}"
       provider = "consul"
-      task = "pgadmin"
-      port = "pgadmin"
+      task     = "pgadmin"
+      port     = "pgadmin"
+
       tags = [
         "traefik.enable=true",
-        "traefik.consulcatalog.connect=false",          
+        "traefik.consulcatalog.connect=false",
         "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
         "traefik.http.routers.${servicename}.entrypoints=web,websecure",
         "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
@@ -55,50 +55,43 @@ job "postgres" {
         interval = "30s"
         timeout  = "5s"
       }
-    } 
-    
+    }
+
     task "pgadmin" {
       driver = "podman"
-      user = "5050"
+      user   = "5050"
 
       config {
-        image = "docker.io/dpage/pgadmin4:latest"
-        userns = "keep-id:uid=5050,gid=101"
-        ports = ["pgadmin"]
+        image              = "${image}"
+        ports              = ["pgadmin"]
         image_pull_timeout = "15m"
         logging = {
           driver = "journald"
           options = [
             {
-              "tag" = "pgadmin"
+              "tag" = "${servicename}"
             }
           ]
-        }         
-      }  
-
-      env {
-        PGADMIN_DEFAULT_EMAIL     = "pgadmin@shamsway.net"
-        PGADMIN_LISTEN_ADDRESS    = "0.0.0.0"
-        PGDATA                    = "/appdata/postgres"
+        }
       }
 
-      volume_mount {
-        volume      = "pgweb-config"
-        destination = "/var/lib/pgadmin"
-        read_only   = false
+      env {
+        PGADMIN_DEFAULT_EMAIL    = "${pgadmin_email}"
+        PGADMIN_LISTEN_ADDRESS   = "0.0.0.0"
+        PGADMIN_DISABLE_POSTFIX  = "true"
       }
 
       template {
         destination = "$${NOMAD_SECRETS_DIR}/env.txt"
         env         = true
         data        = <<EOT
-{{ with nomadVar "nomad/jobs/postgres" }}PGADMIN_DEFAULT_PASSWORD={{ .postgres_password }}{{ end }}
+{{ with nomadVar "nomad/jobs/pgadmin" }}PGADMIN_DEFAULT_PASSWORD={{ .postgres_password }}{{ end }}
 EOT
-      }    
-      
+      }
+
       resources {
-        memory = 128
-      }        
-    }      
+        memory = 384
+      }
+    }
   }
 }

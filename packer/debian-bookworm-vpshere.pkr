@@ -1,9 +1,9 @@
 variable "ssh_username" {
-  default = "debian" 
+  default = "debian"
 }
 
 variable "ssh_password" {
-  default = "D3b1@n4Lyf3" 
+  default = "D3b1@n4Lyf3"
 }
 
 variable "vcenter_server" {

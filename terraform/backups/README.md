@@ -10,7 +10,7 @@ Sync only new files from source to destination
 
 ## Creating/updating TAR archives
 
-Example: 
+Example:
 
 ```bash
 #!/bin/bash
@@ -36,7 +36,7 @@ fi
 
 ## Creating incremental TAR archives
 
-Example: 
+Example:
 
 ```bash
 #!/bin/bash

@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 def convert_docker_compose_to_nomad(docker_compose_content):
     client = Anthropic()
-    
-    #print("Anthropic object attributes:")
-    #print(dir(client))
-    
+
+    # print("Anthropic object attributes:")
+    # print(dir(client))
+
     with open("nomad-job-template.hcl.j2", "r") as f:
         job_template = f.read()
     f.close()
@@ -52,16 +52,15 @@ def convert_docker_compose_to_nomad(docker_compose_content):
     response = client.messages.create(
         model="claude-3-5-sonnet-20240620",
         max_tokens=2048,
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
+        messages=[{"role": "user", "content": prompt}],
     )
 
     return response.content[0].text
 
+
 def ollama_convert_docker_compose_to_nomad(docker_compose_content):
-    ollama_client = Client(host='http://ollama.service.consul:11434')
-    
+    ollama_client = Client(host="http://ollama.service.consul:11434")
+
     with open("nomad-job-template.hcl.j2", "r") as f:
         job_template = f.read()
     f.close()
@@ -94,36 +93,37 @@ def ollama_convert_docker_compose_to_nomad(docker_compose_content):
     """
 
     response = ollama_client.chat(
-        model='llama3-gradient', 
-        messages=[{'role': 'user', 'content': prompt}]
+        model="llama3-gradient", messages=[{"role": "user", "content": prompt}]
     )
 
-    return response['message']['content']
+    return response["message"]["content"]
+
 
 def convert_locally(docker_compose_content):
     docker_compose = yaml.safe_load(docker_compose_content)
 
-    env = Environment(loader=FileSystemLoader('.'))
-    template = env.get_template('nomad-job-template.hcl.j2')
+    env = Environment(loader=FileSystemLoader("."))
+    template = env.get_template("nomad-job-template.hcl.j2")
 
     services = []
-    for service_name, service_config in docker_compose['services'].items():
+    for service_name, service_config in docker_compose["services"].items():
         service = {
-            'name': service_name,
-            'image': service_config['image'],
-            'ports': service_config.get('ports', []),
-            'volumes': service_config.get('volumes', []),
-            'environment': service_config.get('environment', []),
+            "name": service_name,
+            "image": service_config["image"],
+            "ports": service_config.get("ports", []),
+            "volumes": service_config.get("volumes", []),
+            "environment": service_config.get("environment", []),
         }
         services.append(service)
 
     nomad_job = template.render(services=services)
     return nomad_job
 
+
 def main():
     st.title("Docker Compose to Nomad Converter")
 
-    #api_key = st.text_input("Enter your Anthropic API key:")
+    # api_key = st.text_input("Enter your Anthropic API key:")
     docker_compose_content = st.text_area("Enter your Docker Compose YAML:", height=300)
 
     if st.button("Convert using Claude API"):
@@ -143,9 +143,10 @@ def main():
     if st.button("Convert Locally"):
         if docker_compose_content:
             nomad_job = convert_locally(docker_compose_content)
-            st.code(nomad_job, language='hcl')
+            st.code(nomad_job, language="hcl")
         else:
             st.warning("Please provide Docker Compose YAML.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

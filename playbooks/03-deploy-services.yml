@@ -1,0 +1,50 @@
+---
+# Deploy Octant Services via Terraform
+# Runs locally on the controller, targeting the cluster's Consul/Nomad APIs
+# Terraform talks to Consul/Nomad APIs which distribute jobs across the cluster
+#
+# Usage:
+#   ansible-playbook playbooks/03-deploy-services.yml -i inventory/provisioned_vms.yml -i inventory/groups.yml
+#
+# Prerequisites:
+#   - Cluster configured with octant.yml
+#   - Ceph deployed with 02-deploy-ceph.yml
+#   - Terraform installed on controller
+#   - op CLI authenticated (for 1Password provider)
+#
+# Deploys: Traefik, Postgres, Registry, LiteLLM (configurable via terraform_execution_order)
+
+- name: Deploy Octant Services
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    cluster_address: "{{ hostvars[groups['servers'][0]].ansible_host | default(groups['servers'][0]) }}"
+
+  pre_tasks:
+    - name: Verify Consul is accessible
+      ansible.builtin.uri:
+        url: "http://{{ cluster_address }}:8500/v1/status/leader"
+        return_content: true
+      register: consul_leader
+      retries: 5
+      delay: 10
+      until: consul_leader.status == 200
+
+    - name: Verify Nomad is accessible
+      ansible.builtin.uri:
+        url: "http://{{ cluster_address }}:4646/v1/status/leader"
+        return_content: true
+      register: nomad_leader
+      retries: 5
+      delay: 10
+      until: nomad_leader.status == 200
+
+  roles:
+    - role: seed-onepassword
+      tags: seed-onepassword
+    - role: apply-terraform
+
+- name: Capture lab state after deployment
+  ansible.builtin.import_playbook: 07-capture-state.yml

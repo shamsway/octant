@@ -1,0 +1,103 @@
+---
+- Infrastructure:
+    - Traefik:
+        icon: traefik
+        href: http://traefik.octant.local:9002
+        description: Reverse Proxy
+
+    - Nomad:
+        icon: nomad
+        href: http://nomad.octant.local:4646
+        description: Workload Orchestrator
+
+    - Nginx:
+        icon: nginx
+        href: https://nginx.octant.local
+        description: Static Web Server
+
+- Monitoring:
+    - Grafana:
+        icon: grafana
+        href: https://grafana.octant.local
+        description: Dashboards
+
+    - Prometheus:
+        icon: prometheus
+        href: https://prometheus.octant.local
+        description: Metrics
+
+    - Gatus:
+        icon: gatus
+        href: https://gatus.octant.local
+        description: Health Checks
+
+    - Uptime Kuma:
+        icon: uptime-kuma
+        href: https://uptimekuma.octant.local
+        description: Uptime Monitoring
+
+    - Alertmanager:
+        icon: alertmanager
+        href: https://alertmanager.octant.local
+        description: Alert Routing
+
+- Observability:
+    - Loki:
+        icon: loki
+        href: https://loki.octant.local
+        description: Log Aggregation
+
+    - Tempo:
+        icon: tempo
+        href: https://tempo.octant.local
+        description: Distributed Tracing
+
+    - Alloy:
+        icon: grafana
+        description: Telemetry Collector
+
+- Databases:
+    - PostgreSQL:
+        icon: postgres
+        description: Relational DB
+
+    - MariaDB:
+        icon: mariadb
+        description: MySQL-compatible DB
+
+    - pgAdmin:
+        icon: pgadmin
+        href: https://pgadmin.octant.local
+        description: Postgres Admin
+
+    - Qdrant:
+        icon: qdrant
+        href: https://qdrant.octant.local
+        description: Vector DB
+
+- Apps:
+    - SearXNG:
+        icon: searxng
+        href: https://searxng.octant.local
+        description: Metasearch
+
+    - Excalidraw:
+        icon: excalidraw
+        href: https://excalidraw.octant.local
+        description: Whiteboard
+
+    - n8n:
+        icon: n8n
+        href: https://n8n.octant.local
+        description: Workflow Automation
+
+- AI & LLM:
+    - LiteLLM:
+        icon: si-openai
+        href: https://litellm.octant.local/ui/
+        description: LLM Proxy
+
+    - Phoenix:
+        icon: si-phoenix-framework
+        href: https://phoenix.octant.local
+        description: LLM Observability

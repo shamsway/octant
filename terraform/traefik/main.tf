@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    onepassword = {
+      source  = "1Password/onepassword"
+      version = "~> 2.1.2"
+    }
+  }
+}
+
 # Configure the Nomad provider
 provider "nomad" {
   address = "http://${var.nomad}:4646"
@@ -8,34 +17,37 @@ provider "consul" {
   address = "http://${var.consul}:8500"
 }
 
-data "local_file" "traefik_toml" {
-  filename = "traefik.toml"
+# Configure 1password provider (SaaS via op CLI)
+provider "onepassword" {
+  # Authenticates via OP_SERVICE_ACCOUNT_TOKEN environment variable
 }
 
-data "local_file" "dynamic_toml" {
-  filename = "dynamic.toml"
+data "onepassword_vault" "vault" {
+  name = var.op_vault_name
+}
+
+data "onepassword_item" "cloudflare_dns" {
+  vault = data.onepassword_vault.vault.uuid
+  title = "api_cloudflare_key"
+}
+
+data "template_file" "traefik_toml" {
+  template = "${file("./traefik.toml")}"
+  vars = {
+    domain        = var.domain
+    consul        = var.consul
+    datacenter    = var.datacenter
+    certresolver  = var.certresolver
+    admin_email   = var.admin_email
+  }
 }
 
 resource "nomad_variable" "cloudflare_secrets" {
   path = "nomad/jobs/traefik"
   items = {
-    cloudflare_username = var.CLOUDFLARE_USERNAME
-    cloudflare_api_key = var.CLOUDFLARE_API_KEY
-    traefik_toml = data.local_file.traefik_toml.content
-    dynamic_toml = data.local_file.dynamic_toml.content
-  }
-}
-
-data "template_file" "ingress_job_template" {
-  template = "${file("./ingress-lb.nomad.hcl")}"
-  vars = {
-    region = var.region
-    datacenter = var.datacenter
-    domain = var.domain
-    image = var.nginx_image
-    certresolver = var.certresolver
-    servicename = var.servicename
-    dns = jsonencode(var.dns)    
+    cloudflare_username = data.onepassword_item.cloudflare_dns.username
+    cloudflare_api_key  = data.onepassword_item.cloudflare_dns.credential
+    traefik_toml        = data.template_file.traefik_toml.rendered
   }
 }
 
@@ -56,9 +68,4 @@ data "template_file" "traefik_job_template" {
 resource "nomad_job" "traefik" {
   depends_on = [nomad_variable.cloudflare_secrets]
   jobspec = "${data.template_file.traefik_job_template.rendered}"
-}
-
-resource "nomad_job" "ingress-lb" {
-  depends_on = [nomad_job.traefik]
-  jobspec = "${data.template_file.ingress_job_template.rendered}"
 }

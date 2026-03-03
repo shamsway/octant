@@ -4,14 +4,10 @@ variable "cloudflare_token" {
 }
 
 provider "cloudflare" {
-  api_token = "${var.cloudflare_token}"
+  api_token = var.cloudflare_token
 }
 
 variable "domain_name" {
-  default = "octant.net"
+  description = "Domain managed in Cloudflare"
+  default     = "example.com"
 }
-
-# variable "TAILSCALE_KEY" {
-#   description = "Tailscale authentication key"
-#   type        = string
-# }

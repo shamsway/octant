@@ -1,0 +1,75 @@
+---
+- name: Get vault ID
+  ansible.builtin.command: op vault get "{{ op_vault_name }}" --format json
+  register: vault_info
+  changed_when: false
+  environment:
+    OP_SERVICE_ACCOUNT_TOKEN: "{{ lookup('env', 'OP_SERVICE_ACCOUNT_TOKEN') }}"
+
+- name: Set vault UUID
+  ansible.builtin.set_fact:
+    op_vault_uuid: "{{ (vault_info.stdout | from_json).id }}"
+
+- name: Check existing items
+  ansible.builtin.command: op item list --vault "{{ op_vault_name }}" --format json
+  register: existing_items_raw
+  changed_when: false
+  environment:
+    OP_SERVICE_ACCOUNT_TOKEN: "{{ lookup('env', 'OP_SERVICE_ACCOUNT_TOKEN') }}"
+
+- name: Parse existing item titles
+  ansible.builtin.set_fact:
+    existing_item_titles: "{{ (existing_items_raw.stdout | from_json) | map(attribute='title') | list }}"
+
+- name: Seed missing login items
+  ansible.builtin.shell: |
+    op item create \
+      --vault "{{ op_vault_name }}" \
+      --category "{{ item.category }}" \
+      --title "{{ item.title }}" \
+      --generate-password='32,letters,digits' \
+      'username={{ item.username }}' \
+      < /dev/null
+  loop: "{{ op_seed_items | selectattr('username', 'defined') | list }}"
+  when: item.title not in existing_item_titles
+  register: seed_login_results
+  environment:
+    OP_SERVICE_ACCOUNT_TOKEN: "{{ lookup('env', 'OP_SERVICE_ACCOUNT_TOKEN') }}"
+
+- name: Seed missing password items
+  ansible.builtin.shell: |
+    op item create \
+      --vault "{{ op_vault_name }}" \
+      --category "{{ item.category }}" \
+      --title "{{ item.title }}" \
+      --generate-password='32,letters,digits' \
+      < /dev/null
+  loop: "{{ op_seed_items | rejectattr('username', 'defined') | list }}"
+  when: item.title not in existing_item_titles
+  register: seed_password_results
+  environment:
+    OP_SERVICE_ACCOUNT_TOKEN: "{{ lookup('env', 'OP_SERVICE_ACCOUNT_TOKEN') }}"
+
+- name: Report seeded login items
+  ansible.builtin.debug:
+    msg: "Created 1Password item: {{ item.item.title }}"
+  loop: "{{ seed_login_results.results | default([]) }}"
+  when: item.changed | default(false)
+
+- name: Report seeded password items
+  ansible.builtin.debug:
+    msg: "Created 1Password item: {{ item.item.title }}"
+  loop: "{{ seed_password_results.results | default([]) }}"
+  when: item.changed | default(false)
+
+- name: Report skipped items (already exist)
+  ansible.builtin.debug:
+    msg: "1Password item already exists: {{ item.title }}"
+  loop: "{{ op_seed_items }}"
+  when: item.title in existing_item_titles
+
+- name: Check optional items
+  ansible.builtin.debug:
+    msg: "Optional: '{{ item.title }}' not found in vault '{{ op_vault_name }}'. Create it manually to enable {{ item.used_by }}."
+  loop: "{{ op_optional_items }}"
+  when: item.title not in existing_item_titles

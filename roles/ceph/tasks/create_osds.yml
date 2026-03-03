@@ -1,0 +1,24 @@
+---
+- name: Apply OSD configuration for all available devices
+  ansible.builtin.command: ceph orch apply osd --all-available-devices
+  register: ceph_osd_apply
+  changed_when: "'Scheduled' in ceph_osd_apply.stdout"
+
+- name: Wait for OSDs to come online
+  ansible.builtin.command: ceph osd stat
+  register: ceph_osd_stat
+  until: >
+    ceph_osd_stat.stdout is search((groups['servers'] | length) | string + ' osds')
+    and ceph_osd_stat.stdout is search('up')
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Display OSD tree
+  ansible.builtin.command: ceph osd tree
+  register: ceph_osd_tree
+  changed_when: false
+
+- name: Show OSD tree output
+  ansible.builtin.debug:
+    var: ceph_osd_tree.stdout_lines

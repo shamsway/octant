@@ -1,0 +1,7 @@
+---
+podman_exporter_image: "quay.io/navidys/prometheus-podman-exporter:v1.20.0"
+podman_exporter_enable_rootless: true
+podman_exporter_enable_rootful: true
+podman_exporter_rootless_port: 9883
+podman_exporter_rootful_port: 9882
+podman_exporter_container_port: 9882

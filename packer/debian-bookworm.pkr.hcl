@@ -8,14 +8,14 @@ packer {
   }
 
 variable "ssh_username" {
-  default = "root" 
+  default = "root"
 }
 
 variable "ssh_password" {
-  default = "packer" 
+  default = "packer"
 }
 
-variable "builderip" { 
+variable "builderip" {
   default = "192.168.252.5"
 }
 
@@ -29,10 +29,10 @@ source "vmware-iso" "vmware" {
   disk_additional_size = [40960]
   #network              = "vmnet3"
   vmx_data = {
-    "ethernet0.address"         = "00:50:56:BE:EE:EF" 
+    "ethernet0.address"         = "00:50:56:BE:EE:EF"
     "ethernet0.addressType"     = "static"
     "ethernet0.present"         = "TRUE",
-    "ethernet0.startConnected"  = "TRUE", 
+    "ethernet0.startConnected"  = "TRUE",
     "ethernet0.connectionType"  = "nat",
     "ethernet0.virtualDev"      = "vmxnet3"
   }
@@ -43,9 +43,9 @@ source "vmware-iso" "vmware" {
   ssh_timeout          = "20m"
   shutdown_command     = "sudo shutdown -Ph now"
   #http_directory       = "http"
-  http_content = { 
+  http_content = {
     "/preseed.cfg" = file("http/preseed.cfg")
-  }   
+  }
   boot_command         = [
   "<esc><wait>auto url=http://${var.builderip}:{{ .HTTPPort }}/preseed.cfg<enter>"
   ]

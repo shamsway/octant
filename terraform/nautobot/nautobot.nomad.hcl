@@ -12,16 +12,16 @@ job "nautobot" {
   group "nautobot" {
     network {
       port "http" {
-        to = 8000 
+        to = 8000
       }
 
       port "https" {
-        to = 8443 
+        to = 8443
       }
 
       dns {
         servers = ${dns}
-      }      
+      }
     }
 
     volume "nautobot-config" {
@@ -37,7 +37,7 @@ job "nautobot" {
       port = "http"
       tags = [
         "traefik.enable=true",
-        "traefik.consulcatalog.connect=false",          
+        "traefik.consulcatalog.connect=false",
         "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
         "traefik.http.routers.${servicename}.entrypoints=web,websecure",
         "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
@@ -47,7 +47,7 @@ job "nautobot" {
       connect {
         native = true
       }
-              
+
       check {
         name     = "alive"
         type     = "http"
@@ -73,7 +73,7 @@ job "nautobot" {
               "tag" = "${servicename}"
             }
           ]
-        }         
+        }
       }
 
       volume_mount {
