@@ -32,30 +32,33 @@
     create: true
     line: "{{ user }} ALL=(ALL) NOPASSWD: ALL"
 
-# Create console-only user (defined in .secrets.yml)
-- name: Create consule-only user {{ console_user }}
-  ansible.builtin.user:
-    name: "{{ console_user }}"
-    create_home: yes
-    shell: /bin/bash
+# Create console-only user (optional, requires console_user and console_password)
+- name: Create console-only user
+  when: console_user is defined and console_password is defined
+  block:
+    - name: Create consule-only user {{ console_user }}
+      ansible.builtin.user:
+        name: "{{ console_user }}"
+        create_home: yes
+        shell: /bin/bash
 
-- name: Set a password for {{ console_user }}
-  ansible.builtin.user:
-    name: "{{ console_user }}"
-    password: "{{ console_password | password_hash('sha512') }}"
+    - name: Set a password for {{ console_user }}
+      ansible.builtin.user:
+        name: "{{ console_user }}"
+        password: "{{ console_password | password_hash('sha512') }}"
 
-- name: Deny SSH access for the {{ console_user }}
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    line: "DenyUsers {{ console_user }}"
-    state: present
+    - name: Deny SSH access for the {{ console_user }}
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "DenyUsers {{ console_user }}"
+        state: present
 
-- name: Allow {{ console_user }} to have passwordless sudo
-  ansible.builtin.lineinfile:
-    dest: /etc/sudoers.d/{{ console_user }}
-    state: present
-    create: true
-    line: "{{ console_user }} ALL=(ALL) NOPASSWD: ALL"
+    - name: Allow {{ console_user }} to have passwordless sudo
+      ansible.builtin.lineinfile:
+        dest: /etc/sudoers.d/{{ console_user }}
+        state: present
+        create: true
+        line: "{{ console_user }} ALL=(ALL) NOPASSWD: ALL"
 
 - name: Create netns group
   ansible.builtin.group:
@@ -111,6 +114,11 @@
 - name: Set up authorized keys for {{ admin_user }}
   ansible.posix.authorized_key:
     user: "{{ admin_user }}"
+    key: "{{ lookup('file', user_public_key) }}"
+
+- name: Set up authorized keys for {{ user }}
+  ansible.posix.authorized_key:
+    user: "{{ user }}"
     key: "{{ lookup('file', user_public_key) }}"
 
 # Configure DNS
@@ -169,7 +177,7 @@
       register: systemd_resolved_result
       failed_when: false
       changed_when: false
-      ignore_errors: true      
+      ignore_errors: true
 
     - name: Print message if systemd-resolved service is not found
       ansible.builtin.debug:
@@ -201,7 +209,7 @@
     - name: Set resolv.conf attribute to immutable (read only)
       ansible.builtin.file:
         path: /etc/resolv.conf
-        attributes: +i        
+        attributes: +i
 
 - name: Configure dnsmasq for DNS clients
   when: dnsserver is not defined or dnsserver == false
@@ -221,17 +229,17 @@
         dest: /etc/dnsmasq.d/octant-client.conf
         content: |
           {% if region == 'home' %}
-          server=192.168.252.1
-          server=192.168.252.6
-          server=192.168.252.7
+          server={{ dns1 | default('192.168.1.1') }}
+          server={{ dns2 | default('192.168.1.1') }}
+          server={{ dns3 | default('192.168.1.1') }}
           server=1.1.1.1
           {% elif region == 'gcp' %}
           server=169.254.169.254
-          server=/.consul/192.168.252.1
+          server=/.consul/{{ dns1 | default('192.168.1.1') }}
           {% else %}
           server=1.1.1.1
           server=8.8.8.8
-          server=/.consul/192.168.252.1
+          server=/.consul/{{ dns1 | default('192.168.1.1') }}
           {% endif %}
         owner: root
         group: root
@@ -246,7 +254,7 @@
       register: systemd_resolved_result
       failed_when: false
       changed_when: false
-      ignore_errors: true      
+      ignore_errors: true
 
     - name: Print message if systemd-resolved service is not found
       ansible.builtin.debug:
@@ -278,7 +286,7 @@
     - name: Set resolv.conf attribute to immutable (read only)
       ansible.builtin.file:
         path: /etc/resolv.conf
-        attributes: +i        
+        attributes: +i
 
 - name: Update all packages
   ansible.builtin.include_role:
@@ -358,6 +366,7 @@
     daemon_reload: true
 
 - name: Install LibreNMS check_mk agent
+  when: install_librenms_agent | default(false)
   block:
     - name: Clone LibreNMS agent repository
       ansible.builtin.git:
@@ -453,7 +462,8 @@
 
   - name: Lock staging user accounts
     command: usermod -L {{ item }}
-    loop: "{{ staging_users }}" 
+    loop: "{{ staging_users }}"
+    changed_when: false
 
 - name: Restart SSH service
   service:

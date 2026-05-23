@@ -1,0 +1,6 @@
+# Route HAProxy logs to dedicated file and stop further processing.
+# Placed before 50-default.conf so HAProxy messages don't also
+# appear in /var/log/syslog.
+local0.*    /var/log/haproxy.log
+local1.*    /var/log/haproxy.log
+& stop

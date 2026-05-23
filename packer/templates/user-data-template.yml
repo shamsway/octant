@@ -18,7 +18,7 @@ users:
     shell: /bin/bash
     lock_passwd: false
     ssh_authorized_keys:
-      - ${admin_ssh_authorized_key}    
+      - ${admin_ssh_authorized_key}
 
   - name: root
     ssh_authorized_keys:

@@ -84,13 +84,6 @@
     src: dockerio.registry.conf
     dest: /etc/containers/registries.conf.d
 
-- name: Copy docker.io auth
-  become: true
-  become_user: "{{ user }}"
-  ansible.builtin.copy:
-    src: auth.json
-    dest: "/run/user/{{ uid }}/containers/"
-
 - name: Create temporary build directory
   ansible.builtin.tempfile:
     state: directory

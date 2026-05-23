@@ -1,0 +1,7 @@
+# Disable journald wall broadcasts for emerg-level messages.
+# HAProxy logs "backend X has no server available!" at syslog emerg level
+# when all backend servers are down. By default journald forwards emerg
+# messages to all terminals via wall, which is disruptive during planned
+# maintenance (shutdown/restart cycles).
+[Journal]
+ForwardToWall=no

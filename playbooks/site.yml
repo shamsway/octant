@@ -1,0 +1,32 @@
+---
+# Octant Full Deployment Orchestrator
+# Runs all deployment phases in sequence
+#
+# Usage:
+#   ansible-playbook playbooks/site.yml -i inventory/hypervisors.yml
+#
+# Phases:
+#   00 - Build base image (skipped if exists)
+#   01 - Provision VMs
+#   octant - Configure Consul/Nomad/Podman cluster
+#   02 - Deploy Ceph storage
+#   03 - Deploy services via Terraform
+#   04 - Health check
+
+- name: "Phase 0: Build Base Image"
+  ansible.builtin.import_playbook: 00-build-base-image.yml
+
+- name: "Phase 1: Provision VMs"
+  ansible.builtin.import_playbook: 01-provision-vms.yml
+
+- name: "Phase 2: Configure Cluster"
+  ansible.builtin.import_playbook: ../octant.yml
+
+- name: "Phase 3: Deploy Ceph"
+  ansible.builtin.import_playbook: 02-deploy-ceph.yml
+
+- name: "Phase 4: Deploy Services"
+  ansible.builtin.import_playbook: 03-deploy-services.yml
+
+- name: "Phase 5: Health Check"
+  ansible.builtin.import_playbook: 04-health-check.yml

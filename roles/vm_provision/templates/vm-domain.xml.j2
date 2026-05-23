@@ -1,0 +1,70 @@
+<domain type='kvm'>
+  <name>{{ vm_name }}</name>
+  <memory unit='KiB'>{{ (vm_ram_gb | int) * 1024 * 1024 }}</memory>
+  <currentMemory unit='KiB'>{{ (vm_ram_gb | int) * 1024 * 1024 }}</currentMemory>
+  <vcpu placement='static'>{{ vm_vcpus | int }}</vcpu>
+  <cpu mode='{{ vm_cpu_mode }}' check='none'>
+    <topology sockets='1' dies='1' cores='{{ vm_vcpus | int }}' threads='1'/>
+  </cpu>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <devices>
+    <!-- OS Disk -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='none' io='native'/>
+      <source file='{{ libvirt_images_path }}/{{ vm_name }}.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+{% if vm_create_data_disk | default(true) %}
+    <!-- Data Disk (for Ceph OSD) -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='{{ vm_data_disk_format }}' cache='none' io='native'/>
+      <source file='{{ data_disk_pool_path }}/{{ vm_name }}-data.img'/>
+      <target dev='vdb' bus='virtio'/>
+    </disk>
+{% endif %}
+{% if vm_create_container_disk | default(true) %}
+    <!-- Container Storage Disk (Podman) -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='{{ vm_container_disk_format }}' cache='none' io='native'/>
+      <source file='{{ data_disk_pool_path }}/{{ vm_name }}-container.img'/>
+      <target dev='vdc' bus='virtio'/>
+    </disk>
+{% endif %}
+    <!-- Cloud-init CD-ROM -->
+    <disk type='file' device='cdrom'>
+      <source file='{{ libvirt_images_path }}/{{ vm_name }}-cloud-init.iso'/>
+      <target dev='sda' bus='sata'/>
+      <readonly/>
+    </disk>
+    <!-- Network Interface -->
+    <interface type='network'>
+      <source network='{{ vm_network }}'/>
+{% if vm_mac is defined %}
+      <mac address='{{ vm_mac }}'/>
+{% endif %}
+      <model type='virtio'/>
+    </interface>
+    <!-- Serial Console -->
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <!-- Graphics (for debugging via virt-manager) -->
+    <graphics type='vnc' port='-1' autoport='yes' listen='127.0.0.1'>
+      <listen type='address' address='127.0.0.1'/>
+    </graphics>
+    <!-- Guest Agent Channel -->
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+  </devices>
+</domain>

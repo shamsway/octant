@@ -1,0 +1,14 @@
+---
+# Hypervisor inventory for VM-based Octant deployment
+# Copy to hypervisors.yml and adjust for your environment
+all:
+  children:
+    hypervisors:
+      hosts:
+        my-hypervisor:
+          ansible_host: 192.168.1.10     # Your hypervisor IP (or use localhost)
+          # ansible_connection: local    # Uncomment if running on the hypervisor itself
+          libvirt_images_path: /var/lib/libvirt/images
+          data_disk_pool_path: /var/lib/libvirt/images
+          libvirt_network: default
+          base_image_name: octant-base

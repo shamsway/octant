@@ -1,0 +1,30 @@
+---
+- name: Check if CephFS filesystem already exists
+  ansible.builtin.command: ceph fs ls
+  register: ceph_fs_ls
+  changed_when: false
+
+- name: Create CephFS filesystem
+  ansible.builtin.command: "ceph fs volume create {{ ceph_fs_name }}"
+  when: ceph_fs_name not in ceph_fs_ls.stdout
+  register: ceph_fs_create
+
+- name: Set data pool replication size
+  ansible.builtin.command: >
+    ceph osd pool set cephfs.{{ ceph_fs_name }}.data size {{ ceph_pool_size }}
+  register: ceph_data_pool_size
+  changed_when: false  # Declarative state operation
+
+- name: Set metadata pool replication size
+  ansible.builtin.command: >
+    ceph osd pool set cephfs.{{ ceph_fs_name }}.meta size {{ ceph_pool_size }}
+  register: ceph_meta_pool_size
+  changed_when: false  # Declarative state operation
+
+- name: Wait for CephFS filesystem to become active
+  ansible.builtin.command: ceph fs status {{ ceph_fs_name }}
+  register: ceph_fs_status
+  until: ceph_fs_status.stdout is search('active')
+  retries: 30
+  delay: 10
+  changed_when: false

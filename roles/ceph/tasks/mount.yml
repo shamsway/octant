@@ -1,0 +1,77 @@
+---
+- name: Get admin keyring from first monitor
+  ansible.builtin.command: ceph auth get-key client.admin
+  register: ceph_admin_key
+  delegate_to: "{{ ceph_first_mon }}"
+  changed_when: false
+
+- name: Get first monitor IP address
+  ansible.builtin.set_fact:
+    ceph_first_mon_ip: "{{ hostvars[ceph_first_mon].ansible_default_ipv4.address }}"
+
+- name: Ensure /etc/ceph directory exists
+  ansible.builtin.file:
+    path: /etc/ceph
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Write admin keyring file (for ceph CLI tools)
+  ansible.builtin.copy:
+    content: |
+      [client.admin]
+      	key = {{ ceph_admin_key.stdout }}
+    dest: /etc/ceph/ceph.client.admin.keyring
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Write admin secret file (for kernel CephFS mount)
+  ansible.builtin.copy:
+    content: "{{ ceph_admin_key.stdout }}"
+    dest: /etc/ceph/admin.secret
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Fetch ceph.conf from first monitor to controller
+  ansible.builtin.fetch:
+    src: /etc/ceph/ceph.conf
+    dest: /tmp/ceph.conf
+    flat: true
+  delegate_to: "{{ ceph_first_mon }}"
+  run_once: true
+
+- name: Distribute ceph.conf to non-monitor nodes
+  ansible.builtin.copy:
+    src: /tmp/ceph.conf
+    dest: /etc/ceph/ceph.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: inventory_hostname != ceph_first_mon
+
+- name: Create mount point directory
+  ansible.builtin.file:
+    path: "{{ ceph_mount_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Add CephFS fstab entry
+  ansible.posix.mount:
+    path: "{{ ceph_mount_path }}"
+    src: "{{ ceph_first_mon_ip }}:/"
+    fstype: ceph
+    opts: "name=admin,secretfile=/etc/ceph/admin.secret,noatime,_netdev"
+    state: mounted
+    dump: '0'
+    passno: '0'
+
+- name: Verify CephFS mount is working
+  ansible.builtin.command: "stat {{ ceph_mount_path }}"
+  register: ceph_mount_stat
+  changed_when: false
+  failed_when: ceph_mount_stat.rc != 0

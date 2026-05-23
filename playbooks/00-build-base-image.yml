@@ -1,0 +1,463 @@
+---
+# Build Pre-Staged Base Image for Octant Multi-Node
+# Creates a golden image with all prerequisites pre-installed (Debian 13 / Trixie)
+#
+# Usage:
+#   ansible-playbook playbooks/00-build-base-image.yml -i inventory/hypervisors.yml
+#
+# Output:
+#   - {{ libvirt_images_path }}/octant-base.qcow2
+#
+# The image will have:
+#   - All required packages (curl, jq, podman, terraform, cephadm, lvm2, etc.)
+#   - HashiCorp APT repository configured
+#   - Service account (hashi) created (uid 2000)
+#   - /mnt/services directory created (subdirs created by volumes role or Ceph after mount)
+#   - SSH host keys REMOVED (regenerated on first boot)
+#   - cloud-init ready for re-customization
+
+- name: Build Pre-Staged Base Image
+  hosts: hypervisors
+  gather_facts: true
+  become: true
+
+  vars:
+    # Staging VM settings
+    staging_vm_name: "octant-staging"
+    staging_vm_ram_gb: 4
+    staging_vm_vcpus: 2
+
+    # Derived from group_vars/all.yml: base_image_name, cloud_image_url
+    cloud_image_name: "debian-13-cloudimg.qcow2"
+
+    # Paths
+    libvirt_images_path: "{{ hostvars[inventory_hostname]['libvirt_images_path'] | default('/var/lib/libvirt/images') }}"
+
+    # SSH options
+    ssh_key_path: "{{ ansible_user_dir }}/.ssh/id_rsa"
+    ssh_opts: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{ ssh_key_path }}"
+
+    # Service account settings
+    hashi_user: hashi
+    hashi_group: hashi
+    hashi_uid: 2000
+    hashi_gid: 2000
+
+  tasks:
+    - name: Check if base image already exists
+      ansible.builtin.stat:
+        path: "{{ libvirt_images_path }}/{{ base_image_name }}.qcow2"
+      register: base_image_stat
+
+    - name: Confirm rebuild if image exists
+      ansible.builtin.pause:
+        prompt: |
+          Base image already exists at {{ libvirt_images_path }}/{{ base_image_name }}.qcow2
+          Press Enter to rebuild, or Ctrl+C to abort
+      when: base_image_stat.stat.exists
+
+    - name: Download Debian cloud image if not present
+      ansible.builtin.get_url:
+        url: "{{ cloud_image_url }}"
+        dest: "{{ libvirt_images_path }}/{{ cloud_image_name }}"
+        mode: '0644'
+      register: cloud_image_download
+
+    - name: Destroy old staging VM if running
+      ansible.builtin.shell: virsh destroy {{ staging_vm_name }}
+      ignore_errors: true
+
+    - name: Undefine old staging VM if exists
+      ansible.builtin.shell: virsh undefine {{ staging_vm_name }}
+      ignore_errors: true
+
+    - name: Remove old staging VM artifacts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ libvirt_images_path }}/{{ staging_vm_name }}.qcow2"
+        - "{{ libvirt_images_path }}/{{ staging_vm_name }}-user-data"
+        - "{{ libvirt_images_path }}/{{ staging_vm_name }}-meta-data"
+        - "{{ libvirt_images_path }}/{{ staging_vm_name }}-cloud-init.iso"
+
+    - name: Create staging VM disk from cloud image
+      ansible.builtin.shell: |
+        qemu-img create -f qcow2 -F qcow2 \
+          -b {{ libvirt_images_path }}/{{ cloud_image_name }} \
+          {{ libvirt_images_path }}/{{ staging_vm_name }}.qcow2 50G
+
+    - name: Generate cloud-init for staging VM
+      ansible.builtin.copy:
+        dest: "{{ libvirt_images_path }}/{{ staging_vm_name }}-user-data"
+        mode: '0644'
+        content: |
+          #cloud-config
+          hostname: {{ staging_vm_name }}
+
+          # Enable password auth as fallback for debugging
+          ssh_pwauth: true
+          chpasswd:
+            expire: false
+            users:
+              - name: debian
+                password: debian
+                type: text
+
+          users:
+            - name: debian
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              shell: /bin/bash
+              lock_passwd: false
+              ssh_authorized_keys:
+                - {{ lookup('file', '~/.ssh/id_rsa.pub') }}
+
+          package_update: true
+          package_upgrade: true
+
+          packages:
+            # Basic utilities
+            - curl
+            - wget
+            - unzip
+            - jq
+            - htop
+            - vim
+            - gnupg
+            - lsb-release
+            - apt-transport-https
+            - ca-certificates
+            # Python (for Ansible)
+            - python3
+            - python3-pip
+            - python3-venv
+            # Ansible
+            - ansible
+            # Podman container runtime
+            - podman
+            - containernetworking-plugins
+            # Build tools
+            - build-essential
+            # Network tools
+            - net-tools
+            - iputils-ping
+            - dnsutils
+            # Required for Ansible privilege escalation
+            - acl
+            - psmisc
+            # systemd-resolved for DNS
+            - systemd-resolved
+            # Ceph support
+            - cephadm
+            - ceph-common
+            # LVM support
+            - lvm2
+
+          runcmd:
+            # Configure DNS resolution
+            - mkdir -p /etc/systemd/resolved.conf.d
+            - |
+              cat > /etc/systemd/resolved.conf.d/dns.conf << EOF
+              [Resolve]
+              DNS=1.1.1.1 8.8.8.8 8.8.4.4
+              FallbackDNS=1.0.0.1 8.8.4.4
+              DNSSEC=no
+              Cache=yes
+              EOF
+            - systemctl restart systemd-resolved
+            - ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+            # Add HashiCorp APT repository
+            - curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+            - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com trixie main" | tee /etc/apt/sources.list.d/hashicorp.list
+            - apt-get update
+            - apt-get install -y terraform nomad-driver-podman
+
+            # Create service account
+            - groupadd -g {{ hashi_gid }} {{ hashi_group }} || true
+            - useradd -m -u {{ hashi_uid }} -g {{ hashi_group }} -s /bin/bash {{ hashi_user }} || true
+            - echo "{{ hashi_user }} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/{{ hashi_user }}
+
+            # Create octant data directory
+            - mkdir -p /opt/octant
+            - chown {{ hashi_user }}:{{ hashi_group }} /opt/octant
+
+            # Create top-level service mount point only
+            # Subdirectories are created by the volumes role or Ceph after mount
+            - mkdir -p /mnt/services
+            - chown {{ hashi_user }}:{{ hashi_group }} /mnt/services
+
+            # Create Consul and Nomad directories
+            - mkdir -p /opt/consul /opt/nomad
+            - mkdir -p /etc/consul/server /etc/nomad/server
+            - chown -R {{ hashi_user }}:{{ hashi_group }} /opt/consul /opt/nomad
+            - chown -R {{ hashi_user }}:{{ hashi_group }} /etc/consul /etc/nomad
+
+            # Disable unattended-upgrades
+            - systemctl stop unattended-upgrades || true
+            - systemctl disable unattended-upgrades || true
+            - apt-get remove -y unattended-upgrades || true
+
+            # Signal completion
+            - touch /var/lib/cloud/instance/staging-packages-complete
+
+    - name: Generate unique instance ID to force cloud-init re-run
+      ansible.builtin.set_fact:
+        cloud_init_instance_id: "{{ staging_vm_name }}-{{ ansible_date_time.epoch }}"
+
+    - name: Create cloud-init meta-data
+      ansible.builtin.copy:
+        dest: "{{ libvirt_images_path }}/{{ staging_vm_name }}-meta-data"
+        mode: '0644'
+        content: |
+          instance-id: {{ cloud_init_instance_id }}
+          local-hostname: {{ staging_vm_name }}
+
+    - name: Create cloud-init ISO
+      ansible.builtin.shell: |
+        genisoimage -output {{ libvirt_images_path }}/{{ staging_vm_name }}-cloud-init.iso \
+          -volid cidata -joliet -rock -graft-points \
+          user-data={{ libvirt_images_path }}/{{ staging_vm_name }}-user-data \
+          meta-data={{ libvirt_images_path }}/{{ staging_vm_name }}-meta-data
+
+    - name: Define staging VM
+      community.libvirt.virt:
+        command: define
+        xml: |
+          <domain type='kvm'>
+            <name>{{ staging_vm_name }}</name>
+            <memory unit='GiB'>{{ staging_vm_ram_gb }}</memory>
+            <vcpu>{{ staging_vm_vcpus }}</vcpu>
+            <os>
+              <type arch='x86_64'>hvm</type>
+              <boot dev='hd'/>
+            </os>
+            <features>
+              <acpi/>
+              <apic/>
+            </features>
+            <cpu mode='host-passthrough'/>
+            <devices>
+              <disk type='file' device='disk'>
+                <driver name='qemu' type='qcow2'/>
+                <source file='{{ libvirt_images_path }}/{{ staging_vm_name }}.qcow2'/>
+                <target dev='vda' bus='virtio'/>
+              </disk>
+              <disk type='file' device='cdrom'>
+                <source file='{{ libvirt_images_path }}/{{ staging_vm_name }}-cloud-init.iso'/>
+                <target dev='sda' bus='sata'/>
+                <readonly/>
+              </disk>
+              <interface type='network'>
+                <source network='default'/>
+                <model type='virtio'/>
+              </interface>
+              <serial type='pty'><target port='0'/></serial>
+              <console type='pty'><target type='serial' port='0'/></console>
+            </devices>
+          </domain>
+
+    - name: Ensure default network is active
+      ansible.builtin.shell: |
+        if ! virsh net-info default 2>/dev/null | grep -q 'Active:.*yes'; then
+          virsh net-start default
+        fi
+      changed_when: false
+
+    - name: Start staging VM
+      community.libvirt.virt:
+        name: "{{ staging_vm_name }}"
+        state: running
+
+    - name: Wait for staging VM to get IP
+      ansible.builtin.shell: |
+        virsh domifaddr {{ staging_vm_name }} 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1
+      register: staging_vm_ip
+      until: staging_vm_ip.stdout | length > 0
+      retries: 30
+      delay: 10
+
+    - name: Wait for SSH port to be available
+      ansible.builtin.wait_for:
+        host: "{{ staging_vm_ip.stdout }}"
+        port: 22
+        timeout: 300
+
+    - name: Initial delay for cloud-init to set up user and SSH keys
+      ansible.builtin.pause:
+        seconds: 60
+        prompt: "Waiting 60 seconds for cloud-init to configure SSH keys..."
+
+    - name: Wait for SSH authentication to work (cloud-init sets up keys)
+      ansible.builtin.shell: |
+        ssh {{ ssh_opts }} -o BatchMode=yes -o ConnectTimeout=5 \
+          debian@{{ staging_vm_ip.stdout }} "echo connected"
+      register: ssh_test
+      retries: 60
+      delay: 10
+      until: ssh_test.rc == 0
+      become: false
+
+    - name: Wait for cloud-init to complete
+      ansible.builtin.shell: |
+        ssh {{ ssh_opts }} debian@{{ staging_vm_ip.stdout }} "cloud-init status --wait"
+      register: cloud_init_status
+      retries: 30
+      delay: 30
+      until: "'done' in cloud_init_status.stdout or 'error' in cloud_init_status.stdout"
+      become: false
+
+    - name: Display cloud-init status
+      ansible.builtin.debug:
+        msg: "Cloud-init status: {{ cloud_init_status.stdout }}"
+
+    - name: Verify installations
+      ansible.builtin.shell: |
+        ssh {{ ssh_opts }} debian@{{ staging_vm_ip.stdout }} "bash -c '
+          echo \"=== Verifying installations ===\"
+          echo \"Ansible: \$(ansible --version | head -1)\"
+          echo \"Python3: \$(python3 --version)\"
+          echo \"Podman: \$(podman --version)\"
+          echo \"Terraform: \$(terraform version | head -1)\"
+          echo \"jq: \$(jq --version)\"
+          echo \"HashiCorp repo: \$(cat /etc/apt/sources.list.d/hashicorp.list)\"
+          echo \"cephadm: \$(cephadm version 2>/dev/null || echo not-installed)\"
+          echo \"lvm2: \$(lvm version 2>/dev/null | head -1 || echo not-installed)\"
+          echo \"hashi user: \$(id hashi)\"
+          echo \"/mnt/services exists: \$(test -d /mnt/services && echo yes || echo no)\"
+        '"
+      register: verify_result
+      become: false
+
+    - name: Display verification results
+      ansible.builtin.debug:
+        msg: "{{ verify_result.stdout_lines }}"
+
+    - name: Create SSH regeneration script content
+      ansible.builtin.set_fact:
+        rc_local_content: |
+          #!/bin/bash
+          if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+              dpkg-reconfigure openssh-server
+          fi
+          exit 0
+
+    # Create rc.local BEFORE removing SSH keys
+    - name: Create SSH host key regeneration script
+      ansible.builtin.shell: |
+        ssh {{ ssh_opts }} debian@{{ staging_vm_ip.stdout }} \
+          "echo '{{ rc_local_content | b64encode }}' | base64 -d | sudo tee /etc/rc.local > /dev/null && sudo chmod +x /etc/rc.local"
+      become: false
+
+    - name: Prepare image for templating (cleanup - do this last as it kills SSH)
+      ansible.builtin.shell: |
+        ssh {{ ssh_opts }} debian@{{ staging_vm_ip.stdout }} "sudo bash -c '
+            # Clean up cloud-init for re-run on cloned VMs
+            cloud-init clean --logs --seed
+
+            # Clear logs and temp files
+            find /var/log -type f -exec truncate -s 0 {} \;
+            rm -rf /tmp/* /var/tmp/*
+
+            # Remove bash history
+            rm -f /home/debian/.bash_history
+            rm -f /root/.bash_history
+
+            # Remove machine-id (regenerated on first boot)
+            truncate -s 0 /etc/machine-id
+            rm -f /var/lib/dbus/machine-id
+
+            # Sync filesystem
+            sync
+
+            # Remove SSH host keys LAST (this will kill SSH connection)
+            rm -f /etc/ssh/ssh_host_*
+          '"
+      ignore_errors: true  # SSH will disconnect when keys are removed
+      become: false
+
+    - name: Shutdown staging VM
+      community.libvirt.virt:
+        name: "{{ staging_vm_name }}"
+        state: shutdown
+
+    - name: Wait for VM to fully shutdown
+      ansible.builtin.shell: |
+        while virsh domstate {{ staging_vm_name }} 2>/dev/null | grep -q running; do
+          sleep 2
+        done
+      timeout: 60
+
+    - name: Remove old base image if rebuilding
+      ansible.builtin.file:
+        path: "{{ libvirt_images_path }}/{{ base_image_name }}.qcow2"
+        state: absent
+      when: base_image_stat.stat.exists
+
+    - name: Convert staging disk to standalone base image
+      ansible.builtin.shell: |
+        # Commit backing file changes and create standalone compressed image
+        qemu-img convert -O qcow2 -c \
+          {{ libvirt_images_path }}/{{ staging_vm_name }}.qcow2 \
+          {{ libvirt_images_path }}/{{ base_image_name }}.qcow2
+
+    - name: Get base image size
+      ansible.builtin.stat:
+        path: "{{ libvirt_images_path }}/{{ base_image_name }}.qcow2"
+      register: base_image_final
+
+    - name: Cleanup staging VM and files
+      block:
+        - name: Undefine staging VM
+          community.libvirt.virt:
+            name: "{{ staging_vm_name }}"
+            command: undefine
+
+        - name: Remove staging files
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - "{{ libvirt_images_path }}/{{ staging_vm_name }}.qcow2"
+            - "{{ libvirt_images_path }}/{{ staging_vm_name }}-cloud-init.iso"
+            - "{{ libvirt_images_path }}/{{ staging_vm_name }}-user-data"
+            - "{{ libvirt_images_path }}/{{ staging_vm_name }}-meta-data"
+
+    - name: Display completion summary
+      ansible.builtin.debug:
+        msg: |
+          ================================================================================
+          OCTANT BASE IMAGE BUILD COMPLETE
+          ================================================================================
+
+          Image Location: {{ libvirt_images_path }}/{{ base_image_name }}.qcow2
+          Image Size: {{ (base_image_final.stat.size / 1024 / 1024 / 1024) | round(2) }} GB
+
+          Pre-installed Components:
+            - Debian 13 (Trixie)
+            - Python 3 with pip3
+            - Ansible
+            - Podman with CNI plugins
+            - Terraform
+            - nomad-driver-podman
+            - cephadm + ceph-common (Ceph support)
+            - lvm2 (LVM support)
+            - HashiCorp APT repository configured
+            - Service account: {{ hashi_user }} (UID {{ hashi_uid }})
+
+          Directories Created:
+            - /opt/octant (data directory)
+            - /mnt/services (top-level mount point; subdirs created by volumes role or Ceph)
+            - /opt/consul, /opt/nomad (HashiCorp data)
+            - /etc/consul, /etc/nomad (HashiCorp config)
+
+          SSH Behavior:
+            - Host keys removed (regenerated on first boot)
+            - machine-id cleared (regenerated on first boot)
+            - cloud-init ready for re-customization
+
+          Next Steps:
+            1. Run: ansible-playbook playbooks/01-provision-vms.yml -i inventory/hypervisors.yml
+            2. Or use base image directly with vm_provision role
+
+          ================================================================================

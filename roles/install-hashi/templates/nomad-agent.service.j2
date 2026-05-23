@@ -2,7 +2,8 @@
 Description=Nomad agent
 Requires=network-online.target
 After=network-online.target
-Wants=nomad-server.service
+Wants=nomad-server.service consul-agent.service
+After=nomad-server.service consul-agent.service
 Documentation=https://www.nomadproject.io/docs/agent/options
 
 [Service]

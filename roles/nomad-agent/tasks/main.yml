@@ -68,6 +68,14 @@
     group: "{{ group }}"
     mode: "0644"
 
+- name: Ensure alloc_mounts directory exists for Nomad client
+  ansible.builtin.file:
+    path: "{{ datadir }}/alloc_mounts"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0755"
+
 - name: Start {{ role_name }}
   ansible.builtin.systemd:
     name:  "{{ role_name }}"

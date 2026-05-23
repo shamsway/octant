@@ -55,41 +55,8 @@
     name: docker
     state: restarted
 
-- name: Create docker.hcl configuration file
-  ansible.builtin.copy:
-    content: |
-      plugin "docker" {
-        config {
-          endpoint = "unix:///var/run/docker.sock"        
-          allow_privileged = true
-          gc {
-            image = true
-            image_delay = "3m"
-            container = true
-            dangling_containers {
-              enabled = true
-              dry_run = false
-              period = "5m"
-              creation_grace = "5m"
-            }
-          }
-          volumes {
-            enabled = true
-            selinuxlabel = "z"
-          }
-        }
-      }
-    dest: "{{ nomad_root_configdir }}/docker.hcl"
-    owner: root
-    group: root
-    mode: "0644"
-
-- name: Restart Nomad service
-  ansible.builtin.service:
-    name: nomad-agent-root  
-    state: restarted
-
-- name: Wait for Nomad to start
-  ansible.builtin.wait_for:
-    port: "{{ nomad_root_ports.http }}"
-    timeout: 60
+- name: Remove duplicate docker.hcl (config lives in nomad-agent-root.hcl)
+  ansible.builtin.file:
+    path: "{{ nomad_root_configdir }}/docker.hcl"
+    state: absent
+  notify: restart nomad-agent-root

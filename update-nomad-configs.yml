@@ -10,22 +10,22 @@
     - .secrets.yml
   tasks:
     - name: Update nomad-server configs
-      ansible.builtin.include_tasks: 
+      ansible.builtin.include_tasks:
         file: update-nomad.yml
       vars:
         port: "{{ nomad.ports.http }}"
         service_name: "nomad-server"
 
     - name: Update nomad-agent configs
-      ansible.builtin.include_tasks: 
+      ansible.builtin.include_tasks:
         file: update-nomad.yml
       vars:
         port: "{{ nomad.ports.agent_http }}"
         service_name: "nomad-agent"
 
     - name: Update nomad-agent-root configs
-      ansible.builtin.include_tasks: 
+      ansible.builtin.include_tasks:
         file: update-nomad.yml
       vars:
         port: "{{ nomad.ports.root_agent_http }}"
-        service_name: "nomad-agent-root"        
+        service_name: "nomad-agent-root"

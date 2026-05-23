@@ -1,0 +1,114 @@
+---
+# VM Provisioning tasks for Octant
+# Creates and starts VM from base image with cloud-init customization
+
+- name: Find SSH public keys on controller
+  ansible.builtin.set_fact:
+    user_ssh_keys: >-
+      [{% for path in [
+        lookup('env', 'HOME') + '/.ssh/id_ed25519.pub',
+        lookup('env', 'HOME') + '/.ssh/id_rsa.pub'
+      ] %}{% if lookup('fileglob', path) %}
+        "{{ lookup('file', path) }}"{{ "," if not loop.last }}
+      {% endif %}{% endfor %}]
+
+- name: Fail if no SSH keys found
+  ansible.builtin.fail:
+    msg: "No SSH public keys found. Ensure ~/.ssh/id_ed25519.pub or ~/.ssh/id_rsa.pub exists."
+  when: user_ssh_keys | length == 0
+
+- name: Display SSH keys found
+  ansible.builtin.debug:
+    msg: "Found {{ user_ssh_keys | length }} SSH key(s) for VM provisioning"
+
+- name: Create cloud-init configuration directory
+  ansible.builtin.file:
+    path: "{{ libvirt_images_path }}/cloud-init"
+    state: directory
+    mode: '0755'
+
+- name: Generate cloud-init user-data
+  ansible.builtin.template:
+    src: cloud-init.yml.j2
+    dest: "{{ libvirt_images_path }}/cloud-init/{{ vm_name }}-user-data"
+    mode: '0644'
+
+- name: Generate cloud-init meta-data
+  ansible.builtin.copy:
+    content: |
+      instance-id: {{ vm_name }}-{{ ansible_date_time.epoch }}
+      local-hostname: {{ vm_name }}
+    dest: "{{ libvirt_images_path }}/cloud-init/{{ vm_name }}-meta-data"
+    mode: '0644'
+
+- name: Create cloud-init ISO
+  ansible.builtin.shell: |
+    cloud-localds \
+      {{ libvirt_images_path }}/{{ vm_name }}-cloud-init.iso \
+      {{ libvirt_images_path }}/cloud-init/{{ vm_name }}-user-data \
+      {{ libvirt_images_path }}/cloud-init/{{ vm_name }}-meta-data
+  changed_when: true
+
+- name: Generate VM domain XML
+  ansible.builtin.template:
+    src: vm-domain.xml.j2
+    dest: "{{ libvirt_images_path }}/{{ vm_name }}-domain.xml"
+    mode: '0644'
+  register: vm_xml
+
+- name: Check if VM already exists
+  community.libvirt.virt:
+    command: list_vms
+  register: existing_vms
+
+- name: Define VM from XML
+  community.libvirt.virt:
+    command: define
+    xml: "{{ lookup('template', 'vm-domain.xml.j2') }}"
+  when: vm_name not in existing_vms.list_vms
+
+- name: Start VM
+  community.libvirt.virt:
+    name: "{{ vm_name }}"
+    state: running
+
+- name: Set VM autostart
+  community.libvirt.virt:
+    name: "{{ vm_name }}"
+    autostart: "{{ vm_autostart }}"
+
+- name: Wait for VM to obtain IP address
+  ansible.builtin.shell: |
+    virsh domifaddr {{ vm_name }} | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1
+  register: vm_ip
+  until: vm_ip.stdout | length > 0
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Store VM IP in per-VM mapping
+  ansible.builtin.set_fact:
+    vm_ip_map: "{{ vm_ip_map | default({}) | combine({vm_name: vm_ip.stdout}) }}"
+    vm_ip_address: "{{ vm_ip.stdout }}"
+
+- name: Display VM IP address
+  ansible.builtin.debug:
+    msg: "VM {{ vm_name }} obtained IP address: {{ vm_ip.stdout }}"
+
+- name: Wait for SSH to become available
+  ansible.builtin.wait_for:
+    host: "{{ vm_ip_address }}"
+    port: 22
+    delay: 10
+    timeout: "{{ ssh_wait_timeout }}"
+
+- name: Add VM to in-memory inventory
+  ansible.builtin.add_host:
+    name: "{{ vm_name }}"
+    ansible_host: "{{ vm_ip_address }}"
+    ansible_user: "{{ ssh_user }}"
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    groups:
+      - provisioned_vms
+      - servers
+      - "{{ vm_group | default('servers') }}"

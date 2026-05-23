@@ -1,0 +1,21 @@
+---
+# VM Storage defaults for Octant multi-node deployment
+# Data disk enabled by default for Ceph OSD usage
+
+# Disk configuration
+vm_os_disk_size: 60G
+vm_os_disk_format: qcow2
+
+# Data disk (enabled by default for Ceph OSD)
+vm_create_data_disk: true
+vm_data_disk_size: 100G
+vm_data_disk_format: raw
+
+# Container storage disk (dedicated disk for Podman image/container storage)
+vm_create_container_disk: true
+vm_container_disk_size: 30G
+vm_container_disk_format: raw
+
+# Storage pool configuration
+data_disk_pool_name: octant-data
+data_disk_pool_path: /var/lib/libvirt/images/octant-data

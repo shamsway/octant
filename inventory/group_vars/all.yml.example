@@ -33,6 +33,7 @@ datacenter: octant
 snmp_community: octant
 admin_user: admin
 admin_email: admin@change.me
+admin_password: CHANGEME    # local admin password baked into the base image (replace before building)
 location: "Home Lab Location"
 
 external_dns_resolver1: 1.1.1.1
@@ -81,7 +82,7 @@ consul:
     root_agent_grpc: 10502
     root_agent_grpc_tls: 10503
     root_agent_serf_lan: 10301
-    root_agent_serf_wan: 10302    
+    root_agent_serf_wan: 10302
 
   port_list:
     - 8500/tcp
@@ -103,10 +104,33 @@ nomad:
     agent_gossip: 5648
     root_agent_http: 6646
     root_agent_rpc: 6647
-    root_agent_gossip: 6648 
-        
+    root_agent_gossip: 6648
+
   port_list:
     - 4646/tcp
     - 4647/tcp
     - 4648/tcp
     - 4648/udp
+
+# --- VM Provisioning ---
+# HashiCorp version pins (empty string = latest from APT)
+consul_version: ""
+nomad_version: ""
+nomad_driver_podman_version: "0.6.0"
+
+# Base image configuration
+base_image_name: octant-base
+cloud_image_url: "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
+
+# Ceph configuration
+ceph:
+  fs_name: octant-services
+  pool_size: 2
+  mount_path: /mnt/services
+
+# Terraform execution order
+terraform_execution_order:
+  - traefik
+  - postgres
+  - registry
+  - litellm

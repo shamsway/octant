@@ -1,0 +1,74 @@
+---
+repos:
+  # Standard hooks - whitespace, merge conflicts, large files, basic checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+        exclude: ^(local/|\.worktrees/|packer/templates/)
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  # Secrets scanning
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # YAML linting (non-Ansible files only - ansible-lint handles Ansible YAML)
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint.yml]
+        exclude: ^(roles/|playbooks/|handlers/|inventory/|local/|\.worktrees/|packer/templates/|docs/)
+
+  # Ansible linting (includes embedded yamllint for Ansible files)
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v26.2.0
+    hooks:
+      - id: ansible-lint
+        language_version: python3
+        additional_dependencies:
+          - ansible-core>=2.17
+
+  # Shell script linting
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        types: [shell]
+        exclude: ^(local/|\.worktrees/|node_modules/|packer/|docs/)
+        args: [--severity=warning]
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.47.0
+    hooks:
+      - id: markdownlint
+        args: [--config, .markdownlint.json]
+        exclude: ^(local/|\.worktrees/|node_modules/|docs/)
+
+  # Python formatting
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.1.0
+    hooks:
+      - id: black
+        types: [python]
+        exclude: ^(local/|\.worktrees/|node_modules/|docs/)
+
+  # Python linting
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        args: ["--max-line-length=88", "--extend-ignore=E203,E501"]
+        types: [python]
+        exclude: ^(local/|\.worktrees/|node_modules/|docs/)

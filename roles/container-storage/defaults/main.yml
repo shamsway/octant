@@ -1,0 +1,23 @@
+---
+# Container storage role defaults
+# Controls disk formatting and mount configuration for Podman container storage
+
+# The block device to use for container storage
+container_storage_device: /dev/vdc
+
+# Filesystem settings
+container_storage_fstype: xfs
+# mkfs.xfs options: -n ftype=1 is required for overlayfs support
+container_storage_mkfs_opts: "-n ftype=1"
+
+# Mount point - covers both rootful and rootless Podman storage
+container_storage_mount: /var/lib/containers
+
+# Mount options for XFS
+container_storage_mount_opts: "defaults,noatime"
+
+# Rootless storage subdirectory (owned by hashi user)
+container_storage_rootless_path: /var/lib/containers/rootless-storage
+
+# Rootful storage subdirectory (owned by root)
+container_storage_rootful_path: /var/lib/containers/storage

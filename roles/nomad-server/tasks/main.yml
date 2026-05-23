@@ -94,4 +94,4 @@
   ansible.builtin.wait_for:
     port: "{{ nomad.ports.http }}"
     timeout: 60
-  changed_when: false    
+  changed_when: false

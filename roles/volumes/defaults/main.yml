@@ -1,0 +1,14 @@
+---
+# Default ownership and permissions for service volumes
+# These defaults can be overridden per-volume in inventory
+
+# Default user/group ownership
+volume_default_owner: "{{ user | default('hashi') }}"
+volume_default_group: "{{ group | default('hashi') }}"
+
+# Default directory permissions
+volume_default_mode: "0755"
+
+# Whether to manage permissions for volumes
+# Set to false for container-managed volumes (e.g., homeassistant subdirs)
+volume_manage_permissions: true

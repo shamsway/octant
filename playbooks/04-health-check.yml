@@ -1,0 +1,107 @@
+---
+# Octant Cluster Health Check
+# Validates all cluster components are running and healthy
+#
+# Usage:
+#   ansible-playbook playbooks/04-health-check.yml -i inventory/provisioned_vms.yml
+
+- name: Octant Cluster Health Check
+  hosts: servers
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Check Consul server is running
+      ansible.builtin.systemd:
+        name: consul-server
+      register: consul_svc
+      failed_when: consul_svc.status.ActiveState != "active"
+
+    - name: Check Nomad server is running
+      ansible.builtin.systemd:
+        name: nomad-server
+      register: nomad_svc
+      failed_when: nomad_svc.status.ActiveState != "active"
+
+    - name: Check CephFS is mounted
+      ansible.builtin.shell: mountpoint -q {{ ceph_mount_path | default('/mnt/services') }}
+      changed_when: false
+
+    - name: Check Consul cluster members
+      ansible.builtin.shell: consul members
+      register: consul_members
+      changed_when: false
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: Display Consul members
+      ansible.builtin.debug:
+        var: consul_members.stdout_lines
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: Check Nomad node status
+      ansible.builtin.shell: nomad node status
+      register: nomad_nodes
+      changed_when: false
+      when: inventory_hostname == groups['servers'][0]
+      environment:
+        NOMAD_ADDR: "http://localhost:4646"
+
+    - name: Display Nomad nodes
+      ansible.builtin.debug:
+        var: nomad_nodes.stdout_lines
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: Check Ceph cluster health
+      ansible.builtin.shell: ceph status
+      register: ceph_status
+      changed_when: false
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: Display Ceph status
+      ansible.builtin.debug:
+        var: ceph_status.stdout_lines
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: Check Traefik is registered in Consul
+      ansible.builtin.uri:
+        url: "http://localhost:8500/v1/catalog/service/traefik"
+        return_content: true
+      register: traefik_check
+      until: traefik_check.json | length > 0
+      retries: 12
+      delay: 10
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: Check Postgres is registered in Consul
+      ansible.builtin.uri:
+        url: "http://localhost:8500/v1/catalog/service/postgres"
+        return_content: true
+      register: postgres_check
+      until: postgres_check.json | length > 0
+      retries: 12
+      delay: 10
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: List all Nomad jobs
+      ansible.builtin.shell: nomad job status
+      register: nomad_jobs
+      changed_when: false
+      when: inventory_hostname == groups['servers'][0]
+      environment:
+        NOMAD_ADDR: "http://localhost:4646"
+
+    - name: Display Nomad jobs
+      ansible.builtin.debug:
+        var: nomad_jobs.stdout_lines
+      when: inventory_hostname == groups['servers'][0]
+
+    - name: Health check summary
+      ansible.builtin.debug:
+        msg: |
+          === OCTANT HEALTH CHECK - {{ inventory_hostname }} ===
+          Consul: {{ consul_svc.status.ActiveState }}
+          Nomad:  {{ nomad_svc.status.ActiveState }}
+          CephFS: mounted
+          Traefik: {{ 'registered' if (traefik_check.json | default([]) | length > 0) else 'NOT registered' }}
+          Postgres: {{ 'registered' if (postgres_check.json | default([]) | length > 0) else 'NOT registered' }}
+          ================================================

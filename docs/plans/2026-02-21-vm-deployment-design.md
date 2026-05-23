@@ -6,9 +6,9 @@
 
 ## Context
 
-Octant is a homelab framework built around Consul, Nomad, and Podman. The original deployment targets bare-metal servers. This design adds automated VM provisioning using patterns proven in the eai-cluster project and refined in octant-demo, while preserving `homelab.yml` as the core cluster configuration playbook that works on both VMs and bare metal.
+Octant is an Octant framework built around Consul, Nomad, and Podman. The original deployment targets bare-metal servers. This design adds automated VM provisioning using patterns proven in the eai-cluster project and refined in octant-demo, while preserving `octant.yml` as the core cluster configuration playbook that works on both VMs and bare metal.
 
-The immediate goal is a working "stock" Octant deployment on VMs that can be torn down and rebuilt repeatedly to validate full automation. Lessons learned will be ported back to octant-private (the production homelab deployment).
+The immediate goal is a working "stock" Octant deployment on VMs that can be torn down and rebuilt repeatedly to validate full automation. Lessons learned will be ported back to octant-private (the production lab deployment).
 
 ## Decisions Made
 
@@ -25,7 +25,7 @@ The immediate goal is a working "stock" Octant deployment on VMs that can be tor
 
 ## Playbook Structure (Hybrid Approach)
 
-Numbered playbooks handle VM lifecycle and infrastructure. `homelab.yml` stays at the repo root as the cluster configuration entrypoint, agnostic to whether hosts are VMs or bare metal.
+Numbered playbooks handle VM lifecycle and infrastructure. `octant.yml` stays at the repo root as the cluster configuration entrypoint, agnostic to whether hosts are VMs or bare metal.
 
 ```
 playbooks/
@@ -35,9 +35,9 @@ playbooks/
   03-deploy-services.yml      # Terraform modules via apply-terraform role (on VMs)
   04-health-check.yml         # Validate cluster health (on VMs)
   99-teardown.yml             # Destroy VMs and clean up (on hypervisor)
-  site.yml                    # Orchestrator: 00 -> 01 -> homelab.yml -> 02 -> 03 -> 04
+  site.yml                    # Orchestrator: 00 -> 01 -> octant.yml -> 02 -> 03 -> 04
 
-homelab.yml                   # Cluster config: requirements, consul, nomad, podman
+octant.yml                    # Cluster config: requirements, consul, nomad, podman
                               # Works on VMs (via site.yml) OR bare-metal hosts
 ```
 
@@ -45,7 +45,7 @@ homelab.yml                   # Cluster config: requirements, consul, nomad, pod
 
 1. Build base image (skipped if already exists)
 2. Provision 3 VMs from base image
-3. Import and run `homelab.yml` against provisioned VMs
+3. Import and run `octant.yml` against provisioned VMs
 4. Deploy Ceph on secondary disks
 5. Deploy Terraform service modules
 6. Run health checks
@@ -181,7 +181,7 @@ Nomad jobs schedule across the 3-node cluster with CephFS-backed volumes, so job
 
 ```
 octant/
-├── homelab.yml
+├── octant.yml
 ├── playbooks/
 │   ├── 00-build-base-image.yml
 │   ├── 01-provision-vms.yml
@@ -234,11 +234,11 @@ octant/
 
 ## Assessment: What Octant Got Right
 
-**The architecture is genuinely good.** The 3-node Consul/Nomad quorum with server/agent separation, TLS everywhere, and gossip encryption is production-grade distributed systems design. Most homelab projects skip the hard parts. Octant built the real thing.
+**The architecture is genuinely good.** The 3-node Consul/Nomad quorum with server/agent separation, TLS everywhere, and gossip encryption is production-grade distributed systems design. Most lab projects skip the hard parts. Octant built the real thing.
 
 **The port allocation scheme is systematic.** 8500/9500/10500 for server/agent/root-agent across both Consul and Nomad is predictable and easy to reason about.
 
-**Rootless + root Podman was the right call.** Paired Consul+Nomad agents for each mode (rootless default, root when needed) is clean security-conscious design that most homelab projects skip entirely.
+**Rootless + root Podman was the right call.** Paired Consul+Nomad agents for each mode (rootless default, root when needed) is clean security-conscious design that most lab projects skip entirely.
 
 **Terraform for Nomad jobs with Consul state backend.** Plan/apply workflow for service definitions with state stored inside the cluster it manages. Shows real understanding of the tooling.
 

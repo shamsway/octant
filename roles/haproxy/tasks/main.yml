@@ -1,0 +1,72 @@
+---
+- name: Install HAProxy
+  ansible.builtin.apt:
+    name: haproxy
+    state: present
+    update_cache: true
+
+- name: Configure rsyslog to route HAProxy logs to dedicated file
+  ansible.builtin.template:
+    src: 49-haproxy.conf.j2
+    dest: /etc/rsyslog.d/49-haproxy.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart rsyslog
+
+- name: Create journald drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Disable journald wall broadcasts
+  ansible.builtin.template:
+    src: no-wall-broadcasts.conf.j2
+    dest: /etc/systemd/journald.conf.d/no-wall-broadcasts.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart journald
+
+- name: Deploy HAProxy configuration
+  ansible.builtin.template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "haproxy -c -f %s"
+  notify: restart haproxy
+
+- name: Flush handlers to apply config before verification
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure HAProxy is enabled and running with current config
+  ansible.builtin.systemd:
+    name: haproxy
+    enabled: true
+    state: reloaded
+
+- name: Verify HAProxy is listening
+  ansible.builtin.wait_for:
+    port: "{{ item }}"
+    host: 127.0.0.1
+    timeout: 15
+  loop:
+    - 443
+    - 4646
+    - 8500
+    - 9002
+
+- name: Display HAProxy status
+  ansible.builtin.debug:
+    msg: |
+      HAProxy deployed on hypervisor:
+        :443  -> {{ groups['servers'] | map('extract', hostvars, 'vm_ip') | join(', ') }} (Traefik HTTPS)
+        :4646 -> {{ groups['servers'] | map('extract', hostvars, 'vm_ip') | join(', ') }} (Nomad API)
+        :8500 -> {{ groups['servers'] | map('extract', hostvars, 'vm_ip') | join(', ') }} (Consul API)
+        :9002 -> {{ groups['servers'] | map('extract', hostvars, 'vm_ip') | join(', ') }} (Traefik Dashboard)
+        Stats: http://127.0.0.1:8404/

@@ -2,7 +2,11 @@ name = "{{ inventory_hostname.split('.')[0] }}-agent"
 data_dir = "{{ datadirs[role_name] }}"
 datacenter = "{{ datacenter }}"
 region = "{{ region }}"
-bind_addr = "{{ "0.0.0.0" if region == "home" else hostvars[inventory_hostname].ansible_tailscale0.ipv4.address }}"
+{% if region == "home" %}
+bind_addr = "0.0.0.0"
+{% else %}
+bind_addr = "{{ hostvars[inventory_hostname].ansible_tailscale0.ipv4.address }}"
+{% endif %}
 log_level = "info"
 
 server {
@@ -27,10 +31,10 @@ tls {
 consul {
     auto_advertise = true
     server_auto_join = true
-    client_auto_join = true    
+    client_auto_join = true
 {% if (consul.tls_enabled | default('', false)) %}
     address = "127.0.0.1:{{ consul.ports.agent_https }}"
-    grpc_address = "127.0.0.1:{{ consul.ports.agent_grpc_tls }}"    
+    grpc_address = "127.0.0.1:{{ consul.ports.agent_grpc_tls }}"
     ssl = true
     verify_ssl = true
     ca_file = "{{ configdirs['tls'] }}/consul-agent-ca.pem"
@@ -39,7 +43,7 @@ consul {
     grpc_ca_file = "{{ configdirs['tls'] }}/consul-agent-ca.pem"
 {% else %}
     address = "127.0.0.1:{{ consul.ports.agent_http }}"
-    grpc_address = "127.0.0.1:{{ consul.ports.agent_grpc }}
+    grpc_address = "127.0.0.1:{{ consul.ports.agent_grpc }}"
     ssl = false
 {% endif %}
 }
@@ -65,6 +69,23 @@ plugin "nomad-driver-podman" {
 plugin "raw_exec" {
   config {
     enabled = true
+  }
+}
+
+# Disable Docker driver on rootless agents to prevent the dangling container
+# GC from killing containers managed by nomad-agent-root. The rootless agent
+# auto-detects Docker via the shared socket but doesn't track root-agent
+# containers, so it removes them as "untracked."
+plugin "docker" {
+  config {
+    gc {
+      image     = false
+      container = false
+
+      dangling_containers {
+        enabled = false
+      }
+    }
   }
 }
 

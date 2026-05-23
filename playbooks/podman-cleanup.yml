@@ -1,0 +1,61 @@
+---
+# Clean up unused Podman images and container storage to reclaim disk space
+# Useful when VMs report "no space left on device" for container operations
+#
+# Usage:
+#   ansible-playbook playbooks/podman-cleanup.yml -i inventory/provisioned_vms.yml -i inventory/groups.yml
+#
+# Limit to a single host:
+#   ansible-playbook playbooks/podman-cleanup.yml -i inventory/provisioned_vms.yml -i inventory/groups.yml -l octant-01
+
+- name: Clean up Podman container storage
+  hosts: servers
+  gather_facts: false
+  serial: 1
+
+  tasks:
+    - name: Check disk usage before cleanup
+      ansible.builtin.command: df -h /
+      register: disk_before
+      changed_when: false
+
+    - name: Display disk usage before cleanup
+      ansible.builtin.debug:
+        msg: "{{ disk_before.stdout_lines }}"
+
+    # Rootless cleanup (hashi user)
+    - name: Prune unused rootless Podman images
+      ansible.builtin.command: podman image prune -a -f
+      become: true
+      become_user: hashi
+      register: rootless_image_prune
+      changed_when: rootless_image_prune.stdout | length > 0
+
+    - name: Prune unused rootless Podman containers
+      ansible.builtin.command: podman container prune -f
+      become: true
+      become_user: hashi
+      register: rootless_container_prune
+      changed_when: rootless_container_prune.stdout | length > 0
+
+    # Root cleanup (for rootful services like pgadmin)
+    - name: Prune unused root Podman images
+      ansible.builtin.command: podman image prune -a -f
+      become: true
+      register: root_image_prune
+      changed_when: root_image_prune.stdout | length > 0
+
+    - name: Prune unused root Podman containers
+      ansible.builtin.command: podman container prune -f
+      become: true
+      register: root_container_prune
+      changed_when: root_container_prune.stdout | length > 0
+
+    - name: Check disk usage after cleanup
+      ansible.builtin.command: df -h /
+      register: disk_after
+      changed_when: false
+
+    - name: Display disk usage after cleanup
+      ansible.builtin.debug:
+        msg: "{{ disk_after.stdout_lines }}"

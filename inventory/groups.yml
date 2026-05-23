@@ -1,0 +1,317 @@
+---
+servers:
+  hosts:
+    octant-01:
+      server: true
+      dnsserver: true
+      region: home
+      vm_mac: "52:54:00:00:01:01"
+      vm_ip: "192.168.122.101"
+    octant-02:
+      server: true
+      dnsserver: true
+      region: home
+      vm_mac: "52:54:00:00:01:02"
+      vm_ip: "192.168.122.102"
+    octant-03:
+      server: true
+      dnsserver: true
+      region: home
+      vm_mac: "52:54:00:00:01:03"
+      vm_ip: "192.168.122.103"
+  vars:
+    reboot: false
+    vm_ram_gb: 24
+    vm_vcpus: 8
+    vm_os_disk_size: 60G
+    vm_data_disk_size: 100G
+    vm_create_data_disk: true
+    vm_create_container_disk: true
+    vm_container_disk_size: 30G
+    volumes:
+      - name: traefik-data
+        path: /mnt/services/traefik/data
+        backup: true
+      - name: traefik-certs
+        path: /mnt/services/traefik/certs
+        backup: true
+      - name: traefik-config
+        path: /mnt/services/traefik/config
+        backup: true
+      - name: postgres-data
+        path: /mnt/services/postgres
+        backup: true
+        mode: "0700"
+      - name: redis-data
+        path: /mnt/services/redis
+        backup: false
+      - name: influxdb-config
+        path: /mnt/services/influxdb/config
+        backup: true
+      - name: influxdb-data
+        path: /mnt/services/influxdb/data
+        backup: false
+      - name: grafana-config
+        path: /mnt/services/grafana/config
+        backup: true
+      - name: grafana-data
+        path: /mnt/services/grafana/data
+        backup: false
+      - name: homeassistant-data
+        path: /mnt/services/homeassistant
+        backup: true
+      - name: loki-data
+        path: /mnt/services/loki
+        backup: false
+      - name: nginx-data
+        path: /mnt/services/nginx/html
+        backup: true
+      - name: prometheus-data
+        path: /mnt/services/prometheus
+        backup: false
+      - name: backups
+        path: /mnt/services/backups
+        backup: true
+      - name: backups-postgres
+        path: /mnt/services/backups/postgres
+        backup: false
+      - name: backups-mariadb
+        path: /mnt/services/backups/mariadb
+        backup: false
+      - name: backups-snapshots
+        path: /mnt/services/backups/snapshots
+        backup: false
+      - name: open-webui
+        path: /mnt/services/open-webui
+        backup: true
+      - name: litellm
+        path: /mnt/services/litellm
+        backup: true
+      - name: unifi-config
+        path: /mnt/services/unifi/config
+        backup: true
+      - name: unifi-data
+        path: /mnt/services/unifi/data
+        backup: true
+      - name: 1password-config
+        path: /mnt/services/1password/config
+        backup: true
+      - name: 1password-data
+        path: /mnt/services/1password/data
+        backup: true
+      - name: weaviate-config
+        path: /mnt/services/weaviate/config
+        backup: true
+      - name: weaviate-data
+        path: /mnt/services/weaviate/data
+        backup: false
+      - name: rss-config
+        path: /mnt/services/rss-config
+        backup: true
+      - name: jaegar-config
+        path: /mnt/services/jaegar/config
+        backup: true
+      - name: librechat-config
+        path: /mnt/services/librechat/config
+        backup: true
+      - name: open-webui-config
+        path: /mnt/services/open-webui/config
+        backup: true
+      - name: memgpt-config
+        path: /mnt/services/memgpt/config
+        backup: true
+      - name: langfuse-config
+        path: /mnt/services/langfuse/config
+        backup: true
+      - name: langsmith-config
+        path: /mnt/services/langsmith/config
+        backup: true
+      - name: gpt4all-config
+        path: /mnt/services/gpt4all/config
+        backup: true
+      - name: affine
+        path: /mnt/services/affine/config
+        backup: true
+      - name: librenms-config
+        path: /mnt/services/librenms/config
+        backup: true
+      - name: nautobot-config
+        path: /mnt/services/nautobot/config
+        backup: true
+      - name: n8n-config
+        path: /mnt/services/n8n/config
+        backup: true
+      - name: pgweb-config
+        path: /mnt/services/pgweb/config
+        backup: true
+      - name: librenms-data
+        path: /mnt/services/librenms/data
+        backup: false
+      - name: mariadb-data
+        path: /mnt/services/mariadb/data
+        backup: true
+      - name: mosquitto-config
+        path: /mnt/services/mosquitto/config
+        backup: true
+      - name: mosquitto-data
+        path: /mnt/services/mosquitto/data
+        backup: false
+      - name: mosquitto-log
+        path: /mnt/services/mosquitto/log
+        backup: false
+      - name: tempo-data
+        path: /mnt/services/tempo
+        backup: false
+      - name: alertmanager-data
+        path: /mnt/services/alertmanager/data
+        backup: false
+      - name: gatus-data
+        path: /mnt/services/gatus/data
+        backup: true
+      - name: uptimekuma-data
+        path: /mnt/services/uptimekuma/data
+        backup: true
+      - name: searxng-config
+        path: /mnt/services/searxng/config
+        backup: true
+      - name: searxng-data
+        path: /mnt/services/searxng/data
+        backup: false
+      - name: homepage-config
+        path: /mnt/services/homepage/config
+        backup: true
+      - name: n8n-data
+        path: /mnt/services/n8n/data
+        backup: true
+      - name: open-webui-data
+        path: /mnt/services/open-webui/data
+        backup: true
+      - name: phoenix-data
+        path: /mnt/services/phoenix/data
+        backup: true
+      - name: openclaw-gateway-config
+        path: /mnt/services/openclaw-gateway/config
+        backup: true
+      - name: openclaw-gateway-workspaces
+        path: /mnt/services/openclaw-gateway/workspaces
+        backup: true
+      - name: openclaw-gateway-scotty-workspace
+        path: /mnt/services/openclaw-gateway/workspaces/scotty
+        backup: true
+      - name: openclaw-gateway-scotty-memory
+        path: /mnt/services/openclaw-gateway/workspaces/scotty/memory
+        backup: true
+      - name: openclaw-gateway-archivist-workspace
+        path: /mnt/services/openclaw-gateway/workspaces/archivist
+        backup: true
+      - name: openclaw-gateway-archivist-memory
+        path: /mnt/services/openclaw-gateway/workspaces/archivist/memory
+        backup: true
+      - name: openclaw-gateway-vec-ingest-workspace
+        path: /mnt/services/openclaw-gateway/workspaces/vec-ingest
+        backup: true
+      - name: openclaw-gateway-vec-ingest-memory
+        path: /mnt/services/openclaw-gateway/workspaces/vec-ingest/memory
+        backup: true
+      - name: openclaw-gateway-graph-ingest-workspace
+        path: /mnt/services/openclaw-gateway/workspaces/graph-ingest
+        backup: true
+      - name: openclaw-gateway-graph-ingest-memory
+        path: /mnt/services/openclaw-gateway/workspaces/graph-ingest/memory
+        backup: true
+      - name: openclaw-gateway-notes-ingest-workspace
+        path: /mnt/services/openclaw-gateway/workspaces/notes-ingest
+        backup: true
+      - name: openclaw-gateway-notes-ingest-memory
+        path: /mnt/services/openclaw-gateway/workspaces/notes-ingest/memory
+        backup: true
+      - name: obsidian-vault
+        path: /mnt/services/obsidian/vault
+        backup: true
+      - name: obsidian-vault-infrastructure
+        path: /mnt/services/obsidian/vault/infrastructure
+        backup: true
+      - name: obsidian-vault-agents
+        path: /mnt/services/obsidian/vault/agents
+        backup: true
+      - name: obsidian-vault-incidents
+        path: /mnt/services/obsidian/vault/incidents
+        backup: true
+      - name: obsidian-vault-research
+        path: /mnt/services/obsidian/vault/research
+        backup: true
+      - name: obsidian-vault-daily
+        path: /mnt/services/obsidian/vault/daily
+        backup: true
+      - name: bastionclaw-groups
+        path: /mnt/services/bastionclaw/groups
+        backup: true
+      - name: bastionclaw-store
+        path: /mnt/services/bastionclaw/store
+        backup: true
+      - name: bastionclaw-data
+        path: /mnt/services/bastionclaw/data
+        backup: true
+      - name: bastionclaw-qmd-models
+        path: /mnt/services/bastionclaw/qmd-models
+        backup: false
+      - name: ntfy-config
+        path: /mnt/services/ntfy/config
+        backup: true
+      - name: ntfy-data
+        path: /mnt/services/ntfy/data
+        backup: false
+      - name: qdrant-data
+        path: /mnt/services/qdrant/data
+        backup: false
+      - name: linkding-data
+        path: /mnt/services/linkding/data
+        backup: true
+      - name: fusion-data
+        path: /mnt/services/fusion/data
+        backup: true
+      - name: gitea-data
+        path: /mnt/services/gitea/data
+        backup: true
+      - name: linkwarden-data
+        path: /mnt/services/linkwarden/data
+        backup: true
+      - name: nats-data
+        path: /mnt/services/nats/data
+        backup: false
+      - name: falkordb-data
+        path: /mnt/services/falkordb/data
+        backup: true
+      - name: neo4j-data
+        path: /mnt/services/neo4j/data
+        backup: true
+      - name: neo4j-logs
+        path: /mnt/services/neo4j/logs
+        backup: false
+      - name: mongodb-data
+        path: /mnt/services/mongodb/data
+        backup: true
+      - name: mongodb-configdb
+        path: /mnt/services/mongodb/configdb
+        backup: true
+      - name: rocketchat-uploads
+        path: /mnt/services/rocketchat/uploads
+        backup: true
+      - name: docmost-storage
+        path: /mnt/services/docmost/storage
+        backup: true
+      - name: minio-data
+        path: /mnt/services/minio/data
+        backup: true
+      - name: aippt-uploads
+        path: /mnt/services/aippt/uploads
+        backup: true
+      - name: aippt-images
+        path: /mnt/services/aippt/images
+        backup: false
+      - name: aippt-data
+        path: /mnt/services/aippt/data
+        backup: true
+      - name: aippt-config
+        path: /mnt/services/aippt/config
+        backup: true

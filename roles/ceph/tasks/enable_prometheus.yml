@@ -1,0 +1,39 @@
+---
+# Module enable is cluster-wide; only needs to run on one mon
+- name: Enable ceph-mgr prometheus module
+  ansible.builtin.command:
+    cmd: ceph mgr module enable prometheus
+  register: ceph_prometheus_enable
+  changed_when: "'already enabled' not in ceph_prometheus_enable.stderr"
+  failed_when:
+    - ceph_prometheus_enable.rc != 0
+    - "'already enabled' not in ceph_prometheus_enable.stderr"
+  when: inventory_hostname == ceph_first_mon
+
+# Register on all nodes — Consul health check ensures only active mgr is scraped
+- name: Create Consul service definition for ceph-exporter
+  ansible.builtin.copy:
+    content: |
+      {
+        "service": {
+          "name": "ceph-exporter",
+          "tags": ["metrics"],
+          "port": 9283,
+          "check": {
+            "http": "http://localhost:9283/metrics",
+            "interval": "30s",
+            "timeout": "5s"
+          }
+        }
+      }
+    dest: "{{ configdirs['consul-agent'] }}/ceph-exporter.json"
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
+  register: ceph_exporter_consul_def
+
+- name: Reload consul-agent to register ceph-exporter
+  ansible.builtin.command:
+    cmd: consul reload -http-addr=127.0.0.1:{{ consul.ports.agent_http }}
+  when: ceph_exporter_consul_def.changed
+  changed_when: true

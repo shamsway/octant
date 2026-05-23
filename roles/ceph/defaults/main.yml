@@ -1,0 +1,8 @@
+---
+# Ceph role defaults
+ceph_fs_name: "{{ ceph.fs_name | default('octant-services') }}"
+ceph_pool_size: "{{ ceph.pool_size | default(2) }}"
+ceph_mount_path: "{{ ceph.mount_path | default('/mnt/services') }}"
+ceph_first_mon: "{{ groups['servers'][0] }}"
+ceph_skip_monitoring: true
+ceph_data_device: /dev/vdb

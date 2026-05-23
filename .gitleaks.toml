@@ -1,0 +1,12 @@
+title = "Octant Homelab gitleaks config"
+
+[allowlist]
+description = "IaC false positive allowlist"
+
+paths = [
+  '''\.tfstate(\.backup)?$''',
+  '''(?i)\.(jpg|jpeg|png|gif|svg|ico)$''',
+  '''(?i)\.(eot|[ot]tf|woff2?)$''',
+  '''node_modules/''',
+  '''\.terraform/''',
+]

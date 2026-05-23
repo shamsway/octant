@@ -1,0 +1,33 @@
+---
+extends: relaxed
+
+ignore: |
+  .terraform/
+  node_modules/
+  local/
+  .worktrees/
+  packer/templates/
+
+rules:
+  line-length:
+    max: 160
+    level: warning
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+    check-keys: false
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+  empty-lines:
+    max: 2
+    max-start: 1
+    max-end: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

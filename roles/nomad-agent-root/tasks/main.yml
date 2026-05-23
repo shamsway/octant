@@ -27,7 +27,7 @@
     name: nomad-agent-root
     package: nomad
     user: root
-    group: root    
+    group: root
 
 - name: Ensure {{ role-name }}.d directory ownership
   ansible.builtin.file:
@@ -56,6 +56,6 @@
 
 - name: Wait for {{ role_name }} to start
   ansible.builtin.wait_for:
-    port: "{{ nomad.ports.agent_http }}"
+    port: "{{ nomad.ports.root_agent_http }}"
     timeout: 60
   changed_when: false

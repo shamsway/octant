@@ -1,0 +1,39 @@
+---
+# VM Provision defaults for Octant multi-node deployment
+
+# VM Resources
+vm_ram_gb: 24
+vm_vcpus: 8
+vm_network: default
+vm_autostart: false
+vm_cpu_mode: host-passthrough
+vm_data_disk_format: raw
+
+# Container storage disk
+vm_create_container_disk: true
+vm_container_disk_format: raw
+
+# VM group for inventory (targets octant.yml servers group)
+vm_group: servers
+
+# SSH Configuration
+ssh_user: "{{ admin_user | default('admin') }}"
+ssh_default_password: "{{ admin_password }}"  # Required - define in inventory or group_vars
+ssh_wait_timeout: 300
+
+# SSH key paths to check (in order of preference)
+ssh_key_paths:
+  - "{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+  - "{{ ansible_user_dir }}/.ssh/id_ed25519.pub"
+  - "~/.ssh/id_rsa.pub"
+  - "~/.ssh/id_ed25519.pub"
+
+# Cloud-init packages to install on VM first boot
+cloud_init_packages:
+  - qemu-guest-agent
+  - curl
+  - wget
+  - jq
+  - htop
+  - vim
+  - net-tools

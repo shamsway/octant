@@ -1,0 +1,5 @@
+---
+- name: Restart ceph services
+  ansible.builtin.shell: cephadm shell -- ceph orch restart
+  listen: restart ceph
+  changed_when: true

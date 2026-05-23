@@ -62,3 +62,19 @@
     path: "{{ tmpdir.path }}"
     state: absent
   when: tmpdir.path is defined
+
+- name: Ensure /etc/containers directory exists
+  ansible.builtin.file:
+    path: /etc/containers
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy rootful Podman storage.conf
+  ansible.builtin.copy:
+    src: storage.conf
+    dest: /etc/containers/storage.conf
+    owner: root
+    group: root
+    mode: '0644'

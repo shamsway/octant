@@ -1,0 +1,25 @@
+---
+# Volume management role - Single source of truth for service volume creation
+# Volumes are defined in inventory/groups.yml with optional custom permissions
+
+- name: Create service volume directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(volume_default_owner) }}"
+    group: "{{ item.group | default(volume_default_group) }}"
+    mode: "{{ item.mode | default(volume_default_mode) }}"
+  loop: "{{ volumes }}"
+  loop_control:
+    label: "{{ item.name }}: {{ item.path }}"
+  when: item.manage_permissions | default(volume_manage_permissions) | bool
+
+- name: Report volumes with manage_permissions=false
+  ansible.builtin.debug:
+    msg: "Skipping permission management for {{ item.name }} ({{ item.path }}) - managed by container"
+  loop: "{{ volumes }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not (item.manage_permissions | default(volume_manage_permissions) | bool)
+    - ansible_verbosity >= 1

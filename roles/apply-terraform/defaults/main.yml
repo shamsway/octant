@@ -1,0 +1,76 @@
+---
+# Default terraform configuration
+terraform_base_path: "{{ playbook_dir }}/../terraform"
+terraform_env_file: "{{ playbook_dir }}/../.env"
+
+# Cluster address for Nomad/Consul providers (overridden by playbook)
+cluster_address: "localhost"
+
+# 1Password vault name
+op_vault_name: "Octant"
+
+# Default environment variable patterns for modules
+# These are .env keys passed as terraform variables (for modules without 1Password)
+terraform_module_env_patterns:
+  traefik: []
+  postgres: []
+  litellm: []
+  registry:
+    - registry_admin_password
+  mariadb: []
+  nginx: []
+  mqtt: []
+  excalidraw: []
+  pgadmin: []
+  qdrant: []
+  searxng: []
+  uptimekuma: []
+  homepage: []
+  prometheus: []
+  loki: []
+  tempo: []
+  alertmanager: []
+  alloy: []
+  grafana: []
+  gatus: []
+  n8n: []
+  open-webui: []
+  phoenix: []
+  openclaw-gateway: []
+  ntfy: []
+
+# Default variable transformations (can be overridden)
+terraform_variable_transformations: {}
+
+# Default execution order for modules
+terraform_execution_order:
+  # Core infrastructure
+  - traefik
+  - postgres
+  - registry
+  - mariadb
+  - nginx
+  - mqtt
+  - excalidraw
+  - qdrant
+  - searxng
+  - uptimekuma
+  - pgadmin
+  - homepage
+  # Observability stack
+  - prometheus
+  - loki
+  - tempo
+  - alertmanager
+  - alloy
+  - grafana
+  - gatus
+  # LLM stack
+  - litellm
+  # Optional (require external config - will fail if 1Password items missing)
+  # Uncomment as needed:
+  # - n8n
+  # - open-webui
+  # - phoenix
+  # - openclaw-gateway
+  # - ntfy

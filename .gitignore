@@ -3,9 +3,14 @@
 **/.terraform/
 **/.terraform*
 **/terraform.tfstate*
+# Terraform tfvars commonly carry secrets/IDs; commit only *.tfvars.example
+**/*.tfvars
+**/*.auto.tfvars
+!**/*.tfvars.example
 **/.env
 **/venv
 **/.venv
+*.pyc
 packer/output-octantnode
 packer/output-octantnode/*
 packer/packer_cache/
@@ -28,3 +33,12 @@ volumes.csv
 /ARCHIVE/
 /.vscode/
 .worktrees/
+docs/sphinx/
+docs/index.html
+docs/prompts/
+local/
+lab-state.*
+inventory/group_vars/all.yml
+inventory/provisioned_vms.yml
+playbooks/.shutdown-state/
+playbooks/.snapshots/

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     onepassword = {
       source = "1Password/onepassword"
-      version = "~> 1.3.0"
+      version = "~> 2.1.2"
     }
   }
 }
@@ -19,13 +19,11 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "${var.op_api_url}"
-  token                 = "${var.OP_API_TOKEN}"
-  op_cli_path           = "/usr/local/bin/op"
+  # Authenticates via OP_SERVICE_ACCOUNT_TOKEN environment variable
 }
 
 data "onepassword_vault" "vault" {
-  name = "${var.op_vault}"
+  name = var.op_vault_name
 }
 
 data "onepassword_item" "job_pass" {
@@ -49,7 +47,7 @@ data "template_file" "job_template" {
     domain = var.domain
     certresolver = var.certresolver
     servicename = var.servicename
-    dns = jsonencode(var.dns)    
+    dns = jsonencode(var.dns)
   }
 }
 

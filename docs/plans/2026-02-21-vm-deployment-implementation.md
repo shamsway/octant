@@ -4,7 +4,7 @@
 
 **Goal:** Fully automated 3-node Octant cluster on KVM/libvirt VMs with Ceph shared storage, deployable and destroyable repeatedly.
 
-**Architecture:** Numbered playbooks orchestrate VM provisioning on a hypervisor, then run `homelab.yml` to configure Consul/Nomad/Podman on the VMs, deploy Ceph for shared storage, and apply Terraform service modules.
+**Architecture:** Numbered playbooks orchestrate VM provisioning on a hypervisor, then run `octant.yml` to configure Consul/Nomad/Podman on the VMs, deploy Ceph for shared storage, and apply Terraform service modules.
 
 **Tech Stack:** Ansible, libvirt/KVM, cloud-init, Consul, Nomad, Podman, Ceph (cephadm), Terraform, 1Password + direnv
 
@@ -191,7 +191,7 @@ The template already handles optional data disk via `vm_create_data_disk` condit
 **Step 4: Create tasks**
 
 Port from `/home/melliott/git/octant-demo/roles/vm_provision/tasks/main.yml`.
-Key change: the `add_host` groups should include `servers` so `homelab.yml` can target them.
+Key change: the `add_host` groups should include `servers` so `octant.yml` can target them.
 
 **Step 5: Validate syntax**
 
@@ -334,12 +334,12 @@ git commit -m "feat: add VM provisioning playbook for multi-node cluster"
 
 ---
 
-### Task 7: Update homelab.yml for VM Compatibility
+### Task 7: Update octant.yml for VM Compatibility
 
 **Files:**
-- Modify: `homelab.yml`
+- Modify: `octant.yml`
 
-**Step 1: Review current homelab.yml**
+**Step 1: Review current octant.yml**
 
 Current issues for VM deployment:
 - `user: matt` is hardcoded (should use `admin_user` variable)
@@ -347,7 +347,7 @@ Current issues for VM deployment:
 - Missing `volumes` role (directories are created in consul-server role instead)
 - Service verification task runs before roles that install the services
 
-**Step 2: Update homelab.yml**
+**Step 2: Update octant.yml**
 
 Changes needed:
 - Replace `user: matt` with `user: "{{ admin_user }}"`
@@ -360,14 +360,14 @@ Changes needed:
 **Step 3: Validate syntax**
 
 ```bash
-ansible-playbook --syntax-check homelab.yml -i inventory/groups.yml.example
+ansible-playbook --syntax-check octant.yml -i inventory/groups.yml.example
 ```
 
 **Step 4: Commit**
 
 ```bash
-git add homelab.yml
-git commit -m "feat: update homelab.yml for VM deployment compatibility"
+git add octant.yml
+git commit -m "feat: update octant.yml for VM deployment compatibility"
 ```
 
 ---
@@ -590,7 +590,7 @@ git commit -m "feat: add ceph role for automated cephadm deployment"
 #
 # Prerequisites:
 #   - VMs provisioned with playbooks/01-provision-vms.yml
-#   - homelab.yml has been run (base packages installed)
+#   - octant.yml has been run (base packages installed)
 #   - Each VM has a secondary disk at /dev/vdb
 
 - name: Deploy Ceph Storage Cluster
@@ -912,7 +912,7 @@ This is the top-level orchestrator that runs the full deployment sequence:
 # Phases:
 #   00 - Build base image (skipped if exists)
 #   01 - Provision VMs
-#   homelab.yml - Configure Consul/Nomad/Podman
+#   octant.yml - Configure Consul/Nomad/Podman
 #   02 - Deploy Ceph
 #   03 - Deploy services
 #   04 - Health check
@@ -924,7 +924,7 @@ This is the top-level orchestrator that runs the full deployment sequence:
   ansible.builtin.import_playbook: 01-provision-vms.yml
 
 - name: "Phase 2: Configure Cluster"
-  ansible.builtin.import_playbook: ../homelab.yml
+  ansible.builtin.import_playbook: ../octant.yml
 
 - name: "Phase 3: Deploy Ceph"
   ansible.builtin.import_playbook: 02-deploy-ceph.yml
@@ -936,7 +936,7 @@ This is the top-level orchestrator that runs the full deployment sequence:
   ansible.builtin.import_playbook: 04-health-check.yml
 ```
 
-Note: `import_playbook` requires the imported playbooks to work with the inventory passed at the command line. The VM provisioning playbook uses `add_host` to make provisioned VMs available to subsequent plays. For `homelab.yml`, the VMs need to be in the `servers` group, which the vm_provision role handles via `add_host`.
+Note: `import_playbook` requires the imported playbooks to work with the inventory passed at the command line. The VM provisioning playbook uses `add_host` to make provisioned VMs available to subsequent plays. For `octant.yml`, the VMs need to be in the `servers` group, which the vm_provision role handles via `add_host`.
 
 **Step 2: Validate and commit**
 
@@ -1005,7 +1005,7 @@ provision-vms:
 	ansible-playbook playbooks/01-provision-vms.yml -i $(VM_INVENTORY)
 
 deploy-cluster:
-	ansible-playbook homelab.yml -i inventory/provisioned_vms.yml
+	ansible-playbook octant.yml -i inventory/provisioned_vms.yml
 
 deploy-ceph:
 	ansible-playbook playbooks/02-deploy-ceph.yml -i inventory/provisioned_vms.yml
@@ -1189,7 +1189,7 @@ Task 1 (branch + dirs)
   → Task 4 (vm_provision role)
     → Task 5 (00-build-base-image.yml)
     → Task 6 (01-provision-vms.yml)
-  → Task 7 (homelab.yml updates)
+  → Task 7 (octant.yml updates)
   → Task 8 (requirements role updates)
   → Task 9 (install-hashi updates)
   → Task 10 (ceph role) → Task 11 (02-deploy-ceph.yml)
@@ -1206,3 +1206,54 @@ Task 1 (branch + dirs)
 ```
 
 Tasks 2-19 can largely be done in parallel (they're independent file creation/modification). Tasks 20-22 are sequential and depend on all prior tasks.
+
+---
+
+## Phase 2: Ingress & DNS (feature/app-migration)
+
+Tasks 1-22 above are complete. The following tasks extend the deployment with HAProxy ingress and DNS configuration.
+
+### Task 23: HAProxy Ingress on Hypervisor (DONE)
+
+Deploy HAProxy on the hypervisor to load-balance traffic across VMs with active health checks. Proxies ports 443 (Traefik HTTPS), 4646 (Nomad API), 8500 (Consul API), 9002 (Traefik dashboard). See `docs/plans/2026-02-24-haproxy-ingress-design.md`.
+
+- `roles/haproxy/` - role with tasks + config template
+- `playbooks/02.5-deploy-haproxy.yml` / `playbooks/02.5-remove-haproxy.yml`
+- Makefile: `deploy-haproxy`, `remove-haproxy`, integrated into `deploy-vm` and `teardown`
+
+### Task 24: Templatize traefik.toml (DONE)
+
+- Templatized `traefik.toml` with `${domain}`, `${consul}`, `${datacenter}`, `${admin_email}`, `${certresolver}`
+- Changed `main.tf` from `data "local_file"` to `data "template_file"` for traefik.toml
+- Added `admin_email` variable to `variables.tf` and `apply_module.yml`
+- Removed file provider and `dynamic.toml` (all routing via Consul Catalog)
+- Removed static routers that intercepted Consul Catalog routes
+- Fixed TLS config: `[tls]` → `[providers.consulcatalog.endpoint.tls]`, field names for v3
+- Disabled `connectAware`/`connectByDefault` (no Consul Connect in use)
+- Changed Consul endpoint to `consul.lab.shamsway.net:8501`
+
+### Task 25: Create DNS terraform for lab.shamsway.net (DONE)
+
+- Created `terraform/dns-lab/main.tf` with wildcard `*.lab.shamsway.net` → 10.216.113.177
+- Added individual `consul.lab.shamsway.net` A records for each VM (DNS round-robin)
+
+### Task 26: Deploy and Test Ingress (DONE)
+
+- HAProxy deployed with health checks on ports 443, 4646, 8500, 9002
+- DNS records applied via `terraform/dns-lab/`
+- Cloudflare DNS-01 ACME certificates issued for all 12 services
+- HTTPS routing verified end-to-end via `https://<service>.lab.shamsway.net`
+
+### Task 27: Traefik Fixes & Cloudflare 1Password Integration (DONE)
+
+Fixes applied during ingress testing:
+
+- **Duplicate dashboard router:** Renamed `traefik-admin` router from `dashboard` to `traefik-dash` (was conflicting with `traefik-http` router of the same name)
+- **Removed Consul Connect blocks:** Removed `connect { native = true }` from `traefik-admin` and `traefik-metrics` service blocks
+- **Removed stale dynamic.toml:** Deleted empty `dynamic.toml` file and all references in `main.tf`
+- **1Password for Cloudflare creds:** Switched from `.env` file passthrough to 1Password Terraform provider (`api_cloudflare_key` item in Octant vault, `.username` for email, `.credential` for Global API Key)
+- **Removed .env passthrough:** Cleared `terraform_module_env_patterns.traefik` list, removed `CLOUDFLARE_USERNAME`/`CLOUDFLARE_API_KEY` variables from `variables.tf`
+- **Static ports for Traefik:** Changed HTTP (80) and HTTPS (443) from dynamic to static port allocation in Nomad job spec (HAProxy forwards to these ports on the VMs)
+- **Container storage disk:** Added third VM disk (`/dev/vdc`, 30G, XFS) for Podman container storage via `roles/container-storage/`
+- **Service container fixes:** Loki (delete_request_store), Grafana (removed config mount), Qdrant/Tempo (userns uid mapping), PGAdmin (email + memory), Alloy (template parse fix)
+- **CephFS ownership:** Volumes owned by `hashi:hashi` (uid 2000) — rootless Podman keep-id maps host UID

@@ -1,0 +1,44 @@
+---
+# Destroy Octant Services via Terraform
+# Tears down all deployed services in reverse dependency order
+#
+# Usage:
+#   make destroy-services
+#   ansible-playbook playbooks/06-destroy-services.yml -i inventory/provisioned_vms.yml -i inventory/groups.yml
+#
+# Prerequisites:
+#   - Cluster accessible (Consul/Nomad APIs)
+#   - Terraform state exists for deployed modules
+
+- name: Destroy Octant Services
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    cluster_address: "{{ hostvars[groups['servers'][0]].ansible_host | default(groups['servers'][0]) }}"
+
+  pre_tasks:
+    - name: Verify Consul is accessible
+      ansible.builtin.uri:
+        url: "http://{{ cluster_address }}:8500/v1/status/leader"
+        return_content: true
+      register: consul_leader
+      retries: 3
+      delay: 5
+      until: consul_leader.status == 200
+
+    - name: Verify Nomad is accessible
+      ansible.builtin.uri:
+        url: "http://{{ cluster_address }}:4646/v1/status/leader"
+        return_content: true
+      register: nomad_leader
+      retries: 3
+      delay: 5
+      until: nomad_leader.status == 200
+
+  roles:
+    - role: apply-terraform
+      vars:
+        terraform_action: destroy
+        modules: "{{ terraform_execution_order | reverse | list }}"

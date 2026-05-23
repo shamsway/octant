@@ -1,7 +1,14 @@
 [Unit]
 Description=Consul Agent
+{% if tailscale_enabled | default(false) %}
 Requires=network-online.target tailscaled.service
 After=network-online.target tailscaled.service
+{% else %}
+Requires=network-online.target
+After=network-online.target
+{% endif %}
+Wants=consul-server.service
+After=consul-server.service
 Documentation="https://www.consul.io/docs/agent/options"
 
 [Service]

@@ -1,0 +1,103 @@
+---
+- name: Beginning Octant Deploy
+  hosts: servers
+  user: "{{ admin_user | default('admin') }}"
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Set a hostname
+      become: true
+      ansible.builtin.hostname:
+        name: "{{ ansible_hostname }}"
+        use: systemd
+
+    # Setup Admin account
+    - name: Create user {{ admin_user }}
+      ansible.builtin.user:
+        name: "{{ admin_user }}"
+        shell: /bin/bash
+        state: present
+        groups:
+          - sudo
+
+    - name: Allow {{ admin_user }} to have passwordless sudo
+      ansible.builtin.lineinfile:
+        dest: /etc/sudoers.d/{{ admin_user }}
+        state: present
+        create: true
+        line: "{{ admin_user }} ALL=(ALL) NOPASSWD: ALL"
+
+    - name: Set up authorized keys for {{ admin_user }}
+      ansible.posix.authorized_key:
+        user: "{{ admin_user }}"
+        key: "{{ lookup('file', user_public_key) }}"
+
+- name: Applying roles to inventory
+  hosts: servers
+  user: "{{ admin_user | default('admin') }}"
+  become: true
+  gather_facts: true
+
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+  roles:
+    - role: requirements
+      tags: requirements
+    - role: tailscale
+      tags: tailscale
+      when: tailscale_enabled | default(false)
+    - role: docker
+      tags: docker
+      when: docker == true
+    # Must run before nomad-agent/nomad-agent-root (which include podman-rootless/podman-root)
+    - role: container-storage
+      tags: container-storage
+      when: vm_create_container_disk | default(true)
+    - role: consul-server
+      tags: consul-server
+      when: region == "home"
+    - role: consul-agent
+      tags: consul-agent
+    - role: consul-agent-root
+      tags: consul-agent-root
+    - role: nomad-server
+      tags: nomad-server
+      when: region == "home"
+    - role: nomad-agent
+      tags: nomad-agent
+    - role: nomad-agent-root
+      tags: nomad-agent-root
+    - role: restic
+      tags: restic
+    - role: node-exporter
+      tags: node-exporter
+    - role: podman-exporter
+      tags: podman-exporter
+      when: podman == true
+
+  post_tasks:
+    - name: Ensure service are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 3
+      delay: 10
+      with_items:
+        - consul-server
+        - consul-agent
+        - consul-agent-root
+        - nomad-server
+        - nomad-agent
+        - nomad-agent-root
+
+    - name: Set Nomad scheduler algorithm to spread
+      ansible.builtin.command:
+        cmd: nomad operator scheduler set-config -scheduler-algorithm=spread
+      environment:
+        NOMAD_ADDR: "http://localhost:{{ nomad.ports.http }}"
+      register: scheduler_config
+      changed_when: "'updated' in scheduler_config.stdout"
+      run_once: true

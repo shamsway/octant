@@ -1,0 +1,122 @@
+---
+# VM Storage provisioning tasks for Octant
+# Creates VM disks from base image
+
+- name: Check if base image exists
+  ansible.builtin.stat:
+    path: "{{ base_image_path }}"
+  register: base_image_stat
+  changed_when: false
+
+- name: Fail if base image does not exist
+  ansible.builtin.fail:
+    msg: "Base image not found at {{ base_image_path }}. Run playbooks/00-build-base-image.yml first."
+  when: not base_image_stat.stat.exists
+
+- name: Display base image being used
+  ansible.builtin.debug:
+    msg: "Using base image: {{ base_image_path }}"
+
+- name: Ensure libvirt images directory exists
+  ansible.builtin.file:
+    path: "{{ libvirt_images_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Check if OS disk already exists
+  ansible.builtin.stat:
+    path: "{{ libvirt_images_path }}/{{ vm_name }}.qcow2"
+  register: os_disk_stat
+  changed_when: false
+
+- name: Create OS disk for VM from base image
+  ansible.builtin.shell: |
+    qemu-img create -f qcow2 \
+      -b {{ base_image_path }} \
+      -F qcow2 \
+      {{ libvirt_images_path }}/{{ vm_name }}.qcow2 \
+      {{ vm_os_disk_size }}
+  args:
+    creates: "{{ libvirt_images_path }}/{{ vm_name }}.qcow2"
+  when: not os_disk_stat.stat.exists
+
+- name: Display OS disk creation result
+  ansible.builtin.debug:
+    msg: "{{ 'OS disk already exists' if os_disk_stat.stat.exists else 'Created OS disk' }} at {{ libvirt_images_path }}/{{ vm_name }}.qcow2"
+
+# Data disk creation (enabled by default for Ceph OSD)
+- name: Create data disk infrastructure
+  when: vm_create_data_disk | default(true)
+  block:
+    - name: Ensure data disk directory exists
+      ansible.builtin.file:
+        path: "{{ data_disk_pool_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if data disk pool path differs from existing pools
+      ansible.builtin.shell: |
+        virsh pool-list --all | grep -v "^---" | grep -v "^ Name" | grep -v "^$" | awk '{print $1}' | while read pool; do
+          virsh pool-dumpxml "$pool" 2>/dev/null | grep -oP '<path>\K[^<]+'
+        done
+      register: existing_pool_paths
+      changed_when: false
+
+    - name: Create separate libvirt storage pool for data disks
+      when: data_disk_pool_path not in existing_pool_paths.stdout_lines
+      block:
+        - name: Define libvirt storage pool for data disks
+          community.libvirt.virt_pool:
+            name: "{{ data_disk_pool_name }}"
+            command: define
+            xml: |
+              <pool type='dir'>
+                <name>{{ data_disk_pool_name }}</name>
+                <target>
+                  <path>{{ data_disk_pool_path }}</path>
+                </target>
+              </pool>
+
+        - name: Start and autostart storage pool
+          community.libvirt.virt_pool:
+            name: "{{ data_disk_pool_name }}"
+            state: active
+            autostart: true
+
+    - name: Create data disk for VM
+      ansible.builtin.shell: |
+        qemu-img create -f {{ vm_data_disk_format }} \
+          {{ data_disk_pool_path }}/{{ vm_name }}-data.img \
+          {{ vm_data_disk_size }}
+      args:
+        creates: "{{ data_disk_pool_path }}/{{ vm_name }}-data.img"
+
+# Container storage disk creation (dedicated disk for Podman)
+# Uses the same octant-data pool/directory as the data disk
+- name: Create container storage disk
+  when: vm_create_container_disk | default(true)
+  block:
+    - name: Ensure data disk directory exists for container disk
+      ansible.builtin.file:
+        path: "{{ data_disk_pool_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if container disk already exists
+      ansible.builtin.stat:
+        path: "{{ data_disk_pool_path }}/{{ vm_name }}-container.img"
+      register: container_disk_stat
+      changed_when: false
+
+    - name: Create container disk for VM
+      ansible.builtin.shell: |
+        qemu-img create -f {{ vm_container_disk_format }} \
+          {{ data_disk_pool_path }}/{{ vm_name }}-container.img \
+          {{ vm_container_disk_size }}
+      args:
+        creates: "{{ data_disk_pool_path }}/{{ vm_name }}-container.img"
+      when: not container_disk_stat.stat.exists
+
+    - name: Display container disk creation result
+      ansible.builtin.debug:
+        msg: "{{ 'Container disk already exists' if container_disk_stat.stat.exists else 'Created container disk' }} at {{ data_disk_pool_path }}/{{ vm_name }}-container.img"

@@ -1,0 +1,18 @@
+---
+# Deploy service volume directories on CephFS
+# Can be run independently to add volumes for new apps
+#
+# Usage:
+#   make deploy-volumes
+#   ansible-playbook playbooks/05-deploy-volumes.yml -i inventory/provisioned_vms.yml -i inventory/groups.yml
+#
+# Prerequisites:
+#   - CephFS mounted at /mnt/services (via playbooks/02-deploy-ceph.yml)
+
+- name: Deploy service volumes
+  hosts: servers
+  gather_facts: false
+  become: true
+  roles:
+    - role: volumes
+      tags: volumes

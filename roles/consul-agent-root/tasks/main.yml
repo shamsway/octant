@@ -19,7 +19,7 @@
     mode: "0700"
     owner: "{{ user }}"
     group: "{{ group }}"
-  
+
 - name: Install Consul Agent (root)
   ansible.builtin.include_role:
     name: install-hashi
@@ -27,7 +27,7 @@
     name: consul-agent-root
     package: consul
     user: root
-    group: root    
+    group: root
 
 - name: Ensure consul.d directory ownership
   ansible.builtin.file:

@@ -1,0 +1,75 @@
+name       = "{{ inventory_hostname.split('.')[0] }}"
+data_dir   = "/opt/nomad"
+datacenter = "{{ datacenter }}"
+region     = "{{ region }}"
+# Bind to the libvirt bridge IP so cluster traffic stays on the VM subnet.
+bind_addr  = "{{ libvirt_bridge_ip | default('192.168.122.1') }}"
+log_level  = "info"
+
+# HAProxy owns *:4646 on the hypervisor (forwarding to VMs).
+# Use alternate ports so the local agent does not conflict.
+# RPC (4647) and gossip (4648) are not proxied and stay at default.
+ports {
+  http = 14646
+}
+
+# bind_addr restricts RPC/gossip to the bridge subnet.
+# Override HTTP to listen on all interfaces so local CLI and health
+# checks work via 127.0.0.1 (matching Consul's client_addr = "0.0.0.0").
+addresses {
+  http = "0.0.0.0"
+}
+
+# plugin_dir and plugin stanzas must be top-level in Nomad 1.11+
+# (not nested inside client {})
+plugin_dir = "/opt/nomad/plugins"
+
+plugin "amd-gpu" {
+  config {
+    enabled            = true
+    fingerprint_period = "1m"
+    force_sysfs_only   = false
+  }
+}
+
+plugin "raw_exec" {
+  config {
+    enabled = true
+  }
+}
+
+server {
+  enabled = false
+}
+
+consul {
+  auto_advertise   = true
+  server_auto_join = true
+  client_auto_join = true
+  address          = "127.0.0.1:18500"
+  grpc_address     = "127.0.0.1:18503"
+  ssl              = false
+}
+
+telemetry {
+  publish_allocation_metrics = true
+  publish_node_metrics       = true
+  prometheus_metrics         = true
+}
+
+client {
+  enabled = true
+
+  # Explicitly join Nomad servers by IP rather than relying solely on
+  # Consul auto-discovery, which can fail if the client starts before
+  # its Consul agent has fully synced the Nomad server service catalog.
+  server_join {
+    retry_join     = [{% for host in groups['servers'] %}{% if hostvars[host]['region'] == 'home' %}{% if not loop.first %}, {% endif %}"{{ hostvars[host]['vm_ip'] }}:{{ nomad.ports.rpc }}"{% endif %}{% endfor %}]
+    retry_max      = 3
+    retry_interval = "15s"
+  }
+
+  meta {
+    hypervisor = "true"
+  }
+}

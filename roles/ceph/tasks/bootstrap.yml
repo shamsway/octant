@@ -1,0 +1,23 @@
+---
+- name: Bootstrap cephadm cluster on first monitor
+  ansible.builtin.command:
+    cmd: >
+      cephadm bootstrap
+      --mon-ip {{ ansible_default_ipv4.address }}
+      --skip-monitoring-stack
+      --allow-fqdn-hostname
+    creates: /etc/ceph/ceph.conf
+  register: cephadm_bootstrap
+
+- name: Wait for ceph health to be OK or WARN
+  ansible.builtin.command: ceph health
+  register: ceph_health
+  until: ceph_health.stdout is search('HEALTH_OK') or ceph_health.stdout is search('HEALTH_WARN')
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Get ceph public key
+  ansible.builtin.command: ceph cephadm get-pub-key
+  register: ceph_pub_key
+  changed_when: false
