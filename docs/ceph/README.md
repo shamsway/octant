@@ -12,7 +12,7 @@ Install ceph and depedencies
 ```bash
 sudo apt install ceph-common ceph-mon ceph-osd ceph-mds ceph-mgr ceph-fuse ceph-base python3-ceph ceph-mgr-dashboard cephadm xfsprogs
 
-cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.1.6 --cluster-network 192.168.1.0/24 --ssh-user hashi --ssh-private-key /opt/homelab/data/home/.ssh/id_rsa --ssh-public-key /opt/homelab/data/home/.ssh/id_rsa.pub --apply-spec ceph-bootstrap.yml --allow-overwrite
+cephadm bootstrap --skip-monitoring-stack --mon-ip 192.168.1.6 --cluster-network 192.168.1.0/24 --ssh-user hashi --ssh-private-key /opt/octant/data/home/.ssh/id_rsa --ssh-public-key /opt/octant/data/home/.ssh/id_rsa.pub --apply-spec ceph-bootstrap.yml --allow-overwrite
 
 sudo ceph cephadm set-user hashi
 ```
@@ -189,7 +189,7 @@ Links:
 - https://forum.proxmox.com/threads/please-help-ceph-pool-stuck-at-undersized-degraded-remapped-backfill_toofull-peered.121690/
 - https://www.reddit.com/r/ceph/comments/18q5a5n/activeundersizeddegraded/
 - https://www.reddit.com/r/ceph/comments/11ehf6u/pgs_stuck_in_undersized_mode_for_a_long_time/
-- 
+-
 
 # Creating local RBDs
 
@@ -226,7 +226,7 @@ bobby$ sudo rbd map rbd_billy/image_billy
 
 On each server, format the mapped RBD image with a filesystem and mount it to a local directory:
 ```bash
-sudo mkfs.xfs /dev/rbd0 
+sudo mkfs.xfs /dev/rbd0
 sudo mkdir /mnt/rbd
 sudo mount /dev/rbd0 /mnt/rbd
 ```
@@ -295,7 +295,7 @@ View running services:
 Start a service. Example: mon
 `ceph orch daemon start mon.[hostname]`
 
-## Reboot a ceph node 
+## Reboot a ceph node
 
 To reboot the Ceph Storage nodes, follow this process:
 
@@ -332,7 +332,7 @@ ceph orch host ok-to-stop  <hostname>
 
 ## Speeding Up Ceph Recovery and Rebalancing
 
-If you need to speed up the recovery and rebalancing process in your Ceph cluster, especially in a home lab environment where performance is not a critical concern, you can make some temporary adjustments to prioritize the recovery process. Here are a few options:
+If you need to speed up the recovery and rebalancing process in your Ceph cluster, especially in a lab environment where performance is not a critical concern, you can make some temporary adjustments to prioritize the recovery process. Here are a few options:
 
 ## 1. Adjust the recovery settings
 

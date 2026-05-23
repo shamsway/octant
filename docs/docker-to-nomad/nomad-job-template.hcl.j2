@@ -15,7 +15,7 @@ job "{{ job.name }}" {
       }
       dns {
         servers = ["192.168.1.1","192.168.1.6","192.1.252.7"]
-      }      
+      }
     }
 
     volume "{{ job.name }}-mount" {
@@ -31,7 +31,7 @@ job "{{ job.name }}" {
       port = "http"
       tags = [
         "traefik.enable=true",
-        "traefik.consulcatalog.connect=false",          
+        "traefik.consulcatalog.connect=false",
         "traefik.http.routers.{{ job.name }}.rule=Host(`{{ job.name }}.{{ job.domain }}`)",
         "traefik.http.routers.{{ job.name }}.entrypoints=web,websecure",
         "traefik.http.routers.{{ job.name }}.tls.certresolver=cloudflare",
@@ -41,7 +41,7 @@ job "{{ job.name }}" {
       connect {
         native = true
       }
-              
+
       check {
         name     = "alive"
         type     = "http"
@@ -65,7 +65,7 @@ job "{{ job.name }}" {
               "tag" = "{{ job.name }}"
             }
           ]
-        }         
+        }
       }
 
       volume_mount {

@@ -200,19 +200,19 @@ Debian uses `vfs` by default for rootless podman, but `overlayfs` is supported a
 systemctl stop --user podman.service podman.socket
 rm -rf /run/user/2000/containers/*
 rm ~/.local/share/containers/cache/*
-sudo rm -rf /opt/homelab/data/home/.local/share/containers/storage/*
+sudo rm -rf /opt/octant/data/home/.local/share/containers/storage/*
 /usr/bin/podman container prune -f; /usr/bin/podman image prune -a -f; /usr/bin/podman volume prune -f; /usr/bin/podman system prune -a -f
 podman system reset
 ```
 
-- Create `/opt/homelab/data/home/.config/containers/storage.conf`:
+- Create `/opt/octant/data/home/.config/containers/storage.conf`:
 
 ```ini
 [storage]
 driver = "overlay"
 ```
 
-- Restart podman and run some smoke tests 
+- Restart podman and run some smoke tests
 ```bash
 systemctl start --user podman.service podman.socket
 podman run --rm hello-world

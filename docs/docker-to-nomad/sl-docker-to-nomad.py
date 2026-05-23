@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 def convert_docker_compose_to_nomad(docker_compose_content):
     client = Anthropic()
-    
+
     #print("Anthropic object attributes:")
     #print(dir(client))
-    
+
     with open("nomad-job-template.hcl.j2", "r") as f:
         job_template = f.read()
     f.close()
@@ -61,7 +61,7 @@ def convert_docker_compose_to_nomad(docker_compose_content):
 
 def ollama_convert_docker_compose_to_nomad(docker_compose_content):
     ollama_client = Client(host='http://ollama.service.consul:11434')
-    
+
     with open("nomad-job-template.hcl.j2", "r") as f:
         job_template = f.read()
     f.close()
@@ -94,7 +94,7 @@ def ollama_convert_docker_compose_to_nomad(docker_compose_content):
     """
 
     response = ollama_client.chat(
-        model='llama3-gradient', 
+        model='llama3-gradient',
         messages=[{'role': 'user', 'content': prompt}]
     )
 
