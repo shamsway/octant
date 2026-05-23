@@ -1,0 +1,331 @@
+{
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "litellm": {
+        "baseUrl": "https://litellm.lab.shamsway.net/v1",
+        "apiKey": "8dNc3aNAEdrXnrLaVUcwnYAVz9bzgmJ3",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "local/minimax-m2.5",
+            "name": "MiniMax M2.5",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 1048576,
+            "maxTokens": 131072
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "litellm/local/minimax-m2.5"
+      },
+      "workspace": "/home/node/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 4
+      }
+    },
+    "list": [
+      {
+        "id": "scotty",
+        "default": true,
+        "workspace": "/home/node/.openclaw/workspace",
+        "identity": {
+          "name": "Scotty",
+          "emoji": "\ud83d\udd27"
+        },
+        "subagents": {
+          "allowAgents": ["clawnerd"]
+        },
+        "tools": {
+          "profile": "coding",
+          "alsoAllow": [
+            "group:web",
+            "group:sessions",
+            "memory_search",
+            "memory_get",
+            "message",
+            "agents_list",
+            "lobster",
+            "llm-task"
+          ],
+          "deny": [
+            "image",
+            "browser",
+            "canvas",
+            "cron",
+            "gateway",
+            "nodes"
+          ]
+        }
+      },
+      {
+        "id": "clawnerd",
+        "workspace": "/home/node/.openclaw/workspaces/clawnerd",
+        "identity": {
+          "name": "Clawnerd",
+          "emoji": "\ud83e\udde0"
+        },
+        "tools": {
+          "allow": [
+            "read", "exec", "write",
+            "message",
+            "web_fetch", "web_search",
+            "cron"
+          ],
+          "deny": [
+            "edit", "apply_patch",
+            "browser", "canvas", "image",
+            "gateway", "nodes"
+          ]
+        }
+      },
+      {
+        "id": "archivist",
+        "workspace": "/home/node/.openclaw/workspaces/archivist",
+        "identity": {
+          "name": "Archivist",
+          "emoji": "\ud83d\udcda"
+        },
+        "tools": {
+          "allow": [
+            "exec",
+            "read",
+            "write",
+            "edit",
+            "group:web",
+            "group:sessions",
+            "memory_search",
+            "memory_get",
+            "message",
+            "agents_list",
+            "lobster",
+            "llm-task"
+          ]
+        }
+      },
+      {
+        "id": "vec-ingest",
+        "workspace": "/home/node/.openclaw/workspaces/vec-ingest",
+        "identity": {
+          "name": "Vec-Ingest",
+          "emoji": "\ud83d\udd22"
+        },
+        "tools": {
+          "allow": ["exec", "memory_get", "memory_search", "message"]
+        }
+      },
+      {
+        "id": "graph-ingest",
+        "workspace": "/home/node/.openclaw/workspaces/graph-ingest",
+        "identity": {
+          "name": "Graph-Ingest",
+          "emoji": "\ud83d\udd78\ufe0f"
+        },
+        "tools": {
+          "allow": ["exec", "memory_get", "memory_search", "message"]
+        }
+      },
+      {
+        "id": "notes-ingest",
+        "workspace": "/home/node/.openclaw/workspaces/notes-ingest",
+        "identity": {
+          "name": "Notes-Ingest",
+          "emoji": "\ud83d\udcdd"
+        },
+        "tools": {
+          "allow": ["exec", "write", "edit", "read", "message"]
+        }
+      }
+    ]
+  },
+  "tools": {
+    "deny": ["apply_patch", "gateway", "nodes"],
+    "exec": {
+      "applyPatch": { "enabled": false }
+    }
+  },
+  "bindings": [
+    {
+      "agentId": "scotty",
+      "match": {
+        "channel": "rocketchat",
+        "accountId": "scotty",
+        "peer": {
+          "kind": "channel",
+          "id": "bridge"
+        }
+      }
+    },
+    {
+      "agentId": "archivist",
+      "match": {
+        "channel": "rocketchat",
+        "accountId": "archivist",
+        "peer": {
+          "kind": "channel",
+          "id": "bridge"
+        }
+      }
+    },
+    {
+      "agentId": "archivist",
+      "match": {
+        "channel": "rocketchat",
+        "accountId": "archivist",
+        "peer": {
+          "kind": "channel",
+          "id": "knowledge"
+        }
+      }
+    },
+    {
+      "agentId": "clawnerd",
+      "match": {
+        "channel": "rocketchat",
+        "accountId": "clawnerd",
+        "peer": {
+          "kind": "channel",
+          "id": "clawnerd"
+        }
+      }
+    }
+  ],
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "channels": {
+    "rocketchat": {
+      "enabled": true,
+      "serverUrl": "https://rocketchat.lab.shamsway.net",
+      "accounts": {
+        "scotty": {
+          "botUsername": "scotty-bot",
+          "botDisplayName": "Scotty"
+        },
+        "archivist": {
+          "botUsername": "archivist-bot",
+          "botDisplayName": "Archivist"
+        },
+        "clawnerd": {
+          "botUsername": "clawnerd-bot",
+          "botDisplayName": "Clawnerd"
+        },
+        "default": {
+          "dmPolicy": "pairing"
+        }
+      },
+      "groups": {
+        "bridge": {
+          "bots": ["scotty-bot", "archivist-bot"]
+        },
+        "knowledge": {
+          "bots": ["archivist-bot"],
+          "requireMention": false
+        },
+        "clawnerd": {
+          "bots": ["clawnerd-bot"]
+        }
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "custom",
+    "customBindHost": "0.0.0.0",
+    "controlUi": {
+      "allowedOrigins": ["https://openclaw.lab.shamsway.net"]
+    },
+    "channelHealthCheckMinutes": 5,
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}",
+      "rateLimit": {
+        "maxAttempts": 10,
+        "windowMs": 60000,
+        "lockoutMs": 300000,
+        "exemptLoopback": true
+      }
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": false
+        },
+        "responses": {
+          "enabled": false
+        }
+      }
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "plugins": {
+    "slots": {
+      "memory": "memory-core"
+    },
+    "entries": {
+      "openclaw-rocketchat": { "enabled": true },
+      "memory-core": { "enabled": true },
+      "memory-lancedb": { "enabled": false },
+      "lobster": { "enabled": true },
+      "llm-task": {
+        "enabled": true,
+        "config": {
+          "defaultProvider": "litellm",
+          "defaultModel": "local/minimax-m2.5",
+          "maxTokens": 2048,
+          "timeoutMs": 30000
+        }
+      },
+      "thread-ownership": { "enabled": false },
+      "diagnostics-otel": { "enabled": true }
+    }
+  },
+  "diagnostics": {
+    "enabled": true,
+    "otel": {
+      "enabled": true,
+      "endpoint": "http://otel-collector.service.consul:4328",
+      "protocol": "http/protobuf",
+      "serviceName": "openclaw-gateway",
+      "traces": true,
+      "metrics": false,
+      "logs": false,
+      "sampleRate": 1.0,
+      "flushIntervalMs": 10000
+    }
+  },
+  "discovery": {
+    "mdns": {
+      "mode": "off"
+    }
+  },
+  "cron": { "sessionRetention": "6h" },
+  "session": {
+    "maintenance": {
+      "mode": "enforce",
+      "pruneAfter": "30d",
+      "maxEntries": 500,
+      "rotateBytes": "10mb"
+    }
+  }
+}

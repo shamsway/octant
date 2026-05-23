@@ -27,13 +27,14 @@ variable "datacenter" {
 }
 
 variable "image" {
-  type    = string
-  default = "ghcr.io/berriai/litellm-database:main-stable"
+  description = "OpenClaw gateway container image"
+  type        = string
+  default     = "192.168.122.1:5000/openclaw-gateway:latest"
 }
 
 variable "domain" {
   type    = string
-  default = "octant.local"
+  default = "lab.shamsway.net"
 }
 
 variable "certresolver" {
@@ -43,7 +44,7 @@ variable "certresolver" {
 
 variable "servicename" {
   type    = string
-  default = "litellm"
+  default = "openclaw-gateway"
 }
 
 variable "dns" {
@@ -51,13 +52,8 @@ variable "dns" {
   default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }
 
-variable "db_server" {
-  type    = string
-  default = "postgres.service.consul"
+variable "litellm_base_url" {
+  description = "LiteLLM proxy base URL"
+  type        = string
+  default     = "https://litellm.lab.shamsway.net"
 }
-
-variable "db_name" {
-  type    = string
-  default = "litellm"
-}
-

@@ -1,0 +1,135 @@
+# image/Dockerfile.base - OpenClaw runtime image (no infra CLIs)
+#
+# Builds OpenClaw from source and installs the homelab runtime extras:
+#   - lobster workflow CLI
+#   - mcporter MCP CLI client (pre-configured with homelab MCP server URLs)
+#
+# Build context must be the openclaw repo root so COPY instructions resolve.
+# The Dockerfile itself lives outside the build context; pass -f explicitly:
+#
+#   podman build \
+#     -f terraform/openclaw-gateway/image/Dockerfile.base \
+#     -t openclaw-base:VERSION \
+#     /path/to/openclaw
+#
+# Use 'botctl image build' to run this with the correct paths.
+# See docs/IMAGE_STRATEGY.md for the two-image rationale.
+
+FROM node:22-bookworm
+
+# ── Base system dependencies ──────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    git \
+    jq \
+    unzip \
+    ca-certificates \
+    openssh-client \
+    socat \
+    dnsutils \
+    iputils-ping \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── yq (YAML processor) ───────────────────────────────────────────────────────
+# Arch-aware: dpkg returns "amd64"/"arm64" which matches yq's release naming.
+RUN ARCH=$(dpkg --print-architecture) \
+    && curl -fsSL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH}" \
+        -o /usr/local/bin/yq \
+    && chmod +x /usr/local/bin/yq \
+    && yq --version
+
+# ── Install Bun (required for OpenClaw build scripts) ────────────────────────
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
+RUN bun --version
+
+RUN corepack enable
+
+WORKDIR /app
+
+# Optional: extra APT packages at build time (skill-specific tools)
+# Example: --build-arg OPENCLAW_DOCKER_APT_PACKAGES="ripgrep fd-find"
+ARG OPENCLAW_DOCKER_APT_PACKAGES=""
+RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $OPENCLAW_DOCKER_APT_PACKAGES && \
+      apt-get clean && \
+      rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
+    fi
+
+# ── Build OpenClaw ────────────────────────────────────────────────────────────
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY ui/package.json ./ui/package.json
+COPY patches ./patches
+COPY scripts ./scripts
+
+RUN pnpm install --frozen-lockfile
+
+# Optional Chromium + Xvfb install for browser automation workloads.
+# Build with: --build-arg OPENCLAW_INSTALL_BROWSER=1
+ARG OPENCLAW_INSTALL_BROWSER=""
+RUN if [ -n "$OPENCLAW_INSTALL_BROWSER" ]; then \
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb && \
+      node /app/node_modules/playwright-core/cli.js install --with-deps chromium && \
+      apt-get clean && \
+      rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*; \
+    fi
+
+COPY . .
+RUN pnpm build
+# Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
+ENV OPENCLAW_PREFER_PNPM=1
+RUN pnpm ui:build
+
+# ── Stock plugin dependencies ─────────────────────────────────────────────────
+# Some stock plugins ship as TypeScript source but have external npm deps that
+# are not part of the main pnpm workspace. Install them into each plugin's own
+# node_modules so they are available at runtime without a separate install step.
+# --ignore-scripts: skip lifecycle hooks for security; these are pure JS libs.
+RUN cd /app/extensions/memory-lancedb \
+    && npm pkg delete devDependencies \
+    && npm install --omit=dev --ignore-scripts
+RUN cd /app/extensions/diagnostics-otel \
+    && npm pkg delete devDependencies \
+    && npm install --omit=dev --ignore-scripts
+
+# ── Rocket.Chat channel plugin ──────────────────────────────────────────────
+# Community plugin providing Rocket.Chat channel support. Installed via the
+# openclaw CLI (which puts it in ~/.openclaw/extensions/), then moved into the
+# app's bundled extensions directory so it survives CephFS volume mounts that
+# overlay ~/.openclaw at runtime.
+RUN node openclaw.mjs plugins install openclaw-rocketchat \
+    && cp -r /root/.openclaw/extensions/openclaw-rocketchat /app/extensions/openclaw-rocketchat
+
+# ── Lobster workflow CLI ──────────────────────────────────────────────────────
+# Install @clawdbot/lobster globally so the lobster plugin can invoke the
+# lobster CLI as a subprocess. Pinned to the version matching the plugin.
+RUN npm install -g @clawdbot/lobster
+
+# ── mcporter (MCP CLI client) ─────────────────────────────────────────────────
+# Installs mcporter globally. Configuration is injected at runtime via a
+# CephFS volume mount: /mnt/services/openclaw-gateway/config/mcporter.json
+# → /root/.mcporter/mcporter.json (managed by 'botctl config deploy').
+RUN npm install -g mcporter
+
+ENV NODE_ENV=production
+
+# ── Runtime environment defaults ─────────────────────────────────────────────
+# Override these in botctl.yaml / docker-compose / Nomad job template.
+# Do NOT bake tokens or secrets into the image.
+ENV NOMAD_ADDR="http://nomad.service.consul:4646"
+ENV CONSUL_HTTP_ADDR="http://consul.service.consul:8500"
+
+# ── Rootless Podman user note ─────────────────────────────────────────────────
+# Running as root inside the container is intentional and correct for rootless
+# Podman: container uid=0 maps to the host user (e.g. hashi, uid=2000), so the
+# process has no elevated host privileges. Bind-mounted volumes owned by the
+# host user are readable/writable, and new files appear on the host under the
+# correct owner — without needing `podman unshare` or `--userns=keep-id`.
+# (podman-compose 1.0.3 silently drops userns_mode; running as root sidesteps
+# the issue entirely.)
+
+CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]

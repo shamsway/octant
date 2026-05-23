@@ -38,7 +38,7 @@ model_list:
   - model_name: ollama_chat/phi3:3.8b
     litellm_params:
       model: ollama/phi3:3.8b
-      api_base: http://ollama.service.consul:11434                
+      api_base: http://ollama.service.consul:11434
   - model_name: groq-llama3-8b
     litellm_params:
       model: groq/llama3-8b-8192
@@ -46,7 +46,7 @@ model_list:
   - model_name: groq-llama3-70b
     litellm_params:
       model: groq/llama3-70b-8192
-      api_key: os.environ/GROQ_API_KEY      
+      api_key: os.environ/GROQ_API_KEY
   - model_name: groq-mixtral
     litellm_params:
       model: groq/mixtral-8x7b-32768
@@ -54,7 +54,7 @@ model_list:
   - model_name: anthropic/claude-3.5-sonnet
     litellm_params:
       model: claude-3-5-sonnet-20240620
-      max_tokens: 4096      
+      max_tokens: 4096
   - model_name: anthropic/claude-3-opus
     litellm_params:
       model: claude-3-opus-20240229
@@ -66,7 +66,7 @@ model_list:
   - model_name: anthropic/claude-3-haiku
     litellm_params:
       model: claude-3-haiku-20240307
-      max_tokens: 4096      
+      max_tokens: 4096
   - model_name: anthropic/claude-2.1
     litellm_params:
       model: claude-2.1
@@ -78,7 +78,7 @@ model_list:
       model: gpt-4o
   - model_name: openai/gpt-4o-2024-05-13
     litellm_params:
-      model: gpt-4o-2024-05-13      
+      model: gpt-4o-2024-05-13
   - model_name: openai/gpt-4-turbo
     litellm_params:
       model: gpt-4-turbo
@@ -93,25 +93,25 @@ model_list:
       model: gpt-4-32k
   - model_name: openai/gpt-4-32k-0314
     litellm_params:
-      model: gpt-4-32k-0314      
+      model: gpt-4-32k-0314
   - model_name: openai/gpt-4-0125-preview
     litellm_params:
       model: gpt-4-0125-preview
   - model_name: openai/gpt-4-1106-preview
     litellm_params:
-      model: gpt-4-1106-preview   
+      model: gpt-4-1106-preview
   - model_name: openai/gpt-4-0314
     litellm_params:
       model: gpt-4-0314
   - model_name: openai/gpt-3.5-turbo-1106
     litellm_params:
-      model: gpt-3.5-turbo-1106             
+      model: gpt-3.5-turbo-1106
   - model_name: openai/gpt-3.5-turbo
     litellm_params:
       model: gpt-3.5-turbo
   - model_name: openai-dall-e-3
     litellm_params:
-      model: dall-e-3      
+      model: dall-e-3
   - model_name: cohere/command-r
     litellm_params:
       model: command-r
@@ -135,7 +135,7 @@ model_list:
       model: openrouter/nousresearch/nous-capybara-7b:free
   - model_name: openrouter/nousresearch/hermes-2-pro-llama-3-8b
     litellm_params:
-      model: openrouter/nousresearch/hermes-2-pro-llama-3-8b  
+      model: openrouter/nousresearch/hermes-2-pro-llama-3-8b
   - model_name: openrouter/mistralai/mistral-7b-instruct:free
     litellm_params:
       model: openrouter/mistralai/mistral-7b-instruct:free
@@ -166,16 +166,16 @@ model_list:
   - model_name: openrouter/google/gemma-7b-it:free
     litellm_params:
       model: openrouter/google/gemma-7b-it:free
-   
+
 litellm_settings:
   success_callback: ["langfuse"]
   failure_callback: ["langfuse"]
   drop_params: True
-  max_budget: 100 
+  max_budget: 100
   budget_duration: 30d
   num_retries: 5
   request_timeout: 600
 
-general_settings: 
+general_settings:
   proxy_budget_rescheduler_min_time: 30
   proxy_budget_rescheduler_max_time: 60

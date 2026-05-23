@@ -1,17 +1,5 @@
-variable "op_vault_name" {
-  description = "1Password vault name"
-  type        = string
-  default     = "Octant"
-}
-
 variable "nomad" {
   description = "Nomad server address"
-  type        = string
-  default     = "localhost"
-}
-
-variable "consul" {
-  description = "Consul server address"
   type        = string
   default     = "localhost"
 }
@@ -28,7 +16,7 @@ variable "datacenter" {
 
 variable "image" {
   type    = string
-  default = "ghcr.io/berriai/litellm-database:main-stable"
+  default = "docker.io/neo4j:5-community"
 }
 
 variable "domain" {
@@ -43,7 +31,7 @@ variable "certresolver" {
 
 variable "servicename" {
   type    = string
-  default = "litellm"
+  default = "neo4j"
 }
 
 variable "dns" {
@@ -51,13 +39,8 @@ variable "dns" {
   default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }
 
-variable "db_server" {
-  type    = string
-  default = "postgres.service.consul"
+variable "node_name" {
+  description = "Nomad node to pin Neo4j to (must be a root agent for CSI)"
+  type        = string
+  default     = "octant-01-agent-root"
 }
-
-variable "db_name" {
-  type    = string
-  default = "litellm"
-}
-

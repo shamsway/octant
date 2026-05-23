@@ -1,17 +1,5 @@
-variable "op_vault_name" {
-  description = "1Password vault name"
-  type        = string
-  default     = "Octant"
-}
-
 variable "nomad" {
   description = "Nomad server address"
-  type        = string
-  default     = "localhost"
-}
-
-variable "consul" {
-  description = "Consul server address"
   type        = string
   default     = "localhost"
 }
@@ -28,7 +16,7 @@ variable "datacenter" {
 
 variable "image" {
   type    = string
-  default = "ghcr.io/berriai/litellm-database:main-stable"
+  default = "nats:latest"
 }
 
 variable "domain" {
@@ -43,21 +31,10 @@ variable "certresolver" {
 
 variable "servicename" {
   type    = string
-  default = "litellm"
+  default = "nats"
 }
 
 variable "dns" {
   type    = list(string)
   default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }
-
-variable "db_server" {
-  type    = string
-  default = "postgres.service.consul"
-}
-
-variable "db_name" {
-  type    = string
-  default = "litellm"
-}
-

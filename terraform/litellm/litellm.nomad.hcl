@@ -7,7 +7,7 @@ job "litellm" {
     attribute = "$${meta.rootless}"
     value = "true"
   }
-  
+
   group "litellm" {
 
     network {
@@ -17,14 +17,8 @@ job "litellm" {
 
       dns {
         servers = ${dns}
-      }         
+      }
     }
-
-    volume "litellm" {
-        type      = "host"
-        read_only = false
-        source    = "litellm"
-    }    
 
     service {
       name = "${servicename}"
@@ -36,11 +30,12 @@ job "litellm" {
         "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
         "traefik.http.routers.${servicename}.entrypoints=web,websecure",
         "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
+        "homepage.group=AI & LLM",
+        "homepage.name=LiteLLM",
+        "homepage.icon=si-openai",
+        "homepage.description=LLM Proxy",
+        "homepage.href=https://litellm.${domain}/ui/",
       ]
-
-      connect {
-        native = true
-      }        
 
       check {
         name     = "alive"
@@ -49,8 +44,8 @@ job "litellm" {
         interval = "60s"
         timeout  = "5s"
       }
-    }       
-    
+    }
+
     task "litellm" {
       driver = "podman"
 
@@ -68,14 +63,8 @@ job "litellm" {
               "tag" = "${servicename}"
             }
           ]
-        }                 
+        }
       }
-
-      volume_mount {
-        volume      = "litellm"
-        destination = "/app"
-        read_only   = false
-      }   
 
       template {
         destination = "$${NOMAD_TASK_DIR}/config.yaml"
@@ -94,40 +83,15 @@ UI_USERNAME="{{ .litellm_username }}"
 UI_PASSWORD="{{ .litellm_password }}"
 STORE_MODEL_IN_DB="True"
 DATABASE_URL="postgresql://{{ .db_username }}:{{ .db_password }}@${db_server}:5432/${db_name}"
-LANGFUSE_PUBLIC_KEY="{{ .langfuse_public_key }}"
-LANGFUSE_SECRET_KEY="{{ .langfuse_secret_key }}"
-LANGFUSE_HOST="${langfuse_url}"
-# OpenAI
 OPENAI_API_KEY={{ .openai_key }}
-OPENAI_API_BASE=""
-# Cohere
-COHERE_API_KEY={{ .cohere_key }}
-# OpenRouter
-OR_SITE_URL = ""
-OR_APP_NAME = "LiteLLM Example app"
-OR_API_KEY = {{ .openrouter_key }}
-# Azure API base URL
-AZURE_API_BASE = ""
-# Azure API version
-AZURE_API_VERSION = ""
-# Azure API key
-AZURE_API_KEY = ""
-# Replicate
-REPLICATE_API_KEY = {{ .replicate_key }}
-REPLICATE_API_TOKEN = ""
-# Anthropic
-ANTHROPIC_API_KEY = {{ .anthropic_key }}
-# Groq
-GROQ_API_KEY = {{ .groq_key }}
-# Infisical
-INFISICAL_TOKEN = ""
-{{- end -}}
+{{- end }}
+{{ range service "phoenix" }}PHOENIX_COLLECTOR_HTTP_ENDPOINT=http://{{ .Address }}:{{ .Port }}{{ end }}
 EOT
-      }    
+      }
 
       resources {
         cpu    = 500
-        memory = 256
+        memory = 1024
       }
     }
   }

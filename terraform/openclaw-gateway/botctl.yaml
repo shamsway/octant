@@ -1,0 +1,48 @@
+# botctl.yaml - botctl configuration for openclaw-gateway (octant cluster)
+#
+# Non-secret operational settings. Secrets flow from Nomad variables or .env.
+#
+# LOCAL OVERRIDES: Create botctl.local.yaml (gitignored) to override paths and
+# settings for your workstation. See botctl.yaml.example for the full schema.
+#
+# ENV VAR OVERRIDES (take precedence over both yaml files):
+#   BOTCTL_TARGET           override defaults.target for this invocation
+#   BOTCTL_AGENTS_REPO      override storage.agents_repo
+#   BOTCTL_CEPH_BASE        override storage.ceph_base
+#   BOTCTL_SOURCE_REPO      override openclaw.source_repo
+#   BOTCTL_GITHUB_URL       override openclaw.github_url
+#   BOTCTL_GITHUB_REF       override openclaw.github_ref
+#   BOTCTL_IMAGE_VERSION    override openclaw.image.version
+#   BOTCTL_IMAGE_NAME       override openclaw.image.name
+#   BOTCTL_IMAGE_REGISTRY   override openclaw.image.registry
+#   BOTCTL_NOMAD_JOB        override openclaw.nomad_job
+
+defaults:
+  target: octant
+
+targets:
+  octant:
+    driver: nomad
+    openclaw:
+      # Nomad job name for the gateway
+      nomad_job: openclaw-gateway
+
+      # Container image settings
+      image:
+        name: openclaw-gateway
+        registry: 192.168.122.1:5000
+        # version: set explicitly or resolved from openclaw package.json at build time
+
+      # Public GitHub repo used as build context when source_repo is not set locally.
+      # Override openclaw.github_ref (or BOTCTL_GITHUB_REF) to build from a tag or SHA.
+      github_url: https://github.com/openclaw/openclaw
+      github_ref: main
+
+      agents:
+        - scotty
+        - clawnerd
+
+    # Runtime filesystem paths.
+    storage:
+      # CephFS base mount for openclaw-gateway runtime data
+      ceph_base: /mnt/services/openclaw-gateway

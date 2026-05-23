@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     onepassword = {
-      source = "1Password/onepassword"
-      version = "~> 1.3.0"
+      source  = "1Password/onepassword"
+      version = "~> 2.1.2"
     }
   }
 }
@@ -17,61 +17,63 @@ provider "consul" {
   address = "http://${var.consul}:8500"
 }
 
-# Configure 1password provider
+# Configure 1password provider (SaaS via op CLI)
 provider "onepassword" {
-  url                   = "${var.op_api_url}"
-  token                 = "${var.OP_API_TOKEN}"
-  op_cli_path           = "/usr/local/bin/op"
+  # Authenticates via OP_SERVICE_ACCOUNT_TOKEN environment variable
 }
 
-data "onepassword_vault" "dev" {
-  name = "Dev"
+data "onepassword_vault" "vault" {
+  name = var.op_vault_name
 }
 
 data "onepassword_item" "litellm_credentials" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "litellm"
+  vault = data.onepassword_vault.vault.uuid
+  title = "service_litellm"
 }
 
 data "onepassword_item" "postgres_litellm" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "postgres_litellm"
+  vault = data.onepassword_vault.vault.uuid
+  title = "db_litellm"
 }
 
 data "onepassword_item" "openai_key" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "OpenAI API Key"
+  vault = data.onepassword_vault.vault.uuid
+  title = "api_openai_key"
 }
 
-data "onepassword_item" "anthropic_key" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "Anthropic API Key"
-}
-
-data "onepassword_item" "replicate_key" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "Replicate API Key"
-}
-
-data "onepassword_item" "openrouter_key" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "Openrouter API Key"
-}
-
-data "onepassword_item" "choere_key" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "Cohere API Key"
-}
-
-data "onepassword_item" "groq_key" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "Groq API Key"
-}
-
-data "onepassword_item" "langfuse_key" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "Langfuse API Key"
-}
+# Additional provider API keys (uncomment as needed):
+# Requires corresponding 1Password items and Nomad variable entries.
+# See config.yaml.example for the full model list.
+#
+# data "onepassword_item" "anthropic_key" {
+#   vault = data.onepassword_vault.vault.uuid
+#   title = "api_anthropic_key"
+# }
+#
+# data "onepassword_item" "replicate_key" {
+#   vault = data.onepassword_vault.vault.uuid
+#   title = "api_replicate_key"
+# }
+#
+# data "onepassword_item" "openrouter_key" {
+#   vault = data.onepassword_vault.vault.uuid
+#   title = "api_openrouter_key"
+# }
+#
+# data "onepassword_item" "cohere_key" {
+#   vault = data.onepassword_vault.vault.uuid
+#   title = "api_cohere_key"
+# }
+#
+# data "onepassword_item" "groq_key" {
+#   vault = data.onepassword_vault.vault.uuid
+#   title = "api_groq_key"
+# }
+#
+# data "onepassword_item" "langfuse_key" {
+#   vault = data.onepassword_vault.vault.uuid
+#   title = "api_langfuse_key"
+# }
 
 data "local_file" "proxy_config" {
   filename = "config.yaml"
@@ -80,35 +82,27 @@ data "local_file" "proxy_config" {
 resource "nomad_variable" "litellm_secrets" {
   path = "nomad/jobs/litellm"
   items = {
-    litellm_username = data.onepassword_item.litellm_credentials.username
-    litellm_password = data.onepassword_item.litellm_credentials.password
-    db_username = data.onepassword_item.postgres_litellm.username
-    db_password = data.onepassword_item.postgres_litellm.password
-    openai_key = data.onepassword_item.openai_key.password
-    anthropic_key = data.onepassword_item.anthropic_key.password
-    replicate_key = data.onepassword_item.replicate_key.password
-    openrouter_key = data.onepassword_item.openrouter_key.password
-    choere_key = data.onepassword_item.choere_key.password
-    groq_key = data.onepassword_item.groq_key.password
-    langfuse_public_key = data.onepassword_item.langfuse_key.username
-    langfuse_secret_key = data.onepassword_item.langfuse_key.password
-    proxy_config = data.local_file.proxy_config.content
+    litellm_username   = data.onepassword_item.litellm_credentials.username
+    litellm_password   = data.onepassword_item.litellm_credentials.password
+    db_username        = data.onepassword_item.postgres_litellm.username
+    db_password        = data.onepassword_item.postgres_litellm.password
+    openai_key         = data.onepassword_item.openai_key.password
+    proxy_config       = data.local_file.proxy_config.content
   }
 }
 
 data "template_file" "litellm_job_template" {
   template = "${file("./litellm.nomad.hcl")}"
   vars = {
-    region = var.region
-    datacenter = var.datacenter
-    image = var.image
-    domain = var.domain
+    region       = var.region
+    datacenter   = var.datacenter
+    image        = var.image
+    domain       = var.domain
     certresolver = var.certresolver
-    servicename = var.servicename
-    dns = jsonencode(var.dns)    
-    db_name = var.db_name
-    db_server = var.db_server
-    langfuse_url = var.langfuse_url
+    servicename  = var.servicename
+    dns          = jsonencode(var.dns)
+    db_name      = var.db_name
+    db_server    = var.db_server
   }
 }
 

@@ -1,0 +1,94 @@
+# botctl.yaml.example - full schema reference for target-aware botctl config
+#
+# Copy this file to botctl.local.yaml (gitignored) for host-local overrides, or
+# use it as a starting point for a full botctl.yaml with multiple targets.
+#
+# Target selection precedence:
+#   1. --target <name>
+#   2. BOTCTL_TARGET
+#   3. defaults.target
+#   4. Implicit selection when exactly one target exists
+#
+# Path fields support leading "~" expansion. Relative compose paths are
+# resolved from this module directory.
+
+defaults:
+  target: homelab
+
+targets:
+  homelab:
+    driver: nomad
+    openclaw:
+      nomad_job: openclaw-gateway
+
+      image:
+        name: openclaw-homelab
+        registry: registry.service.consul:8082
+        # version: "2026.2.24"   # uncomment to pin; omit to resolve from package.json
+
+      source_repo: /opt/homelab/data/home/git/openclaw
+
+      github_url: https://github.com/openclaw/openclaw
+      github_ref: main
+
+      compose:
+        base: compose/docker-compose.yml
+        podman: compose/docker-compose.podman.yml
+        remote_nodes: compose/docker-compose.remote-nodes.yml
+
+      nodes:
+        - name: bobby
+          display_name: Bobby
+          pin_to: bobby-agent
+        - name: billy
+          display_name: Billy
+          pin_to: billy-agent
+
+      agents:
+        - jerry
+        - bobby
+        - billy
+
+    storage:
+      agents_repo: /opt/homelab/data/home/git/openclaw-agents
+      ceph_base: /mnt/services/openclaw-gateway
+
+  workstation:
+    driver: local
+    openclaw:
+      source_repo: ~/git/openclaw
+
+      image:
+        name: openclaw-homelab
+        registry: registry.service.consul:8082
+
+      github_url: https://github.com/openclaw/openclaw
+      github_ref: main
+
+      agents:
+        - harry
+        - bob
+
+      gateway:
+        primary_agent: harry
+        config_dir: ~/.openclaw
+        workspace_root: ~/.openclaw
+        health_url: http://127.0.0.1:18789/health
+        log_file: ~/.openclaw/logs/gateway.log
+        cli_bin: openclaw
+        restart:
+          mode: manual
+          message: Restart the workstation gateway from your terminal or LaunchAgent.
+
+    storage:
+      agents_repo: ~/git/openclaw-agents
+
+# Example botctl.local.yaml overlays after the selected target is resolved.
+# This file should contain only host-specific deltas, for example:
+#
+# storage:
+#   agents_repo: /Users/yourname/git/openclaw-agents
+#
+# openclaw:
+#   gateway:
+#     config_dir: /Users/yourname/.openclaw

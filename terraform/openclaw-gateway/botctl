@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# botctl - OpenClaw gateway management CLI
+#
+# Usage: botctl [--target <name>] <noun> <verb> [args...]
+#
+# Nouns:
+#   gateway   Manage the selected gateway (logs, restart, status)
+#   node      Manage remote node containers  (nomad targets only)
+#   image     Build and push container images (build, push, pull)
+#   config    Sync configs between git and the selected runtime (deploy, sync)
+#   cli       Target-aware OpenClaw CLI entrypoint
+#   help      Show usage (optionally: help <noun>)
+#   version   Show version info
+#
+# Configuration: botctl.yaml in this directory.
+# Local overrides: botctl.local.yaml (gitignored).
+# See docs/OPERATIONS.md for full documentation.
+
+set -euo pipefail
+
+BOTCTL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="${BOTCTL_DIR}/lib"
+BOTCTL_TARGET="${BOTCTL_TARGET:-}"
+BOTCTL_TARGET_SOURCE=""
+
+# ── Dependency check ──────────────────────────────────────────────────────────
+if ! command -v yq &>/dev/null; then
+  echo "error: 'yq' is required but not found in PATH." >&2
+  echo "       Install: https://github.com/mikefarah/yq#install" >&2
+  exit 1
+fi
+
+# ── Global flag parsing (before config load) ─────────────────────────────────
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --target|-t)
+      if [[ $# -lt 2 ]]; then
+        echo "error: $1 requires a target name" >&2
+        exit 1
+      fi
+      BOTCTL_TARGET="$2"
+      BOTCTL_TARGET_SOURCE="cli"
+      shift 2
+      ;;
+    --target=*)
+      BOTCTL_TARGET="${1#*=}"
+      BOTCTL_TARGET_SOURCE="cli"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+if [[ -z "${BOTCTL_TARGET_SOURCE}" && -n "${BOTCTL_TARGET}" ]]; then
+  BOTCTL_TARGET_SOURCE="env"
+fi
+export BOTCTL_TARGET BOTCTL_TARGET_SOURCE
+
+# ── Load common functions and config ─────────────────────────────────────────
+# shellcheck source=lib/common.sh
+source "${LIB_DIR}/common.sh"
+
+# ── Route to noun handler ─────────────────────────────────────────────────────
+NOUN="${1:-help}"
+shift || true
+
+case "${NOUN}" in
+  gateway|gw)
+    # shellcheck source=lib/gateway.sh
+    source "${LIB_DIR}/gateway.sh"
+    cmd_gateway "$@"
+    ;;
+  node)
+    # shellcheck source=lib/node.sh
+    source "${LIB_DIR}/node.sh"
+    cmd_node "$@"
+    ;;
+  image|img)
+    # shellcheck source=lib/image.sh
+    source "${LIB_DIR}/image.sh"
+    cmd_image "$@"
+    ;;
+  config|cfg)
+    # shellcheck source=lib/config.sh
+    source "${LIB_DIR}/config.sh"
+    cmd_config "$@"
+    ;;
+  cli)
+    # shellcheck source=lib/image.sh
+    source "${LIB_DIR}/image.sh"
+    cmd_cli "$@"
+    ;;
+  help|--help|-h)
+    _botctl_help "$@"
+    ;;
+  version|--version|-v)
+    echo "botctl (openclaw-gateway module)"
+    echo "target: ${BOTCTL_TARGET_NAME}"
+    echo "driver: ${TARGET_DRIVER}"
+    _ver="$(_config_get 'openclaw.image.version' 2>/dev/null || true)"
+    if [[ -n "${_ver}" && "${_ver}" != "null" ]]; then
+      echo "image version: ${_ver}"
+    else
+      echo "image version: (not pinned — resolved at build time)"
+    fi
+    ;;
+  *)
+    echo "error: unknown noun '${NOUN}'" >&2
+    echo "Run 'botctl help' for usage." >&2
+    exit 1
+    ;;
+esac
