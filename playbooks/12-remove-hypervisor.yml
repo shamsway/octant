@@ -1,0 +1,128 @@
+---
+# Remove Consul and Nomad client agents from the hypervisor.
+#
+# Stops services, removes config files and the amd-gpu plugin wrapper.
+# Packages, systemd units, and the plugin binary are left in place by default
+# so that re-joining is fast (make join-hypervisor rewrites config and restarts).
+#
+# Optional extra flags (pass via -e):
+#   purge_data=true         Wipe /opt/consul and /opt/nomad data directories
+#   uninstall_packages=true Remove consul and nomad APT packages
+#
+# Usage:
+#   make remove-hypervisor
+#   ansible-playbook -i inventory/ playbooks/12-remove-hypervisor.yml
+#   ansible-playbook -i inventory/ playbooks/12-remove-hypervisor.yml -e purge_data=true
+
+- name: Remove hypervisor Nomad/Consul agents
+  hosts: hypervisors
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    # --- Drain Nomad node gracefully ---
+
+    - name: Get Nomad node ID for this host
+      ansible.builtin.command: >
+        nomad node status -address=http://127.0.0.1:14646
+        -filter='Name == "{{ inventory_hostname.split('.')[0] }}"'
+        -short -quiet
+      register: nomad_node_id_raw
+      changed_when: false
+      failed_when: false
+
+    - name: Drain Nomad node before stopping
+      ansible.builtin.command: >
+        nomad node drain
+        -address=http://127.0.0.1:14646
+        -enable
+        -deadline 30s
+        -yes
+        {{ nomad_node_id_raw.stdout_lines[0] | default('') }}
+      when:
+        - nomad_node_id_raw.rc == 0
+        - nomad_node_id_raw.stdout_lines | length > 0
+      changed_when: true
+      failed_when: false
+
+    # --- Stop services ---
+
+    - name: Stop and disable Nomad
+      ansible.builtin.systemd:
+        name: nomad
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Leave Consul cluster gracefully
+      ansible.builtin.command: consul leave -http-addr=http://127.0.0.1:18500
+      changed_when: true
+      failed_when: false
+
+    - name: Stop and disable Consul
+      ansible.builtin.systemd:
+        name: consul
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    # --- Remove config files ---
+
+    - name: Remove Consul hypervisor config
+      ansible.builtin.file:
+        path: /etc/consul.d/consul-hypervisor.hcl
+        state: absent
+
+    - name: Remove Consul TLS certificates
+      ansible.builtin.file:
+        path: /etc/consul.d/tls
+        state: absent
+
+    - name: Remove Nomad hypervisor config
+      ansible.builtin.file:
+        path: /etc/nomad.d/nomad-hypervisor.hcl
+        state: absent
+
+    - name: Remove amd-gpu plugin wrapper
+      ansible.builtin.file:
+        path: /opt/nomad/plugins/amd-gpu
+        state: absent
+
+    - name: Remove Nomad plugins directory (if empty)
+      ansible.builtin.command: rmdir /opt/nomad/plugins
+      changed_when: true
+      failed_when: false
+
+    # --- Optional: purge data directories ---
+
+    - name: Purge Consul data directory
+      ansible.builtin.file:
+        path: /opt/consul
+        state: absent
+      when: purge_data | default(false) | bool
+
+    - name: Purge Nomad data directory
+      ansible.builtin.file:
+        path: /opt/nomad
+        state: absent
+      when: purge_data | default(false) | bool
+
+    # --- Optional: uninstall packages ---
+
+    - name: Uninstall consul and nomad packages
+      ansible.builtin.apt:
+        name:
+          - consul
+          - nomad
+        state: absent
+        purge: true
+      when: uninstall_packages | default(false) | bool
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >
+          Hypervisor agents removed.
+          Packages/binaries retained for fast re-join via 'make join-hypervisor'.
+          To fully clean: re-run with -e purge_data=true -e uninstall_packages=true
+      when: not (purge_data | default(false) | bool and uninstall_packages | default(false) | bool)

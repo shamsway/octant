@@ -1,0 +1,253 @@
+---
+# Join the KVM hypervisor to the Octant cluster as a Nomad/Consul client node.
+#
+# Primary use case: test nomad-device-amdgpu on hypervisor GPUs without SR-IOV.
+#
+# Prerequisites (manual):
+#   1. amdgpu driver loaded: cat /sys/module/amdgpu/initstate  →  live
+#   2. Plugin binary built:  ls {{ amdgpu_plugin_repo_dir }}/nomad-device-amdgpu
+#   3. VM cluster up:        consul members shows octant-01/02/03 as servers
+#
+# Usage:
+#   make join-hypervisor
+#   ansible-playbook -i inventory/ playbooks/11-join-hypervisor.yml
+
+- name: Join hypervisor to Octant cluster as Nomad/Consul client
+  hosts: hypervisors
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../.secrets.yml"
+  vars:
+    amdgpu_plugin_repo_dir: "{{ hostvars[inventory_hostname]['amdgpu_plugin_repo_dir'] | default('/home/melliott/git/nomad-device-amdgpu') }}"
+
+  tasks:
+
+    # --- Prerequisites ---
+
+    - name: Assert amdgpu plugin binary exists
+      ansible.builtin.stat:
+        path: "{{ amdgpu_plugin_repo_dir }}/nomad-device-amdgpu"
+      register: plugin_binary
+      failed_when: not plugin_binary.stat.exists
+      changed_when: false
+
+    - name: Fail with clear message if plugin binary is missing
+      ansible.builtin.fail:
+        msg: >
+          nomad-device-amdgpu binary not found at
+          {{ amdgpu_plugin_repo_dir }}/nomad-device-amdgpu.
+          Build it first: cd {{ amdgpu_plugin_repo_dir }} && make build
+          (or make build-sysfs for sysfs-only mode without ROCm).
+      when: not plugin_binary.stat.exists
+
+    - name: Check amdgpu driver state
+      ansible.builtin.command: cat /sys/module/amdgpu/initstate
+      register: amdgpu_state
+      changed_when: false
+      failed_when: false
+
+    - name: Warn if amdgpu driver is not loaded
+      ansible.builtin.debug:
+        msg: >
+          WARNING: /sys/module/amdgpu/initstate returned
+          '{{ amdgpu_state.stdout | default("(file missing)") }}'.
+          The nomad-device-amdgpu plugin requires the amdgpu kernel module to be loaded.
+          GPU fingerprinting will not work until the driver is active.
+      when: amdgpu_state.rc != 0 or amdgpu_state.stdout | default('') != 'live'
+
+    # --- HashiCorp APT repo ---
+
+    - name: Download HashiCorp GPG key
+      ansible.builtin.get_url:
+        url: https://apt.releases.hashicorp.com/gpg
+        dest: /tmp/hashicorp.gpg
+        mode: "0644"
+
+    - name: Dearmor HashiCorp GPG key into keyring
+      ansible.builtin.shell:
+        cmd: gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg /tmp/hashicorp.gpg
+        creates: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+    - name: Add HashiCorp APT repository
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/hashicorp.list
+        content: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com trixie main\n"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Update APT cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Assert servers group is available in inventory
+      ansible.builtin.assert:
+        that: groups['servers'] | default([]) | length > 0
+        fail_msg: >
+          The 'servers' group is not in the active inventory.
+          Run via 'make join-hypervisor', or pass both inventory files:
+          ansible-playbook -i inventory/hypervisors.yml -i inventory/groups.yml playbooks/11-join-hypervisor.yml
+
+    - name: Detect consul version running in cluster
+      ansible.builtin.shell: >
+        consul members -http-addr=http://{{ hostvars[groups['servers'][0]]['vm_ip'] }}:8500
+        2>/dev/null | awk 'NR==2{print $5}'
+      register: cluster_consul_version
+      changed_when: false
+      failed_when: false
+      become: false
+
+    - name: Set consul install version to match cluster (avoid gossip encryption mismatch)
+      ansible.builtin.set_fact:
+        _consul_install_version: >-
+          {{ consul_version if consul_version | default('') != ''
+             else cluster_consul_version.stdout | trim }}
+
+    - name: Install consul and nomad
+      ansible.builtin.apt:
+        name:
+          - "consul={{ _consul_install_version }}-1"
+          - "nomad{% if nomad_version | default('') != '' %}={{ nomad_version }}{% endif %}"
+        state: present
+        allow_downgrade: true
+
+    # --- TLS certificates ---
+
+    - name: Create TLS directory for Consul
+      ansible.builtin.file:
+        path: /etc/consul.d/tls
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Distribute TLS certificates from controller cache
+      ansible.builtin.copy:
+        src: "/tmp/octant-tls/{{ item }}"
+        dest: "/etc/consul.d/tls/{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - consul-agent-ca.pem
+        - "{{ datacenter }}-client-consul-0.pem"
+        - "{{ datacenter }}-client-consul-0-key.pem"
+
+    # --- Consul ---
+
+    - name: Write Consul client config
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/templates/consul-hypervisor.hcl.j2"
+        dest: /etc/consul.d/consul-hypervisor.hcl
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart consul
+
+    - name: Enable and start consul
+      ansible.builtin.systemd:
+        name: consul
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Wait for Consul to be ready
+      ansible.builtin.wait_for:
+        port: 18500
+        host: 127.0.0.1
+        timeout: 60
+
+    # --- Nomad plugin setup ---
+
+    - name: Create Nomad plugins directory
+      ansible.builtin.file:
+        path: /opt/nomad/plugins
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install amd-gpu plugin wrapper script
+      ansible.builtin.copy:
+        dest: /opt/nomad/plugins/amd-gpu
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          REPO_DIR="{{ amdgpu_plugin_repo_dir }}"
+          export LD_LIBRARY_PATH="${REPO_DIR}/.build:/opt/rocm/lib:/opt/rocm/lib64:${LD_LIBRARY_PATH}"
+          exec "${REPO_DIR}/nomad-device-amdgpu" "$@"
+
+    # --- Nomad ---
+
+    - name: Remove default APT-installed Nomad config to avoid data_dir conflicts
+      ansible.builtin.file:
+        path: /etc/nomad.d/nomad.hcl
+        state: absent
+
+    - name: Write Nomad client config
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/templates/nomad-hypervisor.hcl.j2"
+        dest: /etc/nomad.d/nomad-hypervisor.hcl
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart nomad
+
+    - name: Enable and start nomad
+      ansible.builtin.systemd:
+        name: nomad
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    # Flush here so any config-driven restart (Restart nomad handler) completes
+    # before we check the port. Without this, wait_for runs against the old
+    # process if the config changed mid-play.
+    - name: Flush handlers before waiting for Nomad to be ready
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for Nomad to be ready
+      ansible.builtin.wait_for:
+        port: 14646
+        host: 127.0.0.1
+        timeout: 60
+
+    # --- Verify ---
+
+    - name: Check Consul membership
+      ansible.builtin.command: consul members -http-addr=http://127.0.0.1:18500
+      register: consul_members
+      changed_when: false
+      retries: 5
+      delay: 5
+      until: consul_members.rc == 0
+
+    - name: Display Consul members
+      ansible.builtin.debug:
+        msg: "{{ consul_members.stdout_lines }}"
+
+    - name: Check Nomad node status
+      ansible.builtin.command: nomad node status -address=http://127.0.0.1:14646
+      register: nomad_nodes
+      changed_when: false
+      retries: 5
+      delay: 5
+      until: nomad_nodes.rc == 0
+
+    - name: Display Nomad nodes
+      ansible.builtin.debug:
+        msg: "{{ nomad_nodes.stdout_lines }}"
+
+  handlers:
+    - name: Restart consul
+      ansible.builtin.systemd:
+        name: consul
+        state: restarted
+
+    - name: Restart nomad
+      ansible.builtin.systemd:
+        name: nomad
+        state: restarted
