@@ -1,0 +1,367 @@
+---
+# Cluster Start
+# Starts VMs, waits for boot, validates SSH and cluster services
+#
+# Usage:
+#   make start
+#   make start ARGS="-e unset_ceph_flags=yes"    # Also unset Ceph OSD flags
+#
+# This playbook is idempotent - safe to run if VMs are already running.
+#
+# Phases:
+#   1. Start HAProxy on the hypervisor
+#   2. Ensure the default virsh network is active, then start all VMs
+#   3. Wait for SSH connectivity
+#   4. Validate Consul and Nomad services are running
+#   5. Mount CephFS if not already mounted
+#   6. Verify no D-state processes (stale RBD mounts)
+#   7. Prune stale container images (Podman + Docker)
+#   8. Wait for CSI plugin health
+#   9. Optionally unset Ceph OSD maintenance flags
+#
+# After a graceful shutdown (make shutdown), Ceph OSD flags (noout,
+# nobackfill, norecover) remain set. These are safe to leave during
+# staggered startup. Unset them after the cluster is healthy:
+#   make start ARGS="-e unset_ceph_flags=yes"
+
+- name: Cluster Start - Start HAProxy
+  hosts: hypervisors
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Start HAProxy
+      ansible.builtin.systemd:
+        name: haproxy
+        state: started
+      register: haproxy_result
+      failed_when: false
+
+    - name: HAProxy status
+      ansible.builtin.debug:
+        msg: "HAProxy {{ 'started' if haproxy_result is changed else 'already running' }}"
+
+- name: Cluster Start - Start VMs
+  hosts: hypervisors
+  gather_facts: false
+  become: true
+
+  vars:
+    server_list: "{{ groups['servers'] | default([]) }}"
+
+  tasks:
+    - name: Get virsh network state
+      ansible.builtin.command: virsh net-info default
+      register: net_info
+      changed_when: false
+      failed_when: false
+
+    - name: Start default virsh network if inactive
+      ansible.builtin.command: virsh net-start default
+      when: net_info.rc == 0 and net_info.stdout is not search('Active:\\s+yes')
+      changed_when: true
+
+    - name: Get running VMs
+      ansible.builtin.shell: virsh list --state-running --name
+      register: running_vms_output
+      changed_when: false
+
+    - name: Start cluster VMs
+      ansible.builtin.command: virsh start {{ item }}
+      loop: "{{ server_list }}"
+      when: item not in running_vms_output.stdout_lines
+      changed_when: true
+
+    - name: Wait for VMs to be running (up to 60s)
+      ansible.builtin.shell: virsh domstate {{ item }}
+      loop: "{{ server_list }}"
+      register: vm_state
+      until: vm_state.stdout | trim == 'running'
+      retries: 12
+      delay: 5
+      changed_when: false
+
+    - name: VM start summary
+      ansible.builtin.debug:
+        msg: >-
+          VMs running: {{ server_list | join(', ') }}.
+          Waiting for SSH connectivity...
+
+- name: Cluster Start - Validate Services
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Wait for SSH connectivity (up to 120s)
+      ansible.builtin.wait_for_connection:
+        timeout: 120
+
+    - name: Wait for Consul server to start (up to 60s)
+      ansible.builtin.systemd:
+        name: consul-server
+      register: consul_server_status
+      until: consul_server_status.status.ActiveState == "active"
+      retries: 12
+      delay: 5
+
+    - name: Wait for Nomad server to start (up to 60s)
+      ansible.builtin.systemd:
+        name: nomad-server
+      register: nomad_server_status
+      until: nomad_server_status.status.ActiveState == "active"
+      retries: 12
+      delay: 5
+
+    - name: Check consul-agent
+      ansible.builtin.systemd:
+        name: consul-agent
+      register: consul_agent_status
+      check_mode: true
+      changed_when: false
+
+    - name: Check consul-agent-root
+      ansible.builtin.systemd:
+        name: consul-agent-root
+      register: consul_agent_root_status
+      check_mode: true
+      changed_when: false
+
+    - name: Check nomad-agent
+      ansible.builtin.systemd:
+        name: nomad-agent
+      register: nomad_agent_status
+      check_mode: true
+      changed_when: false
+
+    - name: Check nomad-agent-root
+      ansible.builtin.systemd:
+        name: nomad-agent-root
+      register: nomad_agent_root_status
+      check_mode: true
+      changed_when: false
+
+    - name: Check CephFS is mounted
+      ansible.builtin.command: mountpoint -q /mnt/services
+      changed_when: false
+      failed_when: false
+      register: cephfs_status
+
+    - name: Mount CephFS  # noqa: command-instead-of-module
+      ansible.builtin.command: mount /mnt/services
+      when: cephfs_status.rc != 0
+      changed_when: true
+
+    - name: Verify CephFS is mounted
+      ansible.builtin.command: mountpoint -q /mnt/services
+      changed_when: false
+      when: cephfs_status.rc != 0
+
+    - name: Check for D-state processes (stale RBD mounts)
+      ansible.builtin.shell: ps aux | grep -c ' D[+ ]'
+      register: dstate_count
+      changed_when: false
+      failed_when: false
+
+    - name: Warn on D-state processes
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} has {{ dstate_count.stdout }} D-state
+          processes. This may indicate stale RBD kernel mounts. A VM reboot
+          (virsh destroy + virsh start) is required to clear D-state processes.
+      when: dstate_count.stdout | int > 0
+
+    - name: Node status
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          consul-server={{ consul_server_status.status.ActiveState }},
+          consul-agent={{ consul_agent_status.status.ActiveState | default('unknown') }},
+          consul-agent-root={{ consul_agent_root_status.status.ActiveState | default('unknown') }},
+          nomad-server={{ nomad_server_status.status.ActiveState }},
+          nomad-agent={{ nomad_agent_status.status.ActiveState | default('unknown') }},
+          nomad-agent-root={{ nomad_agent_root_status.status.ActiveState | default('unknown') }},
+          CephFS=mounted,
+          D-state={{ dstate_count.stdout }}
+
+- name: Cluster Start - Prune Container Images
+  hosts: servers
+  user: "{{ admin_user }}"
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Prune Podman images (rootless)
+      ansible.builtin.command: podman system prune -a -f
+      become: true
+      become_user: "{{ user | default('hashi') }}"
+      register: podman_prune
+      changed_when: true
+      failed_when: false
+
+    - name: Prune Docker images (root)
+      ansible.builtin.command: docker system prune -a -f
+      become: true
+      register: docker_prune
+      changed_when: true
+      failed_when: false
+
+    - name: Container prune summary
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          Podman: {{ podman_prune.stdout_lines | select('search', 'reclaimed') | first | default('pruned') }}.
+          Docker: {{ docker_prune.stdout_lines | select('search', 'reclaimed') | first | default('pruned') }}.
+
+- name: Cluster Start - Validate Cluster APIs
+  hosts: servers[0]
+  user: "{{ admin_user }}"
+  become: true
+  gather_facts: false
+
+  vars:
+    unset_ceph_flags: "no"
+
+  tasks:
+    - name: Wait for Consul API (up to 60s)
+      ansible.builtin.uri:
+        url: "http://localhost:8500/v1/status/leader"
+        return_content: true
+        timeout: 5
+      register: consul_api
+      until: consul_api.status | default(-1) == 200
+      retries: 12
+      delay: 5
+
+    - name: Wait for Nomad API (up to 60s)
+      ansible.builtin.uri:
+        url: "http://localhost:4646/v1/status/leader"
+        return_content: true
+        timeout: 5
+      register: nomad_api
+      until: nomad_api.status | default(-1) == 200
+      retries: 12
+      delay: 5
+
+    - name: Get Consul members
+      ansible.builtin.command: consul members
+      register: consul_members
+      changed_when: false
+
+    - name: Display Consul members
+      ansible.builtin.debug:
+        msg: "{{ consul_members.stdout }}"
+
+    - name: Get Nomad node status
+      ansible.builtin.command: nomad node status
+      register: nomad_nodes
+      changed_when: false
+      environment:
+        NOMAD_ADDR: "http://localhost:4646"
+
+    - name: Display Nomad nodes
+      ansible.builtin.debug:
+        msg: "{{ nomad_nodes.stdout }}"
+
+    - name: Wait for CSI plugin health (up to 120s)
+      ansible.builtin.shell: |
+        nomad plugin status ceph-csi 2>/dev/null | grep -E 'Nodes (Healthy|Expected)' || echo 'not found'
+      register: csi_status
+      until: >-
+        csi_status.stdout_lines | select('search', 'Nodes Healthy') | first | default('')
+        | regex_search('[0-9]+') | default('0') | int >= 3
+      retries: 24
+      delay: 5
+      changed_when: false
+      failed_when: false
+      environment:
+        NOMAD_ADDR: "http://localhost:4646"
+
+    - name: Display CSI plugin status
+      ansible.builtin.debug:
+        msg: >-
+          CSI ceph-csi:
+          {{ csi_status.stdout_lines | select('search', 'Nodes Healthy') | first | default('unknown') }},
+          {{ csi_status.stdout_lines | select('search', 'Nodes Expected') | first | default('unknown') }}.
+          {{ 'HEALTHY' if (csi_status.stdout_lines | select('search', 'Nodes Healthy') | first
+          | default('') | regex_search('[0-9]+') | default('0') | int >= 3)
+          else 'WARNING: Not all nodes healthy - CSI-dependent services may fail' }}
+
+    - name: Check Ceph health
+      ansible.builtin.command: ceph health
+      register: ceph_health
+      changed_when: false
+      failed_when: false
+
+    - name: Display Ceph health
+      ansible.builtin.debug:
+        msg: "Ceph: {{ ceph_health.stdout | default('unable to query') }}"
+
+    - name: Unset Ceph OSD maintenance flags
+      when: unset_ceph_flags == "yes"
+      block:
+        - name: Unset noout flag
+          ansible.builtin.command: ceph osd unset noout
+          changed_when: true
+
+        - name: Unset nobackfill flag
+          ansible.builtin.command: ceph osd unset nobackfill
+          changed_when: true
+
+        - name: Unset norecover flag
+          ansible.builtin.command: ceph osd unset norecover
+          changed_when: true
+
+        - name: Verify OSD flags cleared
+          ansible.builtin.command: ceph health
+          register: ceph_health_post
+          changed_when: false
+
+        - name: Display post-flag Ceph health
+          ansible.builtin.debug:
+            msg: "Ceph after clearing flags: {{ ceph_health_post.stdout }}"
+
+  post_tasks:
+    - name: Cluster start summary
+      ansible.builtin.debug:
+        msg: >-
+          CLUSTER START COMPLETE --
+          Consul API: OK. Nomad API: OK.
+          CSI: {{ 'HEALTHY' if (csi_status.stdout_lines | select('search', 'Nodes Healthy') | first
+          | default('') | regex_search('[0-9]+') | default('0') | int >= 3)
+          else 'WARNING - check CSI before deploying' }}.
+          Ceph: {{ ceph_health.stdout | default('unknown') }}.
+          OSD flags: {{ 'cleared' if unset_ceph_flags == 'yes' else 'unchanged (use -e unset_ceph_flags=yes to clear)' }}.
+          To deploy services: make deploy-services
+
+- name: Cluster Start - Deploy Traefik
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    cluster_address: "{{ hostvars[groups['servers'][0]].ansible_host | default(groups['servers'][0]) }}"
+
+  roles:
+    - role: apply-terraform
+      vars:
+        module: traefik
+
+  post_tasks:
+    - name: Wait for Traefik to register in Consul (up to 120s)
+      ansible.builtin.uri:
+        url: "http://{{ cluster_address }}:8500/v1/catalog/service/traefik"
+        return_content: true
+        timeout: 5
+      register: traefik_consul
+      until: traefik_consul.json | length > 0
+      retries: 24
+      delay: 5
+      failed_when: false
+
+    - name: Traefik status
+      ansible.builtin.debug:
+        msg: >-
+          Traefik: {{ 'registered in Consul - ingress ready' if (traefik_consul.json | default([]) | length > 0)
+          else 'WARNING - not yet registered in Consul (check: nomad job status traefik)' }}

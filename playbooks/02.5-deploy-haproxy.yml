@@ -1,0 +1,34 @@
+---
+# Deploy HAProxy on hypervisor to load-balance traffic to VM cluster
+# Proxies: 443 (Traefik), 4646 (Nomad), 8500 (Consul)
+#
+# Usage:
+#   ansible-playbook playbooks/02.5-deploy-haproxy.yml -i inventory/hypervisors.yml -i inventory/groups.yml
+#
+# Prerequisites:
+#   - VMs provisioned (01-provision-vms.yml)
+#   - Cluster deployed (octant.yml) - Consul/Nomad listening
+
+- name: Deploy HAProxy ingress on hypervisor
+  hosts: hypervisors
+  gather_facts: true
+  become: true
+
+  roles:
+    - role: haproxy
+
+  handlers:
+    - name: restart haproxy
+      ansible.builtin.systemd:
+        name: haproxy
+        state: restarted
+
+    - name: restart rsyslog
+      ansible.builtin.systemd:
+        name: rsyslog
+        state: restarted
+
+    - name: restart journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted
