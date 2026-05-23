@@ -1,154 +1,211 @@
 ```
- ________  ________ _________  ________  ________   _________   
-|\   __  \|\   ____\\___   ___\\   __  \|\   ___  \|\___   ___\ 
-\ \  \|\  \ \  \___\|___ \  \_\ \  \|\  \ \  \\ \  \|___ \  \_| 
- \ \  \\\  \ \  \       \ \  \ \ \   __  \ \  \\ \  \   \ \  \  
-  \ \  \\\  \ \  \____   \ \  \ \ \  \ \  \ \  \\ \  \   \ \  \ 
+ ________  ________ _________  ________  ________   _________
+|\   __  \|\   ____\\___   ___\\   __  \|\   ___  \|\___   ___\
+\ \  \|\  \ \  \___\|___ \  \_\ \  \|\  \ \  \\ \  \|___ \  \_|
+ \ \  \\\  \ \  \       \ \  \ \ \   __  \ \  \\ \  \   \ \  \
+  \ \  \\\  \ \  \____   \ \  \ \ \  \ \  \ \  \\ \  \   \ \  \
    \ \_______\ \_______\  \ \__\ \ \__\ \__\ \__\\ \__\   \ \__\
     \|_______|\|_______|   \|__|  \|__|\|__|\|__| \|__|    \|__|
     1password   Consul  Terraform   Ansible    Nomad    Tailscale
 
-                   An opinionated home lab framework
+                   An opinionated lab framework
 ```
-**WARNING: Batteries are not included. This battlestation is not yet fully functional**
 
-Octant is an open source project that provides automation and infrastructure as code for setting up and managing a home lab environment. The project utilizes various tools and technologies such as 1Password, Consul, Terraform, Ansible, Nomad, and Tailscale to create a scalable and flexible home lab setup.
+Octant is an opinionated infrastructure‑as‑code framework for standing up
+a HashiCorp Nomad / Consul / Ceph lab from scratch. It targets either a
+3‑node bare‑metal cluster or a 3‑VM cluster built on a libvirt
+hypervisor (the default), with optional integration of an AMD Instinct
+GPU host as a workload‑bearing client.
+
+The repo glues together Packer, Ansible, Terraform, Consul, Nomad,
+Podman, Docker, Ceph, Traefik, Tailscale, and 1Password into a single
+`make`‑driven workflow, plus a catalog of ~60 Nomad jobs covering
+databases, observability, agent platforms, and end‑user applications.
 
 ## Features
 
-- Automated deployment of infrastructure components using Terraform
-- Workload scheduling via HashiCorp Nomad
-- Service discovery via HashiCorp Consul
-- Rootless Podman when possible, Root Podman when necessary
-- Traefik for reverse proxy and TLS cert generation with LetsEncrypt
-- Configuration management and provisioning using Ansible
-- Secrets management integration with 1Password
-- Connectivity between on-prem and cloud using Tailscale
-- Cloud Infrastructure in the major hyperscalers free-tier offerings, deployed with Terraform and automatically connected to Tailscale
-- Nomad Jobs for deploying basic components for Local LLM: Vector Database, Redis, Jupyter Notebooks, Ollama (optional)
-- Database services: postgres, mariadb, influxdb, redis, chromadb, weaviate
-- Monitoring and alerting with Prometheus, Grafana, Loki, LibreNMS and other tools
-- Automated backups to S3-compatible endpoints with Restic
-- (Optional) Distibuted storage with Ceph
+**Cluster foundation**
+- VM‑based deployment on a libvirt hypervisor (Debian 13 / Trixie cloud
+  image) with a Packer‑style golden base image
+- Or bare‑metal 3‑node deployment via the same role set
+- HashiCorp Consul + Nomad with paired root and rootless Podman agents
+  on every node
+- Docker driver alongside Podman for jobs that require it (Ceph CSI,
+  MongoDB replica set)
+- Optional GPU‑bearing hypervisor node joined as a Nomad client for
+  ROCm / vLLM workloads
+- CephFS for shared filesystem state and Ceph RBD (via the `ceph-csi`
+  Nomad CSI plugin) for block volumes
+- Traefik with LetsEncrypt + Cloudflare DNS‑01 for ingress; HAProxy as
+  the front‑door TCP load balancer
+- Tailscale mesh for on‑prem ↔ cloud connectivity; free‑tier GCP
+  Terraform module to extend the cluster
+- 1Password backed secrets, surfaced via Nomad variables
 
-## Coming Soon
+**Day‑2 operations**
+- `make deploy` / `make deploy-host` / `make deploy-role` for targeted
+  Ansible runs
+- Graceful cluster shutdown, cold qcow2 snapshotting, and ordered
+  cluster start with health‑check validation
+- Per‑service Terraform modules under `terraform/<service>/` with a
+  shared template for new services
+- Automated backups to S3‑compatible endpoints with Restic, plus
+  database‑specific dump jobs for Postgres / MariaDB / MongoDB
 
-- A much better getting started guide
-- Centralized config file used by Ansible, Terraform and other components
-- Video walkthroughs and demos
-- Contributing guide, issues, roadmap and changelog
-- More job templates: n8n, InfluxDB, Langflow, AFFiNE and more
-- Terraform templates for additional hyperscaler free tiers
-- Better monitoring: Ansible role for telegraf agents, Grafana dashboards, intelligent alerting
-- Terraform state storage in Consul K/V store
+**Service catalog (selected)**
+- Storage / observability: MinIO, Loki, Tempo, Prometheus, Grafana,
+  Alertmanager, Alloy, Uptime‑Kuma, Gatus
+- Databases / queues: Postgres, MariaDB, MongoDB (3‑node replica set),
+  Redis, Neo4j, Qdrant, FalkorDB, NATS, ChromaDB, Weaviate
+- LLM / agent platform: vLLM (Gemma‑4 31B on AMD Instinct), LiteLLM
+  proxy, OpenClaw gateway with multi‑agent skill packs, Jupyter,
+  Open‑WebUI, Langfuse, Phoenix, Bastionclaw
+- Knowledge layer: Graphiti + Qdrant + Notes ingestion agents
+  orchestrated through OpenClaw
+- Productivity / chat: Rocket.Chat, Docmost, n8n, Searxng, Linkding,
+  Linkwarden, Plantuml, Excalidraw, IT‑Tools, Gitea, Homepage,
+  Nautobot, Home Assistant + Music Assistant
 
-## Getting Started
+## Quick start
 
-**NOTE:** There is a lot of documentation forthcoming! Secrets and environmental variables are used heavily throughout this project, so unless you are feeling adventurous, please hang tight until I'm able to complete this section.
+```bash
+# 0. Configure
+cp envrc.example .envrc        # populate secrets, then `direnv allow`
+cp inventory/group_vars/all.yml.example inventory/group_vars/all.yml
 
-To get started with Octant, follow these steps:
+# 1. Build the golden base image on the hypervisor
+ansible-playbook playbooks/00-build-base-image.yml -i inventory/hypervisors.yml
 
-1. Clone the repository: `git clone https://github.com/shamsway/octant`
-2. Install the required dependencies
-3. Configure the necessary variables
-4. Run the Ansible playbooks to configure the initial cluster
-5. Deploy cloud resources with Terraform
-6. Deploy services to Nomad
+# 2. Provision the 3-VM cluster + Ceph + services in order
+make deploy
 
-For detailed instructions and documentation, please refer to the [docs](./docs) directory.
+# 3. Optional: join a GPU hypervisor as a Nomad client
+make join-hypervisor
 
-## Files and Folders
+# 4. Deploy services
+cd terraform/<service> && terraform init && terraform apply -auto-approve
+```
 
-`docs/`
-- Documentation and notes
-- Not anywhere near complete
-  
-`handlers/`
-- Ansible handlers
+The full getting‑started walkthrough lives under
+[`docs/sphinx/getting-started.md`](docs/sphinx/getting-started.md); see
+the Sphinx site source under [`docs/sphinx/`](docs/sphinx/) for
+architecture, runbooks, operations, and demos.
 
-`inventory/`
-- Ansible inventory and group variables
+## Quick commands
 
-`packer/`
-- Packer scripts for VMware and Hyper-V images
-- Bootstrap scripts
+```bash
+# Ansible
+make deploy                          # Full cluster deployment
+make deploy-host HOST=octant-01      # Single host
+make deploy-role ROLE=volumes        # Single role, all hosts
+make deploy-role-host ROLE=volumes HOST=octant-01
 
-`roles/`
-- The roles folder contains the Ansible roles for the initial setup and deployment of services (i.e. Consul, Nomad, Podman).
-- Todo: Add README file for each role, explaining its purpose, dependencies, and any specific configuration options.
-- Todo: Review the tasks and templates for any sensitive information and replace them with environment variables or secrets.
+# Cluster lifecycle
+make start-nomad / make stop-nomad
+make start-consul / make stop-consul
+make shutdown                        # Graceful cluster shutdown
+make snapshot                        # Cold qcow2 snapshots
+make join-hypervisor                 # Add GPU host as Nomad client
 
-`terraform/`
-- This folder contains Terraform configurations for deploying various services like Loki, Grafana, InfluxDB, Nginx, Postgres, Prometheus, and Traefik.
-- Some jobs are a bare Nomad job without a Terraform "wrapper". These jobs can be easily deployed with `nomad job run`, and will be migrated to Terraform in the future.
-- Todo: Review the configurations for any sensitive information like API keys, passwords, or tokens, and replace them with environment variables or secrets management.
-- Todo: Decide if this folder should be renamed to `services` or `jobs`.
+# Nomad / Consul
+nomad job status                     # All jobs
+nomad alloc logs -job <service>      # Container logs
+consul catalog services              # All registered services
+consul health state critical         # Failing health checks
+```
 
-`homelab.yml`
-- The main Ansible playbook for setting up the home lab infrastructure
-- Uncludes tasks for setting up user accounts, installing required packages, and applying roles to the inventory.
-- Todo: add detailed documentation and usage examples.
+## Architecture
 
-`inventory/group_vars/all.yml`
-- This file contains global variables used across the Ansible inventory.
-- It defines common configuration settings like directory paths, user and group details, domain names, and service-specific settings.
-- Todo: Add comments to explain the purpose of each variable and provide examples where necessary.
+```
+Internet → HAProxy (80/443) → Traefik (Consul catalog) → Nomad services
+                                                          ↕
+                                Consul DNS (<svc>.service.consul)
+                                                          ↕
+                                CephFS (shared FS) + Ceph RBD (block)
+                                via ceph-csi Nomad CSI plugin
+```
 
-`inventory/groups.yml`
-- This file defines the inventory groups and their associated variables.
-- It lists the servers and their specific configurations, such as region, Tailscale advertisements, and volume definitions.
+- **3 cluster nodes** (`octant-01/02/03`, default `192.168.122.101-103`)
+  each running paired Consul/Nomad server + rootless agent + root agent
+- **Optional hypervisor node** runs Consul/Nomad client agents with GPU
+  devices exposed via `nomad-device-amdgpu`
+- **Service discovery** via Consul DNS at `<service>.service.consul`
+- **Ingress** through Traefik with Consul catalog provider,
+  LetsEncrypt via Cloudflare DNS‑01
+- **Storage** mixed: CephFS at `/mnt/services/<svc>/` for most apps,
+  Ceph RBD via CSI for performance‑sensitive databases
+- **Secrets** in 1Password, surfaced as Nomad variables
 
-`Makefile`
-- Various make targets to deploy Ansible roles and other tasks
+## Project structure
 
-`.secrets.yml`
-- This file contains a secret key for Consul gossip encryption.
-- Ensure that this file is excluded from version control and not pushed to any public repository.
-- Todo: Move secrets to 1password, if possible.
+```
+playbooks/             # Lifecycle playbooks (00-build-base-image through 12-remove-hypervisor)
+roles/                 # Ansible roles (consul, nomad, podman, ceph, secrets, ...)
+inventory/             # Inventory + group_vars (groups.yml is the SoT)
+packer/                # Base image scripts
+terraform/<service>/   # Per-service deployment (nomad.hcl + main.tf + variables.tf)
+terraform/template/    # Starter template for new services
+scripts/               # Helper scripts (e.g. openclaw-add-bot.sh)
+docs/                  # Documentation, design docs, postmortems
+docs/sphinx/           # Sphinx site source (architecture, runbooks, demos)
+docs/plans/            # Dated design docs and implementation plans
+CHANGELOG.md           # Release log
+```
+
+## Documentation
+
+- [Getting started](docs/sphinx/getting-started.md)
+- [Architecture](docs/sphinx/architecture.md)
+- [Operations](docs/sphinx/operations.md) and [runbooks](docs/sphinx/runbooks.md)
+- [Service catalog](docs/sphinx/services.md)
+- [OpenClaw gateway](docs/sphinx/openclaw.md)
+- [Guides](docs/guides/) — CephFS→CSI migration, OpenClaw deployment,
+  post‑deployment setup
+- [Changelog](CHANGELOG.md)
 
 ## Diagrams
 
-Example architecture - initial cluster deployment
+Initial cluster deployment
 ![](docs/octant-usage/diagrams/01_architecture.png)
 
-Consul/Nomad Architecture
+Consul/Nomad architecture
 ![](docs/octant-usage/diagrams/03_nomad_consul.png)
 
-Ingress with nginx and Traefik
+Ingress with HAProxy and Traefik
 ![](docs/octant-usage/diagrams/04_ingress_tls.png)
 
-Tailscale Overview
+Tailscale overview
 ![](docs/octant-usage/diagrams/05_tailscale_overview.png)
 
-Tailscale Routing
-![](docs/octant-usage/diagrams/06_tailscale_routing.png)
-
-Tailscale Multicloud
-![](docs/octant-usage/diagrams/07_tailscale_multicloud.png)
-
-Getting Started
-![](docs/octant-usage/diagrams/08_getting_started.png)
-
-## To do 
-- Create GitHub issues for future work/add roadmap
-- Create changelog and automate updates
-- Stand up GitHub actions
-- 
 ## FAQ
 
-- Why? Octant was born out of a desire to learn. I wanted a reliable platform to try the numerous AI/LLM projects coming out. I'd used Terraform, but never Consul or Nomad, and this was a chance to learn them. It was also a response to having to rebuild my home lab from scratch multiple times. I decided that this time, every part of the lab build would be automated. 
-- So how much does this thing cost? Octant was mostly built with components I had on hand - a subscription to 1Password (about $60/year), a free Cloudflare account, a free Tailscale account, and a gaming PC with a GPU capable of running Ollama and VMware Workstation. I heavily leaned on Claude to design, prototype, write code and troubleshoot. Having a subscription to Claude isn't a requirement, but it is a useful tool and co-pilot. After a few weeks of development, I decided to purchase some mini PCs to replace the VMs I'd started with. Dedicated hardware provides better performance, but Octant is flexible enough to run on VMs, dedicated hardware, or a mix of both. So far, cloud costs have been less than $1.00/month. I am a longtime Backblaze user, so I'm using their S3-compatible B2 service for backups, which is very reasonably priced. I just got a UPS capable of monitoring power draw, so I will share power costs once I start tracking them.
-- For the 3-node architecture, are Consul, Nomad, and Ceph all running on the same three nodes, or are they separate clusters? Great question, the answer is a bit complex but it is what makes this lab unique. Both Consul and Nomad use the RAFT protocol for consensus, so the minimum starting cluster size is three. Expanding clusters should respect the requirement for odd numbers of members. Both Consul and Nomad follow a server/agent architecture, but the components can run on the same physical server or VM. Consul and Nomad servers form a quorum for consensus, but do little else. Consul and Nomad agents connect to the servers and perform the service discovery and container scheduling functions. In this lab framework, each node runs these components: a Consul server, a Nomad Server, a Consul rootless agent, a Nomad rootless agent, a Consul agent running as root, and a Nomad agent running as root. There is always a 1:1 correlation between corresponding Consul and Nomad agents. They work as a pair to perform their functions. Running both a rootless and root pair of each allows each node to be able to run either rootless containers, or those few containers requring root privileges. Ceph is also running to provide distributed storage. Each container (running as a Nomad job) stores stateful data on a cephfs mount shared across all the nodes. An nginx tcp proxy runs on each node on ports 80 and 443, which direct any inbound traffic to traefik. 
-- How does Traefik interact with the other components in your setup? Is it running on all nodes or on a dedicated node? Traefik runs in a single container becuase clustering isn't supported in the open source version, so nginx is acting as a simple ingress. Traefik uses Consul service discovery and container tags to generate TLS certs and forward inbound traffic to the correct port on the container. Most ports use a random ports, but some containers run on well-known ports.
+- **Why?** Octant was born out of a desire to learn — a reliable
+  platform to try the numerous AI/LLM projects coming out, and a chance
+  to learn Consul and Nomad in production‑shaped configurations. It was
+  also a response to rebuilding a home lab from scratch multiple times:
+  this time, every part of the build is automated.
+- **How much does it cost?** Mostly built with components on hand — a
+  1Password subscription (~$60/yr), free Cloudflare and Tailscale
+  accounts, and a gaming PC capable of hosting the VM cluster and
+  running Ollama / vLLM. Cloud costs have been under $1/month thanks to
+  free‑tier GCP. Backups go to Backblaze B2.
+- **For the 3‑node architecture, are Consul, Nomad, and Ceph all on the
+  same nodes?** Yes — each node runs a Consul server, a Nomad server,
+  paired rootless and root Consul/Nomad agents, and a Ceph mon/mgr.
+  Both Consul and Nomad use Raft, so the 3‑node minimum gives quorum
+  with one‑node tolerance. Running both rootless and root agents lets
+  each node host either rootless containers or the few containers that
+  require root (GPU access, CSI, privileged networking).
+- **How does Traefik fit in?** Traefik runs in a single container (the
+  OSS version doesn't cluster). HAProxy fronts ports 80/443 and proxies
+  to Traefik, which then uses Consul service discovery + container tags
+  to terminate TLS and route requests.
 
 ## Inspiration
-
-These repos/projects were the inspiration behind many of the choices I made when figuring out how I wanted to structure Octant.
 
 - https://github.com/perrymanuk/hashi-homelab
 - https://github.com/assareh/home-lab
 - https://github.com/abaschen/nomad-consul-vault
-- 
 
 ## License
 
