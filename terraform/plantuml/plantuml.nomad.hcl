@@ -16,7 +16,7 @@ job "plantuml" {
 
       dns {
         servers = ${dns}
-      }         
+      }
     }
 
     service {
@@ -29,11 +29,15 @@ job "plantuml" {
         "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
         "traefik.http.routers.${servicename}.entrypoints=web,websecure",
         "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
+        "homepage.group=Apps",
+        "homepage.name=PlantUML",
+        "homepage.icon=si-uml",
+        "homepage.description=Diagram Server",
       ]
 
       connect {
         native = true
-      }        
+      }
 
       check {
         name     = "alive"
@@ -42,8 +46,8 @@ job "plantuml" {
         interval = "60s"
         timeout  = "5s"
       }
-    }       
-    
+    }
+
     task "plantuml" {
       driver = "podman"
 
@@ -58,8 +62,8 @@ job "plantuml" {
               "tag" = "${servicename}"
             }
           ]
-        }                 
-      } 
+        }
+      }
 
       resources {
         cpu    = 500

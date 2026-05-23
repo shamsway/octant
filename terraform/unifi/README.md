@@ -9,7 +9,7 @@
 
 **Rootless container:** No
 
-**URLs:** 
+**URLs:**
 - https://www.ui.com/software/
 - https://github.com/jacobalberty/unifi-docker
 

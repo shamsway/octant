@@ -21,8 +21,8 @@ job "whoami" {
     attribute = "${node.unique.name}"
     operator  = "regexp"
     value     = "^.*[^-][^r][^o][^o][^t]$"
-  }  
-  
+  }
+
   group "whoami" {
     count = 1
 
@@ -32,7 +32,7 @@ job "whoami" {
       }
       port "https" {
         to = 443
-      }      
+      }
     }
 
     service {

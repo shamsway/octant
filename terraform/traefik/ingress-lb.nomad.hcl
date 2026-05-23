@@ -21,7 +21,7 @@ job "ingress-lb" {
       port "httpalt" {
         static = "8081"
         to = "8081"
-      }      
+      }
       dns {
         servers = ${dns}
       }
@@ -44,7 +44,7 @@ job "ingress-lb" {
 
       template {
         data = <<EOF
-pid /tmp/nginx.pid;        
+pid /tmp/nginx.pid;
 events {}
 stream {
   upstream traefik {
@@ -57,7 +57,7 @@ stream {
     least_conn;
     {{- range service "traefik-http" }}
     server {{ .Address }}:{{ .Port }};{{- end }}
-  }  
+  }
 
   server {
     listen 443;
@@ -75,7 +75,7 @@ http {
     least_conn;
     {{- range service "consul" }}
     server {{ .Address }}:8500;{{- end }}
-  }  
+  }
 
   upstream nomad {
     least_conn;
@@ -102,7 +102,7 @@ http {
       proxy_pass http://nomad;
       proxy_set_header X-Real-IP $remote_addr;
       proxy_set_header X-Forwarded-Host $host;
-      proxy_set_header X-Forwarded-Port $server_port;      
+      proxy_set_header X-Forwarded-Port $server_port;
     }
   }
 }
@@ -111,11 +111,11 @@ EOF
         change_mode   = "signal"
         change_signal = "SIGHUP"
       }
-      
+
       resources {
         cpu    = 100
         memory = 128
-      }      
-    }    
+      }
+    }
   }
 }

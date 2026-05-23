@@ -211,7 +211,7 @@ job "librenms" {
 
       dns {
         servers = var.dns
-      }      
+      }
     }
 
     service {
@@ -221,7 +221,7 @@ job "librenms" {
       port = "http"
       tags = [
         "traefik.enable=true",
-        "traefik.consulcatalog.connect=false",          
+        "traefik.consulcatalog.connect=false",
         "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
         "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
         "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
@@ -231,7 +231,7 @@ job "librenms" {
       connect {
         native = true
       }
-            
+
       check {
         name     = "alive"
         type     = "http"
@@ -250,14 +250,14 @@ job "librenms" {
       connect {
         native = true
       }
-            
+
       check {
         name     = "alive"
         type     = "tcp"
         interval = "10s"
         timeout  = "2s"
       }
-    }    
+    }
 
     task "librenms" {
       driver = "podman"
@@ -274,7 +274,7 @@ job "librenms" {
             "tag" = "${var.servicename}"
             }
           ]
-        }         
+        }
       }
 
       env {
@@ -315,7 +315,7 @@ job "librenms" {
       config {
         image = var.librenms_image
         cap_add = ["NET_RAW","NET_ADMIN"]
-        volumes = ["/mnt/services/librenms/config:/data"]        
+        volumes = ["/mnt/services/librenms/config:/data"]
         network_mode = "host"
         privileged = true
         logging = {
@@ -325,7 +325,7 @@ job "librenms" {
             "tag" = "librenms-poller"
             }
           ]
-        }         
+        }
       }
 
       env {
@@ -370,7 +370,7 @@ job "librenms" {
             "tag" = "librenms-rrdcached"
             }
           ]
-        }         
+        }
       }
 
       env {
@@ -386,7 +386,7 @@ job "librenms" {
 
       resources {
         memory = 512
-      }      
+      }
     }
   }
 }

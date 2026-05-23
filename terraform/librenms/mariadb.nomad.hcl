@@ -67,7 +67,7 @@ job "mariadb" {
       }
       dns {
         servers = var.dns
-      }      
+      }
     }
 
     volume "librenms-data" {
@@ -84,7 +84,7 @@ job "mariadb" {
       connect {
         native = true
       }
-            
+
       check {
         name     = "alive"
         type     = "tcp"
@@ -110,7 +110,7 @@ job "mariadb" {
               "tag" = "${var.servicename}"
             }
           ]
-        }         
+        }
       }
 
       env {
@@ -118,7 +118,7 @@ job "mariadb" {
         MYSQL_ALLOW_EMPTY_PASSWORD = var.MYSQL_ALLOW_EMPTY_PASSWORD
         MYSQL_DATABASE = var.MYSQL_DATABASE
         MYSQL_USER = var.MYSQL_USER
-        MYSQL_PASSWORD = var.MYSQL_PASSWORD 
+        MYSQL_PASSWORD = var.MYSQL_PASSWORD
       }
 
       volume_mount {

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     onepassword = {
       source = "1Password/onepassword"
-      version = "~> 1.3.0"
+      version = "~> 2.1.2"
     }
   }
 }
@@ -19,23 +19,21 @@ provider "consul" {
 
 # Configure 1password provider
 provider "onepassword" {
-  url                   = "${var.op_api_url}"
-  token                 = "${var.OP_API_TOKEN}"
-  op_cli_path           = "/usr/local/bin/op"
+  # Authenticates via OP_SERVICE_ACCOUNT_TOKEN environment variable
 }
 
-data "onepassword_vault" "dev" {
-  name = "Dev"
+data "onepassword_vault" "vault" {
+  name = var.op_vault_name
 }
 
 data "onepassword_item" "nautobot_secrets" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "Nautobot"
+  vault = data.onepassword_vault.vault.uuid
+  title = "service_nautobot"
 }
 
 data "onepassword_item" "nautobot_db_credentials" {
-  vault = data.onepassword_vault.dev.uuid
-  title = "nautobot_db"
+  vault = data.onepassword_vault.vault.uuid
+  title = "db_nautobot"
 }
 
 resource "nomad_variable" "nautobot_secrets" {
@@ -44,11 +42,11 @@ resource "nomad_variable" "nautobot_secrets" {
     nautobot_username = data.onepassword_item.nautobot_secrets.username
     nautobot_password = data.onepassword_item.nautobot_secrets.password
     nautobot_api_key = one(flatten([
-      for s in data.onepassword_item.nautobot_secrets.section : 
+      for s in data.onepassword_item.nautobot_secrets.section :
         [ for f in s.field : f.value if f.label == "api_key" ]
-    ]))    
+    ]))
     nautobot_secret_key = one(flatten([
-      for s in data.onepassword_item.nautobot_secrets.section : 
+      for s in data.onepassword_item.nautobot_secrets.section :
         [ for f in s.field : f.value if f.label == "secret_key" ]
     ]))
   }
@@ -69,7 +67,7 @@ data "template_file" "nautobot_config" {
     admin_name = var.admin_name
     admin_email = var.admin_email
     secret_key = one(flatten([
-      for s in data.onepassword_item.nautobot_secrets.section : 
+      for s in data.onepassword_item.nautobot_secrets.section :
         [ for f in s.field : f.value if f.label == "secret_key" ]
     ]))
   }
@@ -84,7 +82,7 @@ data "template_file" "nautobot_job" {
     domain = var.domain
     certresolver = var.certresolver
     servicename = var.servicename
-    dns = jsonencode(var.dns)    
+    dns = jsonencode(var.dns)
     nautobot_config = base64encode(data.template_file.nautobot_config.rendered)
     uwsgi_ini = data.local_file.uwsgi_ini.content_base64
     nautobot_superuser_email = var.admin_email

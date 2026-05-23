@@ -12,10 +12,10 @@ job "traefik" {
     count = 1
     network {
       port "http" {
-        to = "80"
+        static = "80"
       }
       port "https" {
-        to = "443"
+        static = "443"
       }
       port "metrics" {
         to = "8082"
@@ -25,7 +25,7 @@ job "traefik" {
       }
       dns {
         servers = ${dns}
-      }       
+      }
     }
 
     update {
@@ -33,24 +33,6 @@ job "traefik" {
       min_healthy_time = "30s"
       auto_revert      = true
     }
-
-    volume "traefik-certs" {
-      type      = "host"
-      read_only = false
-      source		= "traefik-certs"
-    }  
-
-    volume "traefik-config" {
-      type      = "host"
-      read_only = false
-      source		= "traefik-config"
-    }  
-
-    volume "traefik-data" {
-      type      = "host"
-      read_only = false
-      source		= "traefik-data"
-    }  
 
     service {
       name = "traefik-http"
@@ -95,11 +77,16 @@ job "traefik" {
       }
       tags = [
         "traefik","traefik.enable=true","lb", "admin",
-        "traefik.http.routers.dashboard.rule=Host(`${servicename}.${domain}`)"
+        "traefik.http.routers.traefik-dash.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.traefik-dash.service=api@internal",
+        "traefik.http.routers.traefik-dash.entrypoints=traefik",
+        "homepage.group=Infrastructure",
+        "homepage.name=Traefik",
+        "homepage.icon=traefik",
+        "homepage.description=Reverse Proxy",
+        "homepage.href=http://traefik.${domain}:9002",
+        "homepage.weight=10",
       ]
-      connect {
-        native = true
-      }
     }
 
     service {
@@ -114,36 +101,20 @@ job "traefik" {
         path     = "/ping"
       }
 
-      connect {
-        native = true
-      }
     }
 
     task "traefik" {
       driver = "podman"
 
-      volume_mount {
-        volume      = "traefik-certs"
-        destination = "/acme"
-        read_only   = false
-      }
-
-      volume_mount {
-        volume      = "traefik-config"
-        destination = "/traefik-config"
-        read_only   = false
-      }
-
-      volume_mount {
-        volume      = "traefik-data"
-        destination = "/traefik-data"
-        read_only   = false
-      }
-
       config {
         image = "${image}"
-        args  = ["--configFile", "$${NOMAD_TASK_DIR}/traefik.toml", "--providers.file.filename", "$${NOMAD_TASK_DIR}/dynamic.toml"]
+        args  = ["--configFile", "$${NOMAD_TASK_DIR}/traefik.toml"]
         ports = ["http", "https", "metrics", "admin"]
+        volumes = [
+          "/mnt/services/traefik/certs:/acme",
+          "/mnt/services/traefik/data:/traefik-data",
+          "/opt/octant/config/tls:/tls:ro",
+        ]
         logging = {
           driver = "journald"
           options = [
@@ -181,12 +152,6 @@ EOH
         destination = "local/traefik.toml"
       }
 
-      template {
-          data = <<EOH
-{{ with nomadVar "nomad/jobs/traefik" }}{{ .dynamic_toml }}{{ end }}
-EOH
-        destination = "local/dynamic.toml"
-      }      
     }
   }
 }

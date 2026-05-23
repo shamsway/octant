@@ -4,7 +4,7 @@ This is a recurring job that backs up all folders tagged with `backup: true` in 
 
 ## Setup
 
-Initialize the repo before scheduling regular backup jobs 
+Initialize the repo before scheduling regular backup jobs
 
 ```bash
 podman run --rm --hostname restic-host -ti \

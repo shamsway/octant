@@ -1,0 +1,87 @@
+metrics: true
+
+ui:
+  title: Octant
+  description: Service health checks
+
+storage:
+  type: sqlite
+  path: /data/gatus.db
+
+endpoints:
+  - name: grafana
+    group: monitoring
+    url: http://grafana.service.consul:3000/api/health
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: prometheus
+    group: monitoring
+    url: http://prometheus.service.consul:9091/-/healthy
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: loki
+    group: monitoring
+    url: http://loki.service.consul:3100/ready
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: tempo
+    group: monitoring
+    url: http://tempo.service.consul:3200/ready
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: alertmanager
+    group: monitoring
+    url: http://alertmanager.service.consul:9093/-/healthy
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: alloy
+    group: monitoring
+    url: http://alloy.service.consul:12345/-/ready
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: traefik
+    group: infrastructure
+    url: http://traefik.service.consul:9002
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: consul
+    group: infrastructure
+    url: http://consul.service.consul:8500/v1/status/leader
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: nomad
+    group: infrastructure
+    url: http://nomad.service.consul:4646/v1/status/leader
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: uptime-kuma
+    group: apps
+    url: https://uptimekuma.lab.shamsway.net
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: phoenix
+    group: apps
+    url: https://phoenix.lab.shamsway.net
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"

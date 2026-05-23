@@ -1,0 +1,138 @@
+---
+- Infrastructure:
+  - Traefik:
+      icon: traefik
+      href: http://traefik.lab.shamsway.net:9002
+      description: Reverse Proxy
+  - Nginx:
+      icon: nginx
+      href: https://web.lab.shamsway.net
+      description: Static Web Server
+- AI & LLM:
+  - Graphiti:
+      icon: si-neo4j
+      href: https://graphiti.lab.shamsway.net
+      description: Knowledge Graph
+  - LiteLLM:
+      icon: si-openai
+      href: https://litellm.lab.shamsway.net/ui/
+      description: LLM Proxy
+  - Open WebUI:
+      icon: sh-open-webui
+      href: https://chatllm.lab.shamsway.net
+      description: Chat Interface
+  - OpenClaw:
+      icon: si-rocket-dot-chat
+      href: https://openclaw.lab.shamsway.net
+      description: AI Agent Gateway
+  - Phoenix:
+      icon: si-phoenix-framework
+      href: https://phoenix.lab.shamsway.net
+      description: LLM Observability
+- Apps:
+  - Docmost:
+      icon: sh-docmost
+      href: https://docmost.lab.shamsway.net
+      description: Wiki / Docs
+  - Excalidraw:
+      icon: excalidraw
+      href: https://excalidraw.lab.shamsway.net
+      description: Whiteboard
+  - Fusion:
+      icon: sh-fusion
+      href: https://fusion.lab.shamsway.net
+      description: RSS Reader
+  - Gitea:
+      icon: gitea
+      href: https://gitea.lab.shamsway.net
+      description: Git Hosting
+  - IT-Tools:
+      icon: it-tools
+      href: https://it-tools.lab.shamsway.net
+      description: Developer Utilities
+  - Linkding:
+      icon: linkding
+      href: https://linkding.lab.shamsway.net
+      description: Bookmark Manager
+  - Linkwarden:
+      icon: linkwarden
+      href: https://linkwarden.lab.shamsway.net
+      description: Bookmark Archive
+  - n8n:
+      icon: n8n
+      href: https://n8n.lab.shamsway.net
+      description: Workflow Automation
+  - PlantUML:
+      icon: si-uml
+      href: https://plantuml.lab.shamsway.net
+      description: Diagram Server
+  - Rocket.Chat:
+      icon: rocket-chat
+      href: https://rocketchat.lab.shamsway.net
+      description: Team Chat
+  - SearXNG:
+      icon: searxng
+      href: https://searxng.lab.shamsway.net
+      description: Metasearch
+- Databases:
+  - FalkorDB:
+      icon: si-redis
+      href: https://falkordb.lab.shamsway.net
+      description: Graph DB (Redis)
+  - MariaDB:
+      icon: mariadb
+      description: MySQL-compatible DB
+  - MongoDB:
+      icon: mongodb
+      description: Document DB
+  - Neo4j:
+      icon: neo4j
+      href: https://neo4j.lab.shamsway.net
+      description: Graph DB
+  - pgAdmin:
+      icon: pgadmin
+      href: https://pgadmin.lab.shamsway.net
+      description: Postgres Admin
+  - PostgreSQL:
+      icon: postgres
+      description: Relational DB
+  - Qdrant:
+      icon: qdrant
+      href: https://qdrant.lab.shamsway.net
+      description: Vector DB
+  - Redis:
+      icon: redis
+      description: Key-Value Store
+- Monitoring:
+  - Alertmanager:
+      icon: alertmanager
+      href: https://alertmanager.lab.shamsway.net
+      description: Alert Routing
+  - Gatus:
+      icon: gatus
+      href: https://gatus.lab.shamsway.net
+      description: Health Checks
+  - Grafana:
+      icon: grafana
+      href: https://grafana.lab.shamsway.net
+      description: Dashboards
+  - Prometheus:
+      icon: prometheus
+      href: https://prometheus.lab.shamsway.net
+      description: Metrics
+  - Uptime Kuma:
+      icon: uptime-kuma
+      href: https://uptimekuma.lab.shamsway.net
+      description: Uptime Monitoring
+- Observability:
+  - Alloy:
+      icon: grafana
+      description: Telemetry Collector
+  - Loki:
+      icon: loki
+      href: https://loki.lab.shamsway.net
+      description: Log Aggregation
+  - Tempo:
+      icon: tempo
+      href: https://tempo.lab.shamsway.net
+      description: Distributed Tracing

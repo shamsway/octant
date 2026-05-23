@@ -1,122 +1,104 @@
-variable "datacenter" {
-  type = string
-  default = "octant"
-}
+job "nginx" {
+  region      = "${region}"
+  datacenters = ["${datacenter}"]
+  type        = "service"
 
-variable "domain" {
-  type = string
-  default = "octant.net"
-}
+  constraint {
+    attribute = "$${attr.kernel.name}"
+    value     = "linux"
+  }
 
-variable "certresolver" {
-  type = string
-  default = "cloudflare"
-}
+  constraint {
+    attribute = "$${meta.rootless}"
+    value     = "true"
+  }
 
-variable "servicename" {
-  type = string
-  default = "nginx"
-}
+  group "nginx" {
+    count = 1
 
-variable "dns" {
-  type = list(string)
-  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
-}
+    network {
+      port "http" {
+        to = 8080
+      }
 
-variable "image" {
-  type = string
-  default = "docker.io/nginxinc/nginx-unprivileged:1.25.4"
-}
-  
-  job "nginx" {
-    region      = "home"
-    datacenters = ["${var.datacenter}"]
-    type        = "service"
-    constraint {
-      attribute = "${meta.rootless}"
-      value = "true"
+      port "httpalt" {
+        to = 8081
+      }
+
+      port "https" {
+        to = 9443
+      }
+
+      dns {
+        servers = ${dns}
+      }
     }
 
-    group "nginx" {
-      count = 1 
+    volume "nginx-data" {
+      type      = "host"
+      read_only = true
+      source    = "nginx-data"
+    }
 
-      network {
-        port "http" {
-          to = 8080
-        }
+    service {
+      name     = "${servicename}"
+      provider = "consul"
+      port     = "http"
 
-        port "httpalt" {
-          to = 8081
-        }      
-
-        port "https" {
-          to = 9443
-        }
-
-        dns {
-          servers = var.dns
-        }        
+      connect {
+        native = true
       }
 
-      service {
-        name = var.servicename
-        port = "http"
-        provider = "consul"       
+      tags = [
+        "traefik.enable=true",
+        "traefik.consulcatalog.connect=false",
+        "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
+        "traefik.http.routers.${servicename}.entrypoints=web,websecure",
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
+        "traefik.http.routers.${servicename}.middlewares=redirect-web-to-websecure@internal",
+        "homepage.group=Infrastructure",
+        "homepage.name=Nginx",
+        "homepage.icon=nginx",
+        "homepage.description=Static Web Server",
+      ]
 
-        tags = [
-          "traefik.enable=true",
-          "traefik.consulcatalog.connect=false",          
-          "traefik.http.routers.${var.servicename}.rule=Host(`${var.servicename}.${var.domain}`)",
-          "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
-          "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
-        ]
+      check {
+        name     = "alive"
+        type     = "http"
+        path     = "/"
+        interval = "30s"
+        timeout  = "5s"
+      }
+    }
 
-        connect {
-          native = true
-        }
+    task "nginx" {
+      driver = "podman"
 
-        check {
-            name     = "alive"
-            type     = "http"
-            path     = "/"
-            interval = "10s"
-            timeout  = "2s"
+      config {
+        image              = "${image}"
+        ports              = ["http", "httpalt", "https"]
+        userns             = "keep-id:uid=101,gid=101"
+        image_pull_timeout = "15m"
+        logging = {
+          driver = "journald"
+          options = [
+            {
+              "tag" = "${servicename}"
+            }
+          ]
         }
       }
 
-      volume "nginx-data" {
-        type      = "host"
-        read_only = true
-        source    = "nginx-data"
-      }   
+      volume_mount {
+        volume      = "nginx-data"
+        destination = "/usr/share/nginx/html"
+        read_only   = true
+      }
 
-      task "nginx" {
-        driver = "podman"
-
-        config {
-          image = var.image
-          ports = ["http", "httpalt", "https"]        
-          userns = "keep-id:uid=101,gid=101"
-          logging = {
-            driver = "journald"
-            options = [
-              {
-                "tag" = "${var.servicename}"
-              }
-            ]
-          }        
-        }
-
-        volume_mount {
-          volume      = "nginx-data"
-          destination = "/usr/share/nginx/html"
-          read_only   = true
-        }
-
-        resources {
-          cpu    = 100
-          memory = 128
-        }
+      resources {
+        cpu    = 100
+        memory = 128
       }
     }
   }
+}

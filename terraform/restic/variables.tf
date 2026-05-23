@@ -1,23 +1,18 @@
-variable "OP_API_TOKEN" {
-  description = "Auth token for 1password connect vault"
-  type = string
-}
-
-variable "op_api_url" {
-  description = "URL for 1password connect vault"
-  type = string
-  default = "https://opapi.octant.net"
+variable "op_vault_name" {
+  description = "1Password vault name"
+  type        = string
+  default     = "Octant"
 }
 
 variable "nomad" {
   description = "Nomad server address"
-  type = string
-  default = "nomad.octant.net"
+  type        = string
+  default     = "localhost"
 }
 
 variable "image" {
-    type = string
-    default = "restic/restic:latest"
+  type    = string
+  default = "restic/restic:latest"
 }
 
 variable "restic_hostname" {
@@ -26,30 +21,28 @@ variable "restic_hostname" {
   default     = "octant-backup"
 }
 
-variable "restic_password" {
-  description = "Restic backup password"
+variable "consul" {
+  description = "Consul server address"
   type        = string
-  sensitive   = true
-}
-
-variable "AWS_ACCESS_KEY_ID" {
-  description = "S3/Backblaze key ID for restic"
-  type        = string
-  sensitive   = true
-}
-
-variable "AWS_SECRET_ACCESS_KEY" {
-  description = "S3/Backblaze key for restic"
-  type        = string
-  sensitive   = true
+  default     = "localhost"
 }
 
 variable "region" {
-    type = string
-    default = "home"
+  type    = string
+  default = "home"
 }
 
 variable "datacenter" {
-    type = string
-    default = "octant"
+  type    = string
+  default = "octant"
+}
+
+variable "domain" {
+  type    = string
+  default = "octant.local"
+}
+
+variable "certresolver" {
+  type    = string
+  default = ""
 }

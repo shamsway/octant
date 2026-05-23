@@ -1,52 +1,55 @@
-  # terraform apply -auto-approve
-  # terraform destroy -auto-approve
-
 job "postgres" {
-  region = "${region}"
+  region      = "${region}"
   datacenters = ["${datacenter}"]
   type        = "service"
 
   constraint {
-    attribute = "$${attr.kernel.name}"
-    value     = "linux"
+    attribute = "$${meta.rootless}"
+    value     = "false"
   }
 
   constraint {
-    attribute = "$${meta.rootless}"
-    value = "true"
+    attribute = "$${node.unique.name}"
+    value     = "${node_name}"
   }
 
   group "postgres" {
     count = 1
+
+    volume "postgres-data" {
+      type            = "csi"
+      source          = "postgres-data"
+      access_mode     = "single-node-writer"
+      attachment_mode = "file-system"
+    }
 
     network {
       port "postgres" {
         static = 5432
       }
 
-
       dns {
         servers = ${dns}
-      }            
-    }
-
-    volume "postgres-data" {
-      type      = "host"
-      read_only = false
-      source    = "postgres-data"
+      }
     }
 
     service {
-      name = "${servicename}"
+      name     = "${servicename}"
       provider = "consul"
-      task = "postgres"      
-      port = "postgres"
+      task     = "postgres"
+      port     = "postgres"
 
       connect {
         native = true
       }
 
-      tags = ["alloc=$${NOMAD_ALLOC_ID}"]
+      tags = [
+        "alloc=$${NOMAD_ALLOC_ID}",
+        "homepage.group=Databases",
+        "homepage.name=PostgreSQL",
+        "homepage.icon=postgres",
+        "homepage.description=Relational DB",
+      ]
 
       check {
         type     = "tcp"
@@ -56,23 +59,33 @@ job "postgres" {
       }
     }
 
-    task "postgres" {
-      driver = "podman"
+    task "volume-init" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      volume_mount {
+        volume      = "postgres-data"
+        destination = "/appdata/postgres"
+      }
 
       config {
-        image = "${image}"
-        ports = ["postgres"]
-        userns = "keep-id:uid=70,gid=70"
-        image_pull_timeout = "15m"
-        logging = {
-          driver = "journald"
-          options = [
-            {
-              "tag" = "${servicename}"
-            }
-          ]
-        } 
+        image   = "busybox:latest"
+        command = "/bin/sh"
+        args    = ["-c", "chown -R 999:999 /appdata/postgres"]
       }
+
+      resources {
+        cpu    = 100
+        memory = 64
+      }
+    }
+
+    task "postgres" {
+      driver = "docker"
 
       volume_mount {
         volume      = "postgres-data"
@@ -80,10 +93,22 @@ job "postgres" {
         read_only   = false
       }
 
+      config {
+        image = "${image}"
+        ports = ["postgres"]
+
+        logging {
+          type = "journald"
+          config {
+            tag = "${servicename}"
+          }
+        }
+      }
+
       env {
-        POSTGRES_DB       = "postgres"
-        POSTGRES_USER     = "postgres"
-        PGDATA            = "/appdata/postgres"
+        POSTGRES_DB   = "postgres"
+        POSTGRES_USER = "postgres"
+        PGDATA        = "/appdata/postgres/data"
       }
 
       template {
@@ -98,6 +123,6 @@ EOT
         cpu    = 100
         memory = 256
       }
-    }  
+    }
   }
 }

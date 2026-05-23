@@ -9,6 +9,7 @@ broker_address = "mqtt.service.consul"
 broker_port = 1883
 topic = "gcp/vm/preempted"
 
+
 # Callback function for connection status
 def on_connect(client, userdata, flags, rc):
     logging.debug(f"on_connect called with reason_code: {rc}")
@@ -17,9 +18,11 @@ def on_connect(client, userdata, flags, rc):
     else:
         logging.error(f"Failed to connect, return code: {rc}")
 
+
 # Callback function for publish status
 def on_publish(client, userdata, mid):
     logging.debug(f"Message published with mid: {mid}")
+
 
 # Create an MQTT client instance
 client = mqtt.Client()

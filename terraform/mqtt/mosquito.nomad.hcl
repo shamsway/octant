@@ -46,7 +46,7 @@ job "mqtt" {
       }
       dns {
         servers = var.dns
-      }      
+      }
     }
 
     service {
@@ -57,7 +57,7 @@ job "mqtt" {
       connect {
         native = true
       }
-            
+
       check {
         name     = "alive"
         type     = "tcp"
@@ -82,7 +82,7 @@ job "mqtt" {
               "tag" = "${var.servicename}"
             }
           ]
-        }         
+        }
       }
 
       resources {

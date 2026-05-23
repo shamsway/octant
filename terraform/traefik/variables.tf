@@ -1,13 +1,19 @@
+variable "op_vault_name" {
+  description = "1Password vault name"
+  type        = string
+  default     = "Octant"
+}
+
 variable "nomad" {
   description = "Nomad server address"
-  type = string
-  default = "nomad.octant.net"
+  type        = string
+  default     = "localhost"
 }
 
 variable "consul" {
-  description = "Consul server address"
-  type = string
-  default = "consul.octant.net"
+  description = "Consul server address (must be routable from inside containers, not localhost)"
+  type        = string
+  default     = "192.168.122.101"
 }
 
 variable "region" {
@@ -31,13 +37,13 @@ variable "nginx_image" {
 }
 
 variable "domain" {
-  type = string
-  default = "octant.net"
+  type    = string
+  default = "octant.local"
 }
 
 variable "certresolver" {
-  type = string
-  default = "cloudflare"
+  type    = string
+  default = ""
 }
 
 variable "servicename" {
@@ -46,16 +52,14 @@ variable "servicename" {
 }
 
 variable "dns" {
-  type = list(string)
-  default = ["192.168.1.1", "192.168.1.6", "192.168.1.7"]
+  type    = list(string)
+  default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"]
 }
 
 
-variable "CLOUDFLARE_USERNAME" {
-  type = string
+variable "admin_email" {
+  description = "Admin email for ACME certificate registration"
+  type        = string
+  default     = ""
 }
 
-variable "CLOUDFLARE_API_KEY" {
-  type = string
-  sensitive = true
-}

@@ -83,7 +83,7 @@ job "homeassistant" {
 
       dns {
         servers = var.dns
-      }      
+      }
     }
 
     volume "homeassistant-data" {
@@ -103,13 +103,13 @@ job "homeassistant" {
         "traefik.http.routers.${var.servicename}.rule=Host(`ha.${var.domain}`)",
         "traefik.http.routers.${var.servicename}.entrypoints=web,websecure",
         "traefik.http.routers.${var.servicename}.tls.certresolver=${var.certresolver}",
-        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",  
+        "traefik.http.routers.${var.servicename}.middlewares=redirect-web-to-websecure@internal",
       ]
 
       connect {
         native = true
       }
-              
+
       check {
         name     = "alive"
         type     = "http"
@@ -126,7 +126,7 @@ job "homeassistant" {
       port = "music"
       tags = [
         "traefik.enable=true",
-        "traefik.consulcatalog.connect=false",          
+        "traefik.consulcatalog.connect=false",
         "traefik.http.routers.musicassistant.rule=Host(`music.${var.domain}`)",
         "traefik.http.routers.musicassistant.entrypoints=web,websecure",
         "traefik.http.routers.musicassistant.tls.certresolver=${var.certresolver}",
@@ -135,7 +135,7 @@ job "homeassistant" {
       connect {
         native = true
       }
-              
+
       check {
         name     = "alive"
         type     = "tcp"
@@ -160,7 +160,7 @@ job "homeassistant" {
               "tag" = "homeassistant"
             }
           ]
-        }         
+        }
       }
 
       volume_mount {
@@ -170,7 +170,7 @@ job "homeassistant" {
       }
 
       env {
-        
+
       }
 
       resources {
@@ -194,7 +194,7 @@ job "homeassistant" {
               "tag" = "musicassistant"
             }
           ]
-        }         
+        }
       }
 
       resources {
@@ -228,14 +228,14 @@ job "homeassistant" {
       resources {
         memory = 128
       }
-    }    
+    }
   }
 
   group "ha_cloudflared" {
-    network {      
+    network {
       dns {
         servers = var.dns
-      }      
+      }
     }
 
     task "ha_cloudflared" {
@@ -253,16 +253,18 @@ job "homeassistant" {
               "tag" = "ha_cloudflared"
             }
           ]
-        }         
+        }
       }
 
+      # Provide via Nomad variable or 1Password integration in main.tf;
+      # never commit a real cloudflared tunnel token.
       env {
-        TUNNEL_TOKEN="eyJhIjoiMmYxYzBlZWU4NmU0YTg1OTkyMWQ2MmY4ZTU3NzYwYmYiLCJ0IjoiNWUxNGE5ZjMtMjkzNy00NWQwLWIzNDAtYmEzZTU1NTI0N2YwIiwicyI6Ik9HRTFZekF4WkRFdE5XUmhPUzAwWkRjekxUaGlZbVl0T1dJeU1Ua3pOams0WVdWbCJ9"
+        TUNNEL_TOKEN = "REPLACE_VIA_NOMAD_VARIABLE"
       }
 
       resources {
         memory = 128
-      }      
+      }
     }
   }
 }

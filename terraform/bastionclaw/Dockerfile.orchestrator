@@ -1,0 +1,35 @@
+FROM node:22-slim
+
+# Install the real Docker CLI (static binary). podman-docker doesn't work here
+# because it runs a local podman instance instead of connecting to the host
+# socket via DOCKER_HOST — and overlay-on-overlay fails inside a container.
+# The real Docker CLI correctly uses DOCKER_HOST=unix:///run/podman/podman.sock
+# to talk to the host's rootless Podman over the mounted socket.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl && \
+    curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz | \
+    tar xz --strip-components=1 -C /usr/local/bin docker/docker && \
+    apt-get purge -y curl && apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy manifests first for layer caching — only reinstall deps when these change.
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Compiled TypeScript output
+COPY dist/ ./dist/
+
+# Agent container assets (Dockerfile, skills, agent-runner source)
+COPY container/ ./container/
+
+# Compiled WebUI frontend
+COPY ui/dist/ ./ui/dist/
+
+# Runtime directories expected by BastionClaw
+RUN mkdir -p groups store data
+
+EXPOSE 3100
+
+CMD ["node", "dist/index.js"]

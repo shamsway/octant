@@ -17,7 +17,7 @@ job "redis" {
       }
       dns {
         servers = ${dns}
-      }      
+      }
     }
 
     service {
@@ -28,7 +28,14 @@ job "redis" {
       connect {
         native = true
       }
-              
+
+      tags = [
+        "homepage.group=Databases",
+        "homepage.name=Redis",
+        "homepage.icon=redis",
+        "homepage.description=Key-Value Store",
+      ]
+
       check {
         name     = "alive"
         type     = "tcp"
@@ -52,9 +59,9 @@ job "redis" {
               "tag" = "${servicename}"
             }
           ]
-        }         
+        }
       }
-      
+
       resources {
         cpu    = 500
         memory = 256

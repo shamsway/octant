@@ -20,7 +20,7 @@ job "unifi" {
         static = 8080
         to = 8080
        }
-      port "https" { 
+      port "https" {
         static = 4443
         to = 4443
       }
@@ -55,13 +55,13 @@ job "unifi" {
       type      = "host"
       read_only = false
       source    = "unifi-data"
-    }    
+    }
 
     volume "backups" {
       type      = "host"
       read_only = false
       source    = "backups"
-    }    
+    }
 
     service {
       name = "${servicename}"
@@ -72,7 +72,7 @@ job "unifi" {
         "traefik.consulcatalog.connect=false",
         "traefik.http.routers.${servicename}.rule=Host(`${servicename}.${domain}`)",
         "traefik.http.routers.${servicename}.entrypoints=web,websecure",
-        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",      
+        "traefik.http.routers.${servicename}.tls.certresolver=${certresolver}",
         "traefik.http.routers.${servicename}.middlewares=redirect-web-to-websecure@internal",
         "traefik.http.services.${servicename}.loadbalancer.serverstransport=skipcertcheck@file",
         "traefik.http.services.${servicename}.loadbalancer.server.scheme=https",
@@ -122,7 +122,7 @@ job "unifi" {
         propagation_mode = "host-to-task"
         destination      = "$${NOMAD_TASK_DIR}/backup"
         read_only        = false
-      }      
+      }
 
       env {
         PUID              = "2000"
@@ -130,7 +130,7 @@ job "unifi" {
         TZ                = "Amercica/New_York"
         UNIFI_HTTP_PORT   = NOMAD_PORT_http
         UNIFI_HTTPS_PORT  = NOMAD_PORT_https
-        UNIFI_STDOUT      = true 
+        UNIFI_STDOUT      = true
       }
 
       resources {

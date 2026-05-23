@@ -8,29 +8,16 @@
   [entryPoints.web]
     address = ":80"
     [entryPoints.web.http.redirections.entryPoint]
-	  to = "websecure"
+      to = "websecure"
       scheme = "https"
   [entryPoints.http]
-    address = ":8080"      
+    address = ":8080"
   [entryPoints.traefik]
     address = ":9002"
   [entryPoints.websecure]
     address = ":443"
   [entryPoints.metrics]
     address = ":8082"
-[http]
-  [http.routers]
-    [http.routers.octant]
-      entryPoints = ["websecure"]
-      rule = "Host(`*.octant.net`)"
-      service = "octant.net"
-      [http.routers.octant.tls]
-        certResolver = "cloudflare"
-    [http.routers.consul]
-      entryPoints = ["http", "websecure"]
-      rule = "Host(`*.consul`)"
-      service = "consul-service"
-
 [accessLog]
   format = "json"
   filePath = "/traefik-data/traefik-access.log"
@@ -38,7 +25,7 @@
   [http.middlewares.https-redirect.redirectscheme]
     scheme = "https"
 [certificatesResolvers.cloudflare.acme]
-  email = "[changeme]"
+  email = "${admin_email}"
   storage = "/acme/acme.json"
   [certificatesResolvers.cloudflare.acme.dnsChallenge]
     provider = "cloudflare"
@@ -52,22 +39,19 @@
   dashboard = true
   insecure = true
 [ping]
-[providers]
-  [providers.file]
-    filename = "/traefik-config/dynamic.toml"  
 [providers.consulcatalog]
   exposedByDefault = false
   prefix = "traefik"
-  defaultRule = "Host(`{{ .Name }}.octant.net`) || Host(`{{ .Name }}.service.consul`)"
-  connectAware = true
-  connectByDefault = true        
+  defaultRule = "Host(`{{ .Name }}.${domain}`) || Host(`{{ .Name }}.service.consul`)"
+  connectAware = false
+  connectByDefault = false
   [providers.consulcatalog.endpoint]
-    address = "consul.octant.net:8501"
+    address = "consul.lab.shamsway.net:8501"
     scheme = "https"
-    datacenter = "octant"
+    datacenter = "${datacenter}"
     endpointWaitTime = "15s"
-    [tls]
-      insecureskipverify = true
-      ca = "/acme/consul-agent-ca.pem"
-      certFile = "/acme/octant-server-traefik-1.pem"
-      keyFile  = "/acme/octant-server-traefik-1-key.pem"
+    [providers.consulcatalog.endpoint.tls]
+      insecureSkipVerify = true
+      ca = "/tls/consul-agent-ca.pem"
+      cert = "/tls/${datacenter}-client-consul-0.pem"
+      key  = "/tls/${datacenter}-client-consul-0-key.pem"

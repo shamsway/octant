@@ -7,7 +7,7 @@ resource "consul_node" "ollama_node" {
   meta = {
     "external-node"  = "true"
     "external-probe" = "true"
-  }  
+  }
 }
 
 resource "consul_service" "ollama_service" {

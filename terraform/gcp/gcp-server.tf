@@ -6,7 +6,7 @@ terraform {
     tailscale = {
       source = "tailscale/tailscale"
       version = "0.15.0"
-    }    
+    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 4.0"
@@ -85,7 +85,7 @@ resource "google_compute_firewall" "allow_ssh" {
   name    = "allow-ssh"
   network = google_compute_network.vpc_network.self_link
 
-  
+
   allow {
     protocol = "tcp"
     ports    = ["22"]
@@ -140,7 +140,7 @@ resource "google_compute_instance" "phil" {
     preemptible       = true
     automatic_restart = false
     provisioning_model          = "SPOT"
-    instance_termination_action = "STOP"  
+    instance_termination_action = "STOP"
   }
 
   metadata = {
@@ -172,7 +172,7 @@ resource "google_compute_instance" "phil" {
       "sudo sysctl -p",
       "sudo echo \"net.ipv4.ip_forward=1\" >> /etc/sysctl.conf",
       "sudo iptables -t mangle -A FORWARD -i tailscale0 -o ens4 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu",
-      "sudo /usr/sbin/iptables-save > /etc/iptables/rules.v4",   
+      "sudo /usr/sbin/iptables-save > /etc/iptables/rules.v4",
       "sudo apt install -y python3 python3-paho-mqtt",
       "sudo chmod 777 /usr/local/bin",
       "sudo mkdir -p /root/.ssh",
@@ -192,7 +192,7 @@ resource "google_compute_instance" "phil" {
   provisioner "file" {
     source      = "${path.module}/shutdown-script.sh"
     destination = "/usr/local/bin/shutdown-script.sh"
-  }  
+  }
 
   provisioner "remote-exec" {
     inline = [ "sudo chmod +x /usr/local/bin/shutdown-script.sh" ]

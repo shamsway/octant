@@ -11,7 +11,7 @@ terraform {
     tailscale = {
     source = "tailscale/tailscale"
     version = "0.15.0"
-    }    
+    }
   }
 }
 
@@ -42,7 +42,7 @@ data "cloudflare_zones" "domain" {
 resource "cloudflare_record" "edgerouter" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "edgerouter"
-  value   = "192.168.1.1"
+  content = "192.168.1.1"
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -51,7 +51,7 @@ resource "cloudflare_record" "edgerouter" {
 resource "cloudflare_record" "joan" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "joan"
-  value   = "192.168.1.5"
+  content = "192.168.1.5"
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -60,7 +60,7 @@ resource "cloudflare_record" "joan" {
 resource "cloudflare_record" "jerry" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "jerry"
-  value   = "192.168.1.6"
+  content = "192.168.1.6"
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -69,7 +69,7 @@ resource "cloudflare_record" "jerry" {
 resource "cloudflare_record" "bobby" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "bobby"
-  value   = "192.168.1.7"
+  content = "192.168.1.7"
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -78,7 +78,7 @@ resource "cloudflare_record" "bobby" {
 resource "cloudflare_record" "billy" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "billy"
-  value   = "192.168.1.8"
+  content = "192.168.1.8"
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -87,7 +87,7 @@ resource "cloudflare_record" "billy" {
 resource "cloudflare_record" "robert" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "robert"
-  value   = "192.168.1.10"
+  content = "192.168.1.10"
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -96,7 +96,7 @@ resource "cloudflare_record" "robert" {
 resource "cloudflare_record" "phil" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "phil"
-  value   = data.tailscale_device.phil.addresses[0]
+  content = data.tailscale_device.phil.addresses[0]
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -105,7 +105,7 @@ resource "cloudflare_record" "phil" {
 resource "cloudflare_record" "consul-a01" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "consul"
-  value   = cloudflare_record.jerry.value
+  content = cloudflare_record.jerry.content
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -114,7 +114,7 @@ resource "cloudflare_record" "consul-a01" {
 resource "cloudflare_record" "consul-a02" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "consul"
-  value   = cloudflare_record.bobby.value
+  content = cloudflare_record.bobby.content
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -123,7 +123,7 @@ resource "cloudflare_record" "consul-a02" {
 resource "cloudflare_record" "consul-a03" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "consul"
-  value   = cloudflare_record.billy.value
+  content = cloudflare_record.billy.content
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -132,7 +132,7 @@ resource "cloudflare_record" "consul-a03" {
 resource "cloudflare_record" "consul-a04" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "consul"
-  value   = cloudflare_record.robert.value
+  content = cloudflare_record.robert.content
   type    = "A"
   proxied = false
   allow_overwrite = false
@@ -141,7 +141,7 @@ resource "cloudflare_record" "consul-a04" {
 resource "cloudflare_record" "nomad-a01" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "nomad"
-  value   = cloudflare_record.jerry.value
+  content = cloudflare_record.jerry.content
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -150,7 +150,7 @@ resource "cloudflare_record" "nomad-a01" {
 resource "cloudflare_record" "nomad-a02" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "nomad"
-  value   = cloudflare_record.bobby.value
+  content = cloudflare_record.bobby.content
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -159,7 +159,7 @@ resource "cloudflare_record" "nomad-a02" {
 resource "cloudflare_record" "nomad-a03" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "nomad"
-  value   = cloudflare_record.billy.value
+  content = cloudflare_record.billy.content
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -168,7 +168,7 @@ resource "cloudflare_record" "nomad-a03" {
 resource "cloudflare_record" "nomad-a04" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "nomad"
-  value   = cloudflare_record.robert.value
+  content = cloudflare_record.robert.content
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -177,7 +177,7 @@ resource "cloudflare_record" "nomad-a04" {
 resource "cloudflare_record" "wildcardmad-a01" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "*"
-  value   = cloudflare_record.jerry.value
+  content = cloudflare_record.jerry.content
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -186,7 +186,7 @@ resource "cloudflare_record" "wildcardmad-a01" {
 resource "cloudflare_record" "wildcardmad-a02" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "*"
-  value   = cloudflare_record.bobby.value
+  content = cloudflare_record.bobby.content
   type    = "A"
   proxied = false
   allow_overwrite = true
@@ -195,7 +195,7 @@ resource "cloudflare_record" "wildcardmad-a02" {
 resource "cloudflare_record" "wildcardmad-a03" {
   zone_id = data.cloudflare_zones.domain.zones[0].id
   name    = "*"
-  value   = cloudflare_record.robert.value
+  content = cloudflare_record.robert.content
   type    = "A"
   proxied = false
   allow_overwrite = true

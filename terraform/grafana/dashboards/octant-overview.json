@@ -1,0 +1,2496 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "grafana-clock-panel",
+      "name": "Clock",
+      "version": "2.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "piechart",
+      "name": "Pie Chart",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "bargauge",
+      "name": "Bar Gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar Chart",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time Series",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "row",
+      "name": "Row",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Octant homelab cluster overview — infrastructure health, GPU status, AI services, and observability",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "grafana-clock-panel",
+      "title": "Clock",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "options": {
+        "mode": "time",
+        "clockType": "24hour",
+        "timezone": "browser",
+        "timezoneData": {
+          "name": "Browser Time",
+          "zone": "browser"
+        },
+        "timeSettings": {
+          "fontSize": "18px",
+          "fontWeight": "normal"
+        },
+        "dateSettings": {
+          "showDate": true,
+          "dateFormat": "YYYY-MM-DD",
+          "fontSize": "12px",
+          "fontWeight": "normal"
+        },
+        "countdownSettings": {
+          "endCountdownTime": "2025-01-01T00:00:00.000Z",
+          "endText": "00:00:00"
+        },
+        "countupSettings": {
+          "beginCountupTime": "2025-01-01T00:00:00.000Z",
+          "beginText": "00:00:00"
+        },
+        "bgColor": "",
+        "fontMono": false,
+        "refresh": "1s"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "datasource": { "type": "datasource", "uid": "-- Dashboard --" },
+      "targets": [],
+      "transparent": false
+    },
+
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Cluster Uptime",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "time() - min(node_boot_time_seconds{job=\"node-exporter\"})",
+          "legendFormat": "Uptime",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "text": {}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Running Jobs",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(nomad_nomad_job_summary_running > 0)",
+          "legendFormat": "Running Jobs",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Nodes Online",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(up{job=\"node-exporter\"} == 1)",
+          "legendFormat": "Nodes",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Alerts Firing",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(ALERTS{alertstate=\"firing\"}) OR on() vector(0)",
+          "legendFormat": "Firing",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Scrape Targets",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(up)",
+          "legendFormat": "Up",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 7,
+      "type": "row",
+      "title": "Cluster Health",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+
+    {
+      "id": 8,
+      "type": "gauge",
+      "title": "octant-01 CPU",
+      "gridPos": { "x": 0, "y": 5, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 - (avg by (instance)(rate(node_cpu_seconds_total{mode=\"idle\",job=\"node-exporter\",instance=\"192.168.122.101:9100\"}[5m])) * 100)",
+          "legendFormat": "CPU %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 9,
+      "type": "gauge",
+      "title": "octant-01 Memory",
+      "gridPos": { "x": 4, "y": 5, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{job=\"node-exporter\",instance=\"192.168.122.101:9100\"} / node_memory_MemTotal_bytes{job=\"node-exporter\",instance=\"192.168.122.101:9100\"})",
+          "legendFormat": "Memory %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 10,
+      "type": "gauge",
+      "title": "octant-01 Disk",
+      "gridPos": { "x": 8, "y": 5, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - node_filesystem_avail_bytes{job=\"node-exporter\",instance=\"192.168.122.101:9100\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"node-exporter\",instance=\"192.168.122.101:9100\",mountpoint=\"/\"})",
+          "legendFormat": "Disk %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 11,
+      "type": "gauge",
+      "title": "octant-02 CPU",
+      "gridPos": { "x": 12, "y": 5, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 - (avg by (instance)(rate(node_cpu_seconds_total{mode=\"idle\",job=\"node-exporter\",instance=\"192.168.122.102:9100\"}[5m])) * 100)",
+          "legendFormat": "CPU %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 12,
+      "type": "gauge",
+      "title": "octant-02 Memory",
+      "gridPos": { "x": 16, "y": 5, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{job=\"node-exporter\",instance=\"192.168.122.102:9100\"} / node_memory_MemTotal_bytes{job=\"node-exporter\",instance=\"192.168.122.102:9100\"})",
+          "legendFormat": "Memory %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 13,
+      "type": "gauge",
+      "title": "octant-02 Disk",
+      "gridPos": { "x": 20, "y": 5, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - node_filesystem_avail_bytes{job=\"node-exporter\",instance=\"192.168.122.102:9100\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"node-exporter\",instance=\"192.168.122.102:9100\",mountpoint=\"/\"})",
+          "legendFormat": "Disk %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 14,
+      "type": "gauge",
+      "title": "octant-03 CPU",
+      "gridPos": { "x": 0, "y": 11, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 - (avg by (instance)(rate(node_cpu_seconds_total{mode=\"idle\",job=\"node-exporter\",instance=\"192.168.122.103:9100\"}[5m])) * 100)",
+          "legendFormat": "CPU %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 15,
+      "type": "gauge",
+      "title": "octant-03 Memory",
+      "gridPos": { "x": 4, "y": 11, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{job=\"node-exporter\",instance=\"192.168.122.103:9100\"} / node_memory_MemTotal_bytes{job=\"node-exporter\",instance=\"192.168.122.103:9100\"})",
+          "legendFormat": "Memory %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 16,
+      "type": "gauge",
+      "title": "octant-03 Disk",
+      "gridPos": { "x": 8, "y": 11, "w": 4, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - node_filesystem_avail_bytes{job=\"node-exporter\",instance=\"192.168.122.103:9100\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"node-exporter\",instance=\"192.168.122.103:9100\",mountpoint=\"/\"})",
+          "legendFormat": "Disk %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "Nomad Raft Peers",
+      "gridPos": { "x": 12, "y": 11, "w": 3, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(up{job=\"nomad\"} == 1)",
+          "legendFormat": "Peers",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "Consul Raft Peers",
+      "gridPos": { "x": 15, "y": 11, "w": 3, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "consul_raft_peers",
+          "legendFormat": "Peers",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "Running Allocations",
+      "gridPos": { "x": 18, "y": 11, "w": 3, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(nomad_client_allocations_running)",
+          "legendFormat": "Running",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "stat",
+      "title": "Failed Allocations",
+      "gridPos": { "x": 21, "y": 11, "w": 3, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(nomad_client_allocs_failed)",
+          "legendFormat": "Failed",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 21,
+      "type": "row",
+      "title": "GPU Accelerator — 8x MI300X",
+      "gridPos": { "x": 0, "y": 17, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "GPU Count",
+      "gridPos": { "x": 0, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "amd_gpu_nodes_total{cluster_name=\"octant-lab\"}",
+          "legendFormat": "GPUs",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "purple", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Total VRAM",
+      "gridPos": { "x": 3, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(amd_gpu_total_vram{cluster_name=\"octant-lab\"}) / 1024",
+          "legendFormat": "VRAM GiB",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "displayName": "${__value} GiB",
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "purple", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "VRAM In Use",
+      "gridPos": { "x": 6, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(amd_gpu_used_vram{cluster_name=\"octant-lab\"}) / 1024",
+          "legendFormat": "Used GiB",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 400 },
+              { "color": "red", "value": 700 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 25,
+      "type": "stat",
+      "title": "Healthy GPUs",
+      "gridPos": { "x": 9, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(amd_gpu_health{cluster_name=\"octant-lab\"})",
+          "legendFormat": "Healthy",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 6 },
+              { "color": "green", "value": 8 }
+            ]
+          },
+          "mappings": [],
+          "noValue": "0/8"
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "Driver Version",
+      "gridPos": { "x": 12, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max by (driver_version)(amd_gpu_health{cluster_name=\"octant-lab\",gpu_id=\"0\"})",
+          "legendFormat": "{{driver_version}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "name",
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "text" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "text", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 27,
+      "type": "stat",
+      "title": "Total Power Draw",
+      "gridPos": { "x": 15, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(amd_gpu_power_usage{cluster_name=\"octant-lab\"})",
+          "legendFormat": "Watts",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3000 },
+              { "color": "red", "value": 5000 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 28,
+      "type": "stat",
+      "title": "Avg Junction Temp",
+      "gridPos": { "x": 18, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg(amd_gpu_junction_temperature{cluster_name=\"octant-lab\"})",
+          "legendFormat": "°C",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 29,
+      "type": "stat",
+      "title": "Avg GFX Activity",
+      "gridPos": { "x": 21, "y": 18, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg(amd_gpu_gfx_activity{cluster_name=\"octant-lab\"})",
+          "legendFormat": "Activity %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 30,
+      "type": "bargauge",
+      "title": "GFX Activity by GPU",
+      "gridPos": { "x": 0, "y": 22, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max by (gpu_id)(amd_gpu_gfx_activity{cluster_name=\"octant-lab\"})",
+          "legendFormat": "GPU {{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color",
+        "showUnfilled": true,
+        "minVizWidth": 10,
+        "minVizHeight": 16,
+        "namePlacement": "auto",
+        "text": {}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 31,
+      "type": "bargauge",
+      "title": "VRAM Usage by GPU",
+      "gridPos": { "x": 12, "y": 22, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max by (gpu_id)(amd_gpu_used_vram{cluster_name=\"octant-lab\"}) / max by (gpu_id)(amd_gpu_total_vram{cluster_name=\"octant-lab\"}) * 100",
+          "legendFormat": "GPU {{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color",
+        "showUnfilled": true,
+        "minVizWidth": 10,
+        "minVizHeight": 16,
+        "namePlacement": "auto",
+        "text": {}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "GPU Utilization Over Time",
+      "gridPos": { "x": 0, "y": 30, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max by (gpu_id)(amd_gpu_gfx_activity{cluster_name=\"octant-lab\"})",
+          "legendFormat": "GPU {{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "Junction Temperature",
+      "gridPos": { "x": 12, "y": 30, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max by (gpu_id)(amd_gpu_junction_temperature{cluster_name=\"octant-lab\"})",
+          "legendFormat": "GPU {{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 34,
+      "type": "row",
+      "title": "Service Catalog",
+      "gridPos": { "x": 0, "y": 38, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+
+    {
+      "id": 35,
+      "type": "stat",
+      "title": "Running Allocs",
+      "gridPos": { "x": 0, "y": 39, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(nomad_client_allocations_running)",
+          "legendFormat": "Allocations",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 36,
+      "type": "gauge",
+      "title": "Scrape Targets Up",
+      "gridPos": { "x": 6, "y": 39, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(up == 1) / count(up) * 100",
+          "legendFormat": "% Up",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 37,
+      "type": "stat",
+      "title": "Alerts Firing",
+      "gridPos": { "x": 12, "y": 39, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "count(ALERTS{alertstate=\"firing\"}) OR on() vector(0)",
+          "legendFormat": "Firing",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 38,
+      "type": "gauge",
+      "title": "CephFS Usage",
+      "gridPos": { "x": 18, "y": 39, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (1 - node_filesystem_avail_bytes{job=\"node-exporter\",instance=\"192.168.122.101:9100\",mountpoint=\"/mnt/services\"} / node_filesystem_size_bytes{job=\"node-exporter\",instance=\"192.168.122.101:9100\",mountpoint=\"/mnt/services\"})",
+          "legendFormat": "CephFS %",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 39,
+      "type": "table",
+      "title": "Service Health",
+      "gridPos": { "x": 0, "y": 43, "w": 24, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "up",
+          "legendFormat": "",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Value",
+            "desc": true
+          }
+        ],
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": ["sum"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Down", "color": "red" },
+                "1": { "text": "Up", "color": "green" }
+              }
+            }
+          ],
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "job" },
+            "properties": [
+              { "id": "displayName", "value": "Service" },
+              { "id": "custom.width", "value": 200 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "instance" },
+            "properties": [
+              { "id": "displayName", "value": "Instance" },
+              { "id": "custom.width", "value": 250 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "displayName", "value": "Status" },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "custom.width", "value": 100 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [
+              { "id": "custom.hidden", "value": true }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "__name__" },
+            "properties": [
+              { "id": "custom.hidden", "value": true }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": [
+              { "displayName": "Value", "desc": false }
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "id": 40,
+      "type": "piechart",
+      "title": "Jobs by Status",
+      "gridPos": { "x": 0, "y": 53, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_nomad_job_status_running",
+          "legendFormat": "Running",
+          "refId": "A"
+        },
+        {
+          "expr": "nomad_nomad_job_status_dead",
+          "legendFormat": "Dead",
+          "refId": "B"
+        },
+        {
+          "expr": "nomad_nomad_job_status_pending",
+          "legendFormat": "Pending",
+          "refId": "C"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "pieType": "pie",
+        "displayLabels": ["percent", "name"],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Running" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Dead" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Pending" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "id": 41,
+      "type": "barchart",
+      "title": "Allocations per Node",
+      "gridPos": { "x": 12, "y": 53, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_client_allocations_running",
+          "legendFormat": "{{instance}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.6,
+        "groupWidth": 0.7,
+        "fillOpacity": 80,
+        "gradientMode": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "instance",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 80
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 42,
+      "type": "row",
+      "title": "AI / LLM Stack",
+      "gridPos": { "x": 0, "y": 61, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+
+    {
+      "id": 43,
+      "type": "stat",
+      "title": "LiteLLM",
+      "gridPos": { "x": 0, "y": 62, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_nomad_job_summary_running{exported_job=\"litellm\"}",
+          "legendFormat": "LiteLLM",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Stopped", "color": "red" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 999,
+                "result": { "text": "Running", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 44,
+      "type": "stat",
+      "title": "Open WebUI",
+      "gridPos": { "x": 4, "y": 62, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_nomad_job_summary_running{exported_job=\"open-webui\"}",
+          "legendFormat": "Open WebUI",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Stopped", "color": "red" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 999,
+                "result": { "text": "Running", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 45,
+      "type": "stat",
+      "title": "Phoenix",
+      "gridPos": { "x": 8, "y": 62, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_nomad_job_summary_running{exported_job=\"phoenix\"}",
+          "legendFormat": "Phoenix",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Stopped", "color": "red" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 999,
+                "result": { "text": "Running", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 46,
+      "type": "stat",
+      "title": "Neo4j",
+      "gridPos": { "x": 12, "y": 62, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_nomad_job_summary_running{exported_job=\"neo4j\"}",
+          "legendFormat": "Neo4j",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Stopped", "color": "red" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 999,
+                "result": { "text": "Running", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 47,
+      "type": "stat",
+      "title": "Graphiti",
+      "gridPos": { "x": 16, "y": 62, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_nomad_job_summary_running{exported_job=\"graphiti\"}",
+          "legendFormat": "Graphiti",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Stopped", "color": "red" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 999,
+                "result": { "text": "Running", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 48,
+      "type": "stat",
+      "title": "Qdrant",
+      "gridPos": { "x": 20, "y": 62, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nomad_nomad_job_summary_running{exported_job=\"qdrant\"}",
+          "legendFormat": "Qdrant",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Stopped", "color": "red" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 999,
+                "result": { "text": "Running", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 49,
+      "type": "timeseries",
+      "title": "Trace Ingestion Rate",
+      "gridPos": { "x": 0, "y": 66, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(tempo_distributor_traces_per_batch_sum[5m]))",
+          "legendFormat": "Spans/sec",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "opacity",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "id": 50,
+      "type": "row",
+      "title": "Observability",
+      "gridPos": { "x": 0, "y": 74, "w": 24, "h": 1 },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 51,
+          "type": "stat",
+          "title": "Prometheus Targets Up",
+          "gridPos": { "x": 0, "y": 75, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "count(up == 1)",
+              "legendFormat": "Up",
+              "refId": "A"
+            },
+            {
+              "expr": "count(up)",
+              "legendFormat": "Total",
+              "refId": "B"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          }
+        },
+
+        {
+          "id": 52,
+          "type": "stat",
+          "title": "Loki Ingestion Rate",
+          "gridPos": { "x": 6, "y": 75, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(rate(loki_write_sent_bytes_total[5m]))",
+              "legendFormat": "Bytes/sec",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "color": { "mode": "fixed", "fixedColor": "orange" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "orange", "value": null }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          }
+        },
+
+        {
+          "id": 53,
+          "type": "stat",
+          "title": "Tempo Trace Rate",
+          "gridPos": { "x": 12, "y": 75, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(rate(tempo_distributor_traces_per_batch_sum[5m]))",
+              "legendFormat": "Spans/sec",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "fixed", "fixedColor": "blue" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "blue", "value": null }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          }
+        },
+
+        {
+          "id": 54,
+          "type": "timeseries",
+          "title": "Log Volume",
+          "gridPos": { "x": 0, "y": 79, "w": 24, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(rate(loki_source_journal_target_lines_total[5m]))",
+              "legendFormat": "Lines/sec",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          }
+        }
+      ]
+    }
+
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["octant", "overview"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"
+    ]
+  },
+  "timezone": "browser",
+  "title": "Octant Lab Overview",
+  "uid": "octant-overview",
+  "version": 1,
+  "weekStart": ""
+}
