@@ -51,8 +51,8 @@
 ### Traefik
 - **Reverse proxy:** Routes external HTTPS traffic to backend services
 - **Consul Catalog provider:** Auto-discovers services from Consul
-- **TLS:** Handles Let's Encrypt certificates for `*.lab.shamsway.net`
-- **Dashboard:** Available at `https://traefik.lab.shamsway.net`
+- **TLS:** Handles Let's Encrypt certificates for `*.lab.example.com`
+- **Dashboard:** Available at `https://traefik.lab.example.com`
 
 ### Ceph
 - **Version:** 16.2.15 (Pacific), deployed via cephadm
@@ -69,14 +69,14 @@
 ## Request Flow
 
 ```
-Client → DNS (*.lab.shamsway.net)
+Client → DNS (*.lab.example.com)
        → HAProxy (:443)
        → Traefik (Consul Catalog routing)
        → Nomad-scheduled container (Podman or Docker)
        → Data on CephFS or CSI RBD
 ```
 
-1. DNS resolves `<service>.lab.shamsway.net` to the cluster's Tailscale IP
+1. DNS resolves `<service>.lab.example.com` to the cluster's Tailscale IP
 2. HAProxy terminates the connection and forwards to Traefik on the cluster
 3. Traefik uses Consul Catalog to find the backend service and its healthy instances
 4. The request reaches the container (Podman on rootless agents, Docker on root agents)

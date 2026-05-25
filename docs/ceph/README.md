@@ -1,5 +1,11 @@
 # Install Ceph on the first node
 
+> **Note:** This document predates the current 3-node KVM cluster and reflects an
+> earlier 4-node bare-metal topology (hostnames `node-a` through `node-d`). The
+> Ceph install, OSD provisioning, and RBD examples remain useful as reference,
+> but example hostnames, device paths, and the partition layout will not match
+> a current `octant-01/02/03` deployment one-for-one.
+
 Disable local NFS server
 
 ```bash
@@ -19,13 +25,13 @@ sudo ceph cephadm set-user hashi
 NOTE: `sudo apt install ceph-common cephadm xfsprogs` may be all that is needed for everything but the first ceph node?
 NOTE: Run systemctl stop nfs-client to temporarily disable the NFS client before bootstrapping the new node. This is to avoid the NFS client from interfering with the Ceph bootstrap process.
 
-ceph orch host add jerry 192.168.1.6 --labels _admin
+ceph orch host add node-a 192.168.1.6 --labels _admin
 
 # Configure additional nodes
 
-ceph orch host add bobby 192.168.1.7 --labels _admin
-ceph orch host add billy 192.168.1.8 --labels _admin
-ceph orch host add robert 192.168.1.10 --labels _admin
+ceph orch host add node-b 192.168.1.7 --labels _admin
+ceph orch host add node-c 192.168.1.8 --labels _admin
+ceph orch host add node-d 192.168.1.10 --labels _admin
 
 ## Prepare disk(s)
 
@@ -64,8 +70,8 @@ ceph orch daemon add osd *<host>*:*<device-path>*
 (see https://docs.ceph.com/en/latest/cephadm/services/osd/#cephadm-deploy-osds)
 
 Examples:
-Raw disk: `ceph orch daemon add osd --method raw billy:/dev/sdb`
-LVM: `ceph orch daemon add osd bobby:/dev/ceph-vg/ceph-lv`
+Raw disk: `ceph orch daemon add osd --method raw node-c:/dev/sdb`
+LVM: `ceph orch daemon add osd node-b:/dev/ceph-vg/ceph-lv`
 
 ## Update /etc/fstab
 
@@ -87,8 +93,8 @@ service_id: nomad
 service_name: osd.nomad
 placement:
   hosts:
-  - jerry
-  - billy
+  - node-a
+  - node-c
 spec:
   data_devices:
     paths:
@@ -98,11 +104,11 @@ spec:
   objectstore: bluestore
 ---
 service_type: osd
-service_id: nomad-bobby
-service_name: osd.nomad-bobby
+service_id: nomad-node-b
+service_name: osd.nomad-node-b
 placement:
   hosts:
-  - bobby
+  - node-b
 spec:
   data_devices:
     paths:
@@ -196,32 +202,32 @@ Links:
 Create separate RBD pools for each server in the cluster.
 ```bash
 ceph config set global mon_allow_pool_size_one true
-ceph osd pool create rbd_jerry 32
-ceph osd pool create rbd_bobby 32
-ceph osd pool create rbd_billy 32
-ceph osd pool application enable rbd_jerry rbd
-ceph osd pool application enable rbd_bobby rbd
-ceph osd pool application enable rbd_billy rbd
-ceph osd pool set rbd_jerry size 1
-ceph osd pool set rbd_bobby size 1
-ceph osd pool set rbd_billy size 1
-ceph osd pool set rbd_jerry min_size 1 --yes-i-really-mean-it
-ceph osd pool set rbd_bobby min_size 1 --yes-i-really-mean-it
-ceph osd pool set rbd_billy min_size 1 --yes-i-really-mean-it
+ceph osd pool create rbd_node-a 32
+ceph osd pool create rbd_node-b 32
+ceph osd pool create rbd_node-c 32
+ceph osd pool application enable rbd_node-a rbd
+ceph osd pool application enable rbd_node-b rbd
+ceph osd pool application enable rbd_node-c rbd
+ceph osd pool set rbd_node-a size 1
+ceph osd pool set rbd_node-b size 1
+ceph osd pool set rbd_node-c size 1
+ceph osd pool set rbd_node-a min_size 1 --yes-i-really-mean-it
+ceph osd pool set rbd_node-b min_size 1 --yes-i-really-mean-it
+ceph osd pool set rbd_node-c min_size 1 --yes-i-really-mean-it
 ```
 
 On each server, create an RBD image within its respective pool. For example:
 ```bash
-jerry$ rbd create --size 150G rbd_jerry/image_jerry
-billy$ rbd create --size 150G rbd_bobby/image_bobby
-bobby$ rbd create --size 150G rbd_billy/image_billy
+node-a$ rbd create --size 150G rbd_node-a/image_node-a
+node-c$ rbd create --size 150G rbd_node-b/image_node-b
+node-b$ rbd create --size 150G rbd_node-c/image_node-c
 ```
 
 On each server, map its respective RBD image to a local block device:
 ```bash
-jerry$ sudo rbd map rbd_jerry/image_jerry
-billy$ sudo rbd map rbd_bobby/image_bobby
-bobby$ sudo rbd map rbd_billy/image_billy
+node-a$ sudo rbd map rbd_node-a/image_node-a
+node-c$ sudo rbd map rbd_node-b/image_node-b
+node-b$ sudo rbd map rbd_node-c/image_node-c
 ```
 
 On each server, format the mapped RBD image with a filesystem and mount it to a local directory:
@@ -499,14 +505,14 @@ ceph orch host rm [host] --offline --force  # If needed
 
 `ceph orch` placement will likely need to be cleaned up. Check `ceph orch ls`/`ceph orch ps` and update as needed. Some examples:
 
-Remove `bobby` and add `robert`: `ceph orch apply nfs octantnfs --placement "jerry;bobby;robert;count:3"`
+Remove `node-b` and add `node-d`: `ceph orch apply nfs octantnfs --placement "node-a;node-b;node-d;count:3"`
 
 ## Clean up
 
 ceph mgr module disable cephadm
 ceph fsid
 cephadm rm-cluster --force --zap-osds --fsid [fsid]
-cephadm rm-cluster --force --zap-osds --fsid 2e13015c-f0ad-11ee-8cdf-000c2961913e
+cephadm rm-cluster --force --zap-osds --fsid 00000000-0000-0000-0000-000000000000
 
 sudo wipefs -f -a /dev/sdb
 sgdisk --zap-all /dev/sdb
@@ -545,7 +551,7 @@ restrict ::1
 
 ceph health detail reports "host [hostname] has flags noout"
 
-Fix: `ceph osd unset-group noout jerry`
+Fix: `ceph osd unset-group noout node-a`
 
 # Cleaning up PGs
 

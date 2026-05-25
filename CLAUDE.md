@@ -104,7 +104,7 @@ variable "certresolver" { default = "" }
 variable "dns"          { default = ["192.168.122.101", "192.168.122.102", "192.168.122.103"] }
 ```
 
-Note: A `.envrc` / tfvars may override `domain` to `lab.shamsway.net` and `certresolver` to `cloudflare` at runtime.
+Note: A `.envrc` / tfvars may override `domain` to `lab.example.com` and `certresolver` to `cloudflare` at runtime.
 
 ### Shared Infrastructure
 
